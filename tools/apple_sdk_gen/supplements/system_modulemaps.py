@@ -1,6 +1,6 @@
 """Generate Clang module maps for system headers in usr/include/.
 
-Without these, ``@import Darwin`` and ``import Darwin`` in Swift fail.
+The maps let Clang import these headers as Darwin modules.
 Module maps are generated conditionally — only headers that actually exist
 in the SDK get submodule entries.
 """

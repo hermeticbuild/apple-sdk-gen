@@ -84,16 +84,14 @@ class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as directory:
             header = assemble_header(Path(directory), "macos", await docc.symbols())
             contents = header.read_text()
-            for arch in ("arm64", "x86_64"):
-                with self.subTest(arch=arch):
-                    result = subprocess.run(
-                        [CLANG, "-target", f"{arch}-apple-macos11", "-ffreestanding",
-                         "-fsyntax-only", "-Werror", "-isysroot", str(header.parents[5]),
-                         "-include", str(header), "-x", "objective-c", "-"],
-                        input="void start(void) { [SharedApplication run]; }\n",
-                        text=True, capture_output=True,
-                    )
-                    self.assertEqual(result.returncode, 0, result.stderr)
+            result = subprocess.run(
+                [CLANG, "-target", "arm64-apple-macos11", "-ffreestanding",
+                 "-fsyntax-only", "-Werror", "-isysroot", str(header.parents[5]),
+                 "-include", str(header), "-x", "objective-c", "-"],
+                input="void start(void) { [SharedApplication run]; }\n",
+                text=True, capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(contents.count("extern Application *SharedApplication;"), 1)
 
     async def test_appkit_event_and_activation_values(self):
@@ -221,19 +219,17 @@ class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
         })
         with tempfile.TemporaryDirectory() as directory:
             header = assemble_header(Path(directory), "macos", await docc.symbols())
-            for arch in ("arm64", "x86_64"):
-                with self.subTest(arch=arch):
-                    result = subprocess.run(
-                        [CLANG, "-target", f"{arch}-apple-macos11", "-ffreestanding", "-fblocks",
-                         "-fsyntax-only", "-Werror", "-include", str(header), "-x", "c", "-"],
-                        input=('_Static_assert(sizeof(Address) == 6, "array");\n'
-                               '_Static_assert(StateIdle == 7, "explicit enum value");\n'
-                               '_Static_assert(sizeof(Opaque) == 4, "raw enum width");\n'
-                               '_Static_assert(sizeof(Read()) == sizeof(int), "record return");\n'
-                               'Error error;\n'),
-                        text=True, capture_output=True,
-                    )
-                    self.assertEqual(result.returncode, 0, result.stderr)
+            result = subprocess.run(
+                [CLANG, "-target", "arm64-apple-macos11", "-ffreestanding", "-fblocks",
+                 "-fsyntax-only", "-Werror", "-include", str(header), "-x", "c", "-"],
+                input=('_Static_assert(sizeof(Address) == 6, "array");\n'
+                       '_Static_assert(StateIdle == 7, "explicit enum value");\n'
+                       '_Static_assert(sizeof(Opaque) == 4, "raw enum width");\n'
+                       '_Static_assert(sizeof(Read()) == sizeof(int), "record return");\n'
+                       'Error error;\n'),
+                text=True, capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
 
     @unittest.skipUnless(CLANG, "requires Clang")
     async def test_foundation_constant_values(self):
@@ -259,20 +255,18 @@ class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             header = assemble_header(Path(directory), "macos", await DocC(pages).symbols())
-            for arch in ("arm64", "x86_64"):
-                with self.subTest(arch=arch):
-                    result = subprocess.run(
-                        [CLANG, "-target", f"{arch}-apple-macos11", "-ffreestanding",
-                         "-fsyntax-only", "-Werror", "-isysroot", str(header.parents[5]),
-                         "-include", str(header), "-x", "objective-c", "-"],
-                        input=(
-                            '_Static_assert(NSUTF8StringEncoding == 4, "UTF-8");\n'
-                            '_Static_assert(NSDocumentDirectory == 9, "Documents");\n'
-                            '_Static_assert(NSUserDomainMask == 1, "user domain");\n'
-                        ),
-                        text=True, capture_output=True,
-                    )
-                    self.assertEqual(result.returncode, 0, result.stderr)
+            result = subprocess.run(
+                [CLANG, "-target", "arm64-apple-macos11", "-ffreestanding",
+                 "-fsyntax-only", "-Werror", "-isysroot", str(header.parents[5]),
+                 "-include", str(header), "-x", "objective-c", "-"],
+                input=(
+                    '_Static_assert(NSUTF8StringEncoding == 4, "UTF-8");\n'
+                    '_Static_assert(NSDocumentDirectory == 9, "Documents");\n'
+                    '_Static_assert(NSUserDomainMask == 1, "user domain");\n'
+                ),
+                text=True, capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
             tbd = header.parents[1] / "Foundation.tbd"
             self.assertNotIn("_NSUTF8StringEncoding", tbd.read_text())
 
@@ -524,18 +518,16 @@ class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as directory:
             header = assemble_header(Path(directory), "macos", await docc.symbols())
             framework_dir = header.parents[2]
-            for arch in ("arm64", "x86_64"):
-                with self.subTest(arch=arch):
-                    result = subprocess.run(
-                        [CLANG, "-target", f"{arch}-apple-macos11",
-                         "-ffreestanding", "-fsyntax-only", "-Werror",
-                         "-isysroot", str(header.parents[5]), "-nostdinc",
-                         "-isystem", str(clang_resources / "include"),
-                         "-F", str(framework_dir), "-x", "objective-c", "-"],
-                        input="#import <Foundation/Foundation.h>\nNSImage *image(void) { return copyImage(); }\n",
-                        text=True, capture_output=True,
-                    )
-                    self.assertEqual(result.returncode, 0, result.stderr)
+            result = subprocess.run(
+                [CLANG, "-target", "arm64-apple-macos11",
+                 "-ffreestanding", "-fsyntax-only", "-Werror",
+                 "-isysroot", str(header.parents[5]), "-nostdinc",
+                 "-isystem", str(clang_resources / "include"),
+                 "-F", str(framework_dir), "-x", "objective-c", "-"],
+                input="#import <Foundation/Foundation.h>\nNSImage *image(void) { return copyImage(); }\n",
+                text=True, capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
 
             docc.pages["/documentation/foundation/subimage"] = page(
                 "SubImage", "class",
@@ -605,30 +597,26 @@ class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             macos = assemble_header(root, "macos", symbols).read_text()
-            ios = assemble_header(root, "ios", symbols).read_text()
-            watchos = assemble_header(root, "watchos", symbols).read_text()
         self.assertIn("typedef struct Desktop *Handle;", macos)
-        self.assertIn("typedef struct Mobile *Handle;", ios)
-        self.assertIn("typedef struct Generic *Handle;", watchos)
+        self.assertNotIn("typedef struct Mobile *Handle;", macos)
+        self.assertNotIn("typedef struct Generic *Handle;", macos)
 
     @unittest.skipUnless(CLANG, "requires Clang")
     async def test_struct_offsets_follow_memberwise_initializer(self):
         docc = DocC(address_pages("init(code:number:)"))
         with tempfile.TemporaryDirectory() as directory:
             header = assemble_header(Path(directory), "macos", await docc.symbols())
-            for arch in ("arm64", "x86_64"):
-                with self.subTest(arch=arch):
-                    result = subprocess.run(
-                        [CLANG, "-target", f"{arch}-apple-macos11", "-ffreestanding",
-                         "-std=c11", "-fsyntax-only", "-Werror", "-include", str(header),
-                         "-x", "c", "-"],
-                        input=(
-                            '_Static_assert(__builtin_offsetof(Address, code) == 0, "code");\n'
-                            '_Static_assert(__builtin_offsetof(Address, number) == 4, "number");\n'
-                        ),
-                        text=True, capture_output=True,
-                    )
-                    self.assertEqual(result.returncode, 0, result.stderr)
+            result = subprocess.run(
+                [CLANG, "-target", "arm64-apple-macos11", "-ffreestanding",
+                 "-std=c11", "-fsyntax-only", "-Werror", "-include", str(header),
+                 "-x", "c", "-"],
+                input=(
+                    '_Static_assert(__builtin_offsetof(Address, code) == 0, "code");\n'
+                    '_Static_assert(__builtin_offsetof(Address, number) == 4, "number");\n'
+                ),
+                text=True, capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
 
     async def test_incomplete_initializer_leaves_struct_opaque(self):
         docc = DocC(address_pages("init(code:)"))

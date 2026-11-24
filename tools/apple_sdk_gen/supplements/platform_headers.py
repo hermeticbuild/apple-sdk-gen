@@ -13,56 +13,38 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# ── TargetConditionals per-platform values ──────────────────────────
-# Tuple: (TARGET_OS_MAC, TARGET_OS_IPHONE, TARGET_OS_IOS, TARGET_OS_WATCH,
-#          TARGET_OS_TV, TARGET_OS_VISION, TARGET_OS_SIMULATOR,
-#          TARGET_CPU_ARM64, TARGET_RT_64_BIT)
-
-_TARGET_VALUES: dict[str, tuple[int, ...]] = {
-    #                MAC  IPHONE  IOS  WATCH  TV  VISION  SIM  ARM64  64BIT
-    "ios":       (   1,    1,      1,   0,     0,  0,      0,   1,     1),
-    "macos":     (   1,    0,      0,   0,     0,  0,      0,   1,     1),
-    "tvos":      (   1,    1,      0,   0,     1,  0,      0,   1,     1),
-    "watchos":   (   1,    1,      0,   1,     0,  0,      0,   1,     1),
-    "visionos":  (   1,    1,      0,   0,     0,  1,      0,   1,     1),
-}
-
-
-def _generate_target_conditionals(platform_key: str) -> str:
-    vals = _TARGET_VALUES.get(platform_key, _TARGET_VALUES["ios"])
-    (mac, iphone, ios, watch, tv, vision, sim, arm64, bit64) = vals
-
-    return f"""\
+def _generate_target_conditionals() -> str:
+    return """\
 /*
- * TargetConditionals.h — auto-generated for {platform_key}
+ * TargetConditionals.h — auto-generated for macOS arm64
  */
 #ifndef __TARGETCONDITIONALS__
 #define __TARGETCONDITIONALS__
 
 /* Operating-system flags */
-#define TARGET_OS_MAC               {mac}
-#define TARGET_OS_OSX               {1 if platform_key == 'macos' else 0}
-#define TARGET_OS_IPHONE            {iphone}
-#define TARGET_OS_IOS               {ios}
-#define TARGET_OS_WATCH             {watch}
-#define TARGET_OS_WATCHOS           {watch}
-#define TARGET_OS_TV                {tv}
-#define TARGET_OS_VISION            {vision}
-#define TARGET_OS_SIMULATOR         {sim}
-#define TARGET_OS_EMBEDDED          {iphone}
+#define TARGET_OS_MAC               1
+#define TARGET_OS_OSX               1
+#define TARGET_OS_IPHONE            0
+#define TARGET_OS_IOS               0
+#define TARGET_OS_WATCH             0
+#define TARGET_OS_WATCHOS           0
+#define TARGET_OS_TV                0
+#define TARGET_OS_VISION            0
+#define TARGET_OS_SIMULATOR         0
+#define TARGET_OS_EMBEDDED          0
 #define TARGET_OS_MACCATALYST       0
 #define TARGET_OS_DRIVERKIT         0
 #define TARGET_OS_UNIX              1
 #define TARGET_OS_WIN32             0
 #define TARGET_OS_WINDOWS           0
 #define TARGET_OS_LINUX             0
-#define TARGET_OS_NANO              {watch}
+#define TARGET_OS_NANO              0
 
 /* CPU flags */
 #define TARGET_CPU_ARM              0
-#define TARGET_CPU_ARM64            {arm64}
+#define TARGET_CPU_ARM64            1
 #define TARGET_CPU_X86              0
-#define TARGET_CPU_X86_64           {1 if platform_key == 'macos' else 0}
+#define TARGET_CPU_X86_64           0
 #define TARGET_CPU_PPC              0
 #define TARGET_CPU_PPC64            0
 #define TARGET_CPU_MIPS             0
@@ -70,7 +52,7 @@ def _generate_target_conditionals(platform_key: str) -> str:
 /* Runtime flags */
 #define TARGET_RT_LITTLE_ENDIAN     1
 #define TARGET_RT_BIG_ENDIAN        0
-#define TARGET_RT_64_BIT            {bit64}
+#define TARGET_RT_64_BIT            1
 #define TARGET_RT_MAC_CFM           0
 
 /* Feature flags */
@@ -381,7 +363,7 @@ __END_DECLS
 """
 
 
-def install_platform_headers(sdk_root: Path, platform_key: str) -> None:
+def install_platform_headers(sdk_root: Path) -> None:
     """Install essential platform headers into usr/include/."""
     usr_include = sdk_root / "usr" / "include"
     usr_include.mkdir(parents=True, exist_ok=True)
@@ -391,7 +373,7 @@ def install_platform_headers(sdk_root: Path, platform_key: str) -> None:
     # TargetConditionals.h
     tc_path = usr_include / "TargetConditionals.h"
     if not tc_path.exists():
-        tc_path.write_text(_generate_target_conditionals(platform_key))
+        tc_path.write_text(_generate_target_conditionals())
         generated += 1
 
     # Block.h
@@ -412,4 +394,4 @@ def install_platform_headers(sdk_root: Path, platform_key: str) -> None:
         math_path.write_text(_generate_math_h())
         generated += 1
 
-    logger.info("Generated %d platform headers for %s", generated, platform_key)
+    logger.info("Generated %d macOS platform headers", generated)

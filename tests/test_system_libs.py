@@ -13,7 +13,7 @@ class SystemLibraryStubsTest(unittest.TestCase):
         }
         with TemporaryDirectory() as directory:
             sdk = Path(directory)
-            install_system_lib_stubs(sdk, ["arm64-macos", "x86_64-macos"])
+            install_system_lib_stubs(sdk, ["arm64-macos"])
 
             for library, expected in expected_exports.items():
                 with self.subTest(library=library):

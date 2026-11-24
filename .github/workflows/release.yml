@@ -9,13 +9,12 @@ permissions:
   contents: write
 
 env:
-  SDK_VERSION: "27.0"
-  SWIFT_VERSION: "6.4.0"
+  SDK_VERSION: "26.5"
 
 jobs:
   release:
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
         with:
@@ -50,26 +49,24 @@ jobs:
           restore-keys: api-cache-
 
       - name: Install dependencies
-        run: pip install -e tools/
+        run: |
+          pip install -e tools/
+          brew install gnu-tar ninja
 
-      - name: Build all SDKs
+      - name: Build the arm64 macOS SDK
         run: |
           python -m tools.apple_sdk_gen \
             --sdk-version "$SDK_VERSION" \
-            --swift-version "$SWIFT_VERSION" \
-            --platforms ios,macos,tvos,watchos,visionos \
-            --include-simulators \
             --all-frameworks \
-            --include-swift \
             --include-libc \
             --include-cxx \
             --cache-dir cache \
             -v
 
-      - name: Bundle SDKs
+      - name: Bundle the SDK
         run: |
-          tar --sort=name --owner=0 --group=0 --numeric-owner --mtime='2023-01-01 00:00Z' \
-            -cf - -C output Xcode.app | zstd -19 -T0 -o "stub-sdks-$SDK_VERSION.tar.zst"
+          gtar --sort=name --owner=0 --group=0 --numeric-owner --mtime='2023-01-01 00:00Z' \
+            -cf - -C output Xcode.app | zstd -19 -T0 -o "macos-arm64-sdk-$SDK_VERSION.tar.zst"
 
       - name: Create tag
         run: |
@@ -83,4 +80,4 @@ jobs:
           gh release create "${{ steps.version.outputs.tag }}" \
             --title "${{ steps.version.outputs.tag }}" \
             --generate-notes \
-            "stub-sdks-$SDK_VERSION.tar.zst"
+            "macos-arm64-sdk-$SDK_VERSION.tar.zst"

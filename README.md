@@ -1,142 +1,66 @@
 # apple-sdk-gen
 
-Generate Apple SDK stubs from the public Apple Developer Documentation API.
+Generate an arm64 macOS SDK for C, C++, Objective-C and Objective-C++.
+Framework declarations come from Apple’s public documentation. Clang
+module maps and linker stubs make the generated interfaces usable by
+cross-compilers.
 
-## What it does
+## Generate macOS 26.5
 
-`apple-sdk-gen` crawls Apple's documentation JSON API to discover frameworks
-and their symbols, then assembles stub SDKs containing:
+With Python 3.12 or newer, CMake, Ninja and Clang on `PATH`:
 
-- **TBD stubs** (`.tbd`) for linking against system frameworks and dylibs
-- **Objective-C umbrella headers** with type declarations, class interfaces, protocols, and enums
-- **Module maps** for Clang module imports
-- **Swift interfaces** (`.swiftinterface`) for Swift cross-compilation
-- **The Darwin Swift runtime** from swift.org's macOS toolchain package: the
-  standard library's `.swiftinterface` modules, `libswift*.tbd` stubs with the
-  exported symbols of its dylibs, the shims, the clang resource directory and
-  the compatibility archives (`--swift-version`)
-- **libSystem, libobjc and libc++ stubs** from a Darwin export inventory
-  selected for the requested SDK version and platform
-- **C stdlib / POSIX headers** from Apple open-source distributions
-- **C++ standard library headers** from upstream LLVM
-- **SDKSettings.json**, **Info.plist** and **version.plist** matching Xcode's metadata format
-
-Output replicates the Xcode SDK directory structure:
-
-```
-output/Xcode.app/Contents/Developer/Platforms/
-├── iPhoneOS.platform/Developer/SDKs/
-│   ├── iPhoneOS.sdk/            ← real directory
-│   └── iPhoneOS27.0.sdk         → iPhoneOS.sdk (symlink)
-├── iPhoneSimulator.platform/Developer/SDKs/
-│   ├── iPhoneSimulator.sdk/
-│   └── iPhoneSimulator27.0.sdk  → iPhoneSimulator.sdk
-├── MacOSX.platform/...
-├── AppleTVOS.platform/...
-├── AppleTVSimulator.platform/...
-├── WatchOS.platform/...
-├── WatchSimulator.platform/...
-├── XROS.platform/...
-└── XRSimulator.platform/...
+```sh
+python3 -m pip install -e tools/
+python3 -m tools.apple_sdk_gen --sdk-version 26.5 \
+  --frameworks Cocoa,CoreFoundation,CoreGraphics,Network,Security \
+  --include-cxx --cache-dir cache --output output
 ```
 
-Without `--swift-stdlib-path`, no file in the output is copied from an Xcode
-SDK.
+The SDK is at
+`output/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk`.
+The cache stores DocC responses and the LLVM source archives. Reuse it
+when regenerating a framework. Selecting Cocoa requests Foundation,
+AppKit and Core Data and builds an umbrella for the three.
 
-## Quick start
+| Flag | Purpose |
+|---|---|
+| `--sdk-version` | Required version of the generated SDK |
+| `--darwin-library-metadata` | Override the bundled 26.5 inventory with a matching version |
+| `--frameworks` | Generate a comma-separated set of frameworks |
+| `--all-frameworks` | Generate every discovered macOS framework |
+| `--exclude-frameworks` | Exclude selected frameworks, including Cocoa |
+| `--include-libc` | Install the generator's optional Apple OSS C header supplement |
+| `--include-cxx` | Install the macOS 26.5 LLVM C++ and ABI headers |
+| `--output`, `--cache-dir` | Choose the SDK output and download cache directories |
+| `--concurrency`, `--rate-limit` | Set the DocC request limits |
+| `--xcode-version`, `--xcode-build` | Set the version recorded in the Xcode-style metadata |
+| `-v`, `-vv` | Enable info or debug logging |
 
-```bash
-# Generate iOS and macOS SDKs (default)
-python3 -m tools.apple_sdk_gen --sdk-version 27.0 --all-frameworks
+The C++ layer uses LLVM 21.1.6, the libc++ version reported by Xcode
+26.5. The installer checks release archive digests and runs LLVM's
+Apple CMake preset and header install targets. It includes both
+LLVM license files. Consumers link to the macOS system dylibs.
+[LLVM release](https://github.com/llvm/llvm-project/releases/tag/llvmorg-21.1.6)
 
-# Generate all platforms with simulators, full headers and the Swift runtime
-python3 -m tools.apple_sdk_gen \
-  --platforms ios,macos,tvos,watchos,visionos \
-  --include-simulators \
-  --sdk-version 27.0 \
-  --swift-version 6.4.0 \
-  --all-frameworks \
-  --include-libc \
-  --include-swift \
-  --include-cxx \
-  --output output
-```
+## Darwin linker stubs
 
-First run can take up to several hours, but API responses are cached locally in
-`.cache/` so subsequent runs should be faster.
+The generator uses the checked-in macOS 26.5 export inventory for
+`libSystem.B`, `libobjc.A`, `libc++.1` and `libc++abi`. Metadata for
+another SDK must declare that version. The writer keeps the arm64
+exports, reexports and owning install names.
+[26.5 provenance](tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.md)
 
-The macOS SDK includes the Cocoa umbrella when Foundation, AppKit, and Core Data
-are all generated. Use `--platforms macos --frameworks Cocoa` to select those
-frameworks together, or `--exclude-frameworks Cocoa` to skip the umbrella.
-
-## CLI options
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--sdk-version` | *(required)* | SDK version to generate (e.g. `27.0`) |
-| `--darwin-library-metadata` | bundled 27.0 inventory | JSON export inventory for the requested SDK version and platforms |
-| `--platforms` | `ios,macos` | Comma-separated: `ios`, `macos`, `tvos`, `watchos`, `visionos` |
-| `--include-simulators` | off | Also generate simulator SDKs for each device platform |
-| `--all-frameworks` | off | Generate all available frameworks |
-| `--frameworks` | none | Comma-separated list of specific frameworks |
-| `--exclude-frameworks` | none | Comma-separated list of frameworks to skip |
-| `--include-swift` | off | Generate `.swiftinterface` files |
-| `--include-libc` | off | Download C stdlib/POSIX headers from Apple OSS |
-| `--include-cxx` | off | Download C++ stdlib headers from LLVM |
-| `--swift-version` | none | swift.org release whose macOS package supplies the Darwin Swift runtime (e.g. `6.4.0`) |
-| `--swift-pkg` | download | Local copy of that package |
-| `--swift-pkg-sha256` | known digest | Expected sha256 of the package |
-| `--xcode-version` | from `--sdk-version` | Xcode version recorded in `version.plist` |
-| `--xcode-build` | `<major>A0` | Xcode build recorded in `version.plist` |
-| `--output` | `./output` | Output directory |
-| `--cache-dir` | `./.cache` | Cache directory for API responses |
-| `--concurrency` | `10` | Max concurrent API requests |
-| `--rate-limit` | `10.0` | API requests per second |
-| `-v` / `-vv` | quiet | Verbosity (INFO / DEBUG) |
-
-Code built against an SDK generated with `--swift-version` must be compiled
-with that same Swift release.
-
-### Darwin export inventories
-
-The bundled inventory is used for SDK 27.0. For another version, pass
-`--darwin-library-metadata` with an inventory for that exact SDK version.
-Its top-level fields are `sdk_version` and `platforms`. Each platform maps
-the stub basenames `libSystem.B`, `libobjc.A`, `libc++.1`, and `libc++abi`
-to arrays of TBD v4 documents. Export and reexport target groups are
-preserved. Missing versions or requested platforms are reported before
-the documentation crawl starts.
-
-To compare locally with an installed SDK, the extractor reads its version
-from `SDKSettings.json` and keeps its target groups:
+To extract comparison data from an installed SDK locally:
 
 ```sh
 python3 tools/extract-darwin-libs.py "$REFERENCE_SDK" \
   --platform macos --output "$LOCAL_METADATA"
-python3 -m tools.apple_sdk_gen --platforms macos --sdk-version 26.5 \
-  --darwin-library-metadata "$LOCAL_METADATA" --frameworks CoreFoundation
 ```
 
-The extractor is for local comparisons. Supply an inventory with
-appropriate provenance when producing distributable SDKs.
+## CI and limitations
 
-For the arm64 macOS 26.5 SDK, add `--include-cxx` to install libc++ and
-libc++abi headers from LLVM 21.1.6. The installer checks the release
-archives' SHA-256 digests and uses LLVM's Apple CMake preset with its
-header install targets. Put CMake, Ninja, and Clang on `PATH`. The SDK
-includes both LLVM license files and links against macOS system dylibs.
+Pushes to `main` and pull requests run the unit tests. The manual
+**Release** workflow packages the macOS SDK on an Apple Silicon runner.
 
-## CI and releases
-
-Pushes to `main` and pull requests targeting it run the unit tests.
-
-Run **Release** manually from `main` to build all platforms and publish
-`stub-sdks-<sdk version>.tar.zst`, holding `Xcode.app`, as a GitHub release.
-
-## Limitations
-
-The documentation API was designed for rendering docs, not generating SDKs. Key
-gaps include missing enum raw values, empty struct bodies, no inline function
-implementations, and no preprocessor macro definitions. See
-[LIMITATIONS.md](tools/apple_sdk_gen/LIMITATIONS.md) for details and
-workarounds.
+The [known limitations](tools/apple_sdk_gen/LIMITATIONS.md) describe
+framework APIs that need evidence beyond Apple’s documentation.

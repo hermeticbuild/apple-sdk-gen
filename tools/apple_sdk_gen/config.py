@@ -11,100 +11,21 @@ class PlatformConfig:
     sdk_prefix: str
     platform_dir: str
     target_triples: list[str] = field(default_factory=list)
-    swift_triples: list[str] = field(default_factory=list)
 
 
 PLATFORM_CONFIGS: dict[str, PlatformConfig] = {
-    "ios": PlatformConfig(
-        name=PlatformName.IOS,
-        sdk_prefix="iPhoneOS",
-        platform_dir="iPhoneOS.platform",
-        target_triples=["arm64-apple-ios", "arm64e-apple-ios"],
-        swift_triples=["arm64-apple-ios"],
-    ),
     "macos": PlatformConfig(
         name=PlatformName.MACOS,
         sdk_prefix="MacOSX",
         platform_dir="MacOSX.platform",
-        target_triples=["x86_64-apple-macos", "arm64-apple-macos", "arm64e-apple-macos"],
-        swift_triples=["arm64-apple-macos", "x86_64-apple-macos"],
-    ),
-    "tvos": PlatformConfig(
-        name=PlatformName.TVOS,
-        sdk_prefix="AppleTVOS",
-        platform_dir="AppleTVOS.platform",
-        target_triples=["arm64-apple-tvos", "arm64e-apple-tvos"],
-        swift_triples=["arm64-apple-tvos"],
-    ),
-    "watchos": PlatformConfig(
-        name=PlatformName.WATCHOS,
-        sdk_prefix="WatchOS",
-        platform_dir="WatchOS.platform",
-        target_triples=["arm64_32-apple-watchos", "arm64-apple-watchos", "arm64e-apple-watchos"],
-        swift_triples=["arm64_32-apple-watchos"],
-    ),
-    "visionos": PlatformConfig(
-        name=PlatformName.VISIONOS,
-        sdk_prefix="XROS",
-        platform_dir="XROS.platform",
-        target_triples=["arm64-apple-xros", "arm64e-apple-xros"],
-        swift_triples=["arm64-apple-xros"],
-    ),
-    # ── Simulator platforms ──
-    "ios-simulator": PlatformConfig(
-        name=PlatformName.IOS,
-        sdk_prefix="iPhoneSimulator",
-        platform_dir="iPhoneSimulator.platform",
-        target_triples=["arm64-apple-ios-simulator", "x86_64-apple-ios-simulator"],
-        swift_triples=["arm64-apple-ios-simulator", "x86_64-apple-ios-simulator"],
-    ),
-    "tvos-simulator": PlatformConfig(
-        name=PlatformName.TVOS,
-        sdk_prefix="AppleTVSimulator",
-        platform_dir="AppleTVSimulator.platform",
-        target_triples=["arm64-apple-tvos-simulator", "x86_64-apple-tvos-simulator"],
-        swift_triples=["arm64-apple-tvos-simulator", "x86_64-apple-tvos-simulator"],
-    ),
-    "watchos-simulator": PlatformConfig(
-        name=PlatformName.WATCHOS,
-        sdk_prefix="WatchSimulator",
-        platform_dir="WatchSimulator.platform",
-        target_triples=["arm64-apple-watchos-simulator", "x86_64-apple-watchos-simulator"],
-        swift_triples=["arm64-apple-watchos-simulator", "x86_64-apple-watchos-simulator"],
-    ),
-    "visionos-simulator": PlatformConfig(
-        name=PlatformName.VISIONOS,
-        sdk_prefix="XRSimulator",
-        platform_dir="XRSimulator.platform",
-        target_triples=["arm64-apple-xros-simulator", "x86_64-apple-xros-simulator"],
-        swift_triples=["arm64-apple-xros-simulator", "x86_64-apple-xros-simulator"],
+        target_triples=["arm64-apple-macos"],
     ),
 }
 
 
-_TBD_OS = {
-    "ios": "ios",
-    "macos": "macos",
-    "tvos": "tvos",
-    "watchos": "watchos",
-    "visionos": "xros",
-    "ios-simulator": "ios-simulator",
-    "tvos-simulator": "tvos-simulator",
-    "watchos-simulator": "watchos-simulator",
-    "visionos-simulator": "xros-simulator",
-}
-
-
-def tbd_target_name(platform_key: str, arch: str) -> str:
-    return f"{arch}-{_TBD_OS.get(platform_key, platform_key)}"
-
-
-def tbd_targets_for_platform(platform_key: str, sdk_version: str = "") -> list[str]:
-    """Generate TBD target strings like 'arm64-ios' for a platform."""
-    cfg = PLATFORM_CONFIGS.get(platform_key)
-    if not cfg:
-        return []
-    return [tbd_target_name(platform_key, triple.split("-")[0]) for triple in cfg.target_triples]
+def tbd_targets_for_platform(platform_key: str) -> list[str]:
+    cfg = PLATFORM_CONFIGS[platform_key]
+    return [f"{triple.split('-', 1)[0]}-{platform_key}" for triple in cfg.target_triples]
 
 
 # Module names from the documentation API that are NOT real .framework
@@ -216,56 +137,8 @@ SUPPLEMENTARY_FRAMEWORKS: list[str] = [
     "Twitter",              # Deprecated
     "CoreMediaIO",          # Camera extensions (iOS 17+)
     "HealthKitUI",          # iOS 8+, in doc API but not in technologies listing
-    "MetalPerformancePrimitives",  # arm64e-only, no doc entry
-    "RealityFoundation",    # Swift-only, no doc entry
     "SecurityUI",           # No doc entry
-    "StickerFoundation",    # arm64e-only, no doc entry
     "StickerKit",           # No doc entry
-    "SwiftUICore",          # Swift-only, no doc entry
-]
-
-# Private underscore overlay frameworks needed for SwiftUI integration
-# at link time.  These get TBD-only stubs (no headers / modulemaps).
-SWIFT_OVERLAY_FRAMEWORKS: list[str] = [
-    "_AdAttributionKit_StoreKit",
-    "_AppIntents_SwiftUI",
-    "_AppIntents_UIKit",
-    "_AuthenticationServices_SwiftUI",
-    "_AVKit_SwiftUI",
-    "_CoreData_CloudKit",
-    "_CoreLocationUI_SwiftUI",
-    "_CoreNFC_UIKit",
-    "_DeviceActivity_SwiftUI",
-    "_DeviceDiscoveryUI_SwiftUI",
-    "_GameController_SwiftUI",
-    "_GeoToolbox_AppIntents",
-    "_GroupActivities_UIKit",
-    "_HomeKit_SwiftUI",
-    "_Intents_TipKit",
-    "_LocationEssentials",
-    "_ManagedAppDistribution_SwiftUI",
-    "_MapKit_SwiftUI",
-    "_MarketplaceKit_UIKit",
-    "_MusicKit_SwiftUI",
-    "_PassKit_SwiftUI",
-    "_PermissionKit_SwiftUI",
-    "_PermissionKit_UIKit",
-    "_Photos_AppIntents",
-    "_PhotosUI_SwiftUI",
-    "_PhotosUI_WidgetKit",
-    "_QuickLook_SwiftUI",
-    "_RealityKit_SwiftUI",
-    "_RelevanceKit_MapKit",
-    "_SceneKit_SwiftUI",
-    "_SecureElementCredential_SwiftUI",
-    "_SecureElementCredential_UIKit",
-    "_SpriteKit_SwiftUI",
-    "_StoreKit_SwiftUI",
-    "_SwiftData_CoreData",
-    "_SwiftData_SwiftUI",
-    "_Translation_SwiftUI",
-    "_WebKit_SwiftUI",
-    "_WorkoutKit_SwiftUI",
 ]
 
 # ── Shared exclusion categories ──
@@ -289,27 +162,8 @@ _DEV_TOOLS: set[str] = {
     "Xcode", "XcodeKit", "XCTest", "XCUIAutomation",
 }
 
-# Per-platform framework exclusions.  Covers doc-API frameworks,
-# supplementary/companion frameworks, and private overlay frameworks
-# that should not appear in a given platform's SDK.
+# Documentation and companion frameworks omitted from the macOS SDK.
 PLATFORM_EXCLUDED_MODULES: dict[str, set[str]] = {
-    # ── iOS (device) ─────────────────────────────────────────────
-    "ios": {
-        # macOS-only
-        "AppKit", "Quartz",
-        # watchOS-only
-        "WatchKit",
-        # DriverKit top-level
-        "DriverKit",
-        # macOS-only or not a .framework on iOS
-        "ShaderGraph", "EndpointSecurity", "MediaExtension",
-        "ServiceManagement", "Spatial", "StoreKitTest",
-        "WalletOrders", "WalletPasses",
-        # dylib, not a .framework
-        "AppleArchive",
-    } | _DRIVERKIT_SUB | _DEV_TOOLS,
-
-    # ── macOS ────────────────────────────────────────────────────
     "macos": {
         # iOS/mobile-only
         "HealthKitUI", "IdentityLookupUI", "MarketplaceKit",
@@ -319,112 +173,9 @@ PLATFORM_EXCLUDED_MODULES: dict[str, set[str]] = {
         "StoreKitTest", "WalletOrders",
         # dylib, not a .framework
         "AppleArchive",
-        # iOS-only overlay frameworks
-        "_AdAttributionKit_StoreKit", "_AppIntents_UIKit",
-        "_CoreLocationUI_SwiftUI", "_CoreNFC_UIKit",
-        "_DeviceDiscoveryUI_SwiftUI", "_GameController_SwiftUI",
-        "_GroupActivities_UIKit", "_HomeKit_SwiftUI",
-        "_MarketplaceKit_UIKit", "_PermissionKit_UIKit",
-        "_RelevanceKit_MapKit", "_SecureElementCredential_SwiftUI",
-        "_SecureElementCredential_UIKit",
     } | _DEPRECATED_MOBILE | _DRIVERKIT_SUB | _DEV_TOOLS,
 
-    # ── tvOS ─────────────────────────────────────────────────────
-    "tvos": {
-        "AppKit", "Quartz", "WatchKit", "IOKit",
-        "DriverKit",
-        # Not in tvOS SDK
-        "ActivityKit", "AdServices", "ARKit", "BusinessChat", "ImageCaptureCore",
-        "MarketplaceKit", "MediaExtension", "MessageUI",
-        "NearbyInteraction", "PassKit", "SafetyKit", "SensorKit",
-        "ShaderGraph", "Spatial", "StoreKitTest",
-        "TelephonyMessagingKit", "WebKit", "WidgetKit",
-        "WorkoutKit",
-        # Supplementary/companion not on tvOS
-        "HealthKitUI", "StickerFoundation", "StickerKit",
-        # dylib
-        "AppleArchive",
-        # Overlay frameworks not on tvOS
-        "_AdAttributionKit_StoreKit", "_CoreLocationUI_SwiftUI",
-        "_CoreNFC_UIKit", "_DeviceActivity_SwiftUI",
-        "_ManagedAppDistribution_SwiftUI", "_MarketplaceKit_UIKit",
-        "_PassKit_SwiftUI", "_PermissionKit_SwiftUI",
-        "_PermissionKit_UIKit", "_PhotosUI_SwiftUI",
-        "_PhotosUI_WidgetKit", "_QuickLook_SwiftUI",
-        "_SecureElementCredential_SwiftUI", "_SecureElementCredential_UIKit",
-        "_Translation_SwiftUI", "_WebKit_SwiftUI", "_WorkoutKit_SwiftUI",
-    } | _DEPRECATED_MOBILE | _DRIVERKIT_SUB | _DEV_TOOLS,
-
-    # ── watchOS ──────────────────────────────────────────────────
-    "watchos": {
-        "AppKit", "Quartz", "IOKit",
-        "DriverKit",
-        # Not in watchOS SDK
-        "ActivityKit", "AdServices", "ARKit", "AudioToolbox", "BusinessChat",
-        "CoreMediaIO", "CreateML", "DeviceDiscoveryUI", "hvf",
-        "IdentityLookup", "IdentityLookupUI", "IntentsUI",
-        "MarketplaceKit", "MediaAccessibility",
-        "MediaExtension", "MessageUI",
-        "MetalPerformancePrimitives", "MetalPerformanceShaders",
-        "Photos", "RealityFoundation", "RealityKit",
-        "SensorKit", "ShaderGraph", "SharedWithYou", "SharedWithYouCore",
-        "Spatial", "StoreKitTest", "TelephonyMessagingKit",
-        "VideoToolbox", "WalletPasses", "WiFiAware",
-        # Supplementary/companion not on watchOS
-        "OpenAL", "StickerFoundation", "StickerKit",
-        # dylib
-        "AppleArchive",
-        # Overlay frameworks not on watchOS
-        "_AdAttributionKit_StoreKit", "_CoreNFC_UIKit",
-        "_DeviceActivity_SwiftUI", "_DeviceDiscoveryUI_SwiftUI",
-        "_GameController_SwiftUI", "_GroupActivities_UIKit",
-        "_ManagedAppDistribution_SwiftUI", "_MarketplaceKit_UIKit",
-        "_PermissionKit_SwiftUI", "_PermissionKit_UIKit",
-        "_Photos_AppIntents", "_PhotosUI_WidgetKit",
-        "_QuickLook_SwiftUI", "_RealityKit_SwiftUI",
-        "_SecureElementCredential_SwiftUI", "_SecureElementCredential_UIKit",
-        "_Translation_SwiftUI", "_WebKit_SwiftUI",
-    } | _DEPRECATED_MOBILE | _DRIVERKIT_SUB | _DEV_TOOLS,
-
-    # ── visionOS ─────────────────────────────────────────────────
-    "visionos": {
-        "AppKit", "Quartz", "WatchKit",
-        # Not in visionOS SDK
-        "ActivityKit", "BusinessChat", "DeviceDiscoveryUI", "DockKit",
-        "FamilyControls", "hvf", "ManagedSettings",
-        "MarketplaceKit", "MediaExtension",
-        "ProximityReader", "RoomPlan", "SensorKit",
-        "ShaderGraph", "Spatial", "StoreKitTest",
-        # Supplementary not on visionOS
-        "OpenAL",
-        # dylib
-        "AppleArchive",
-        # Overlay frameworks not on visionOS
-        "_AdAttributionKit_StoreKit", "_CoreLocationUI_SwiftUI",
-        "_CoreNFC_UIKit", "_DeviceActivity_SwiftUI",
-        "_DeviceDiscoveryUI_SwiftUI", "_MarketplaceKit_UIKit",
-        "_SecureElementCredential_SwiftUI", "_SecureElementCredential_UIKit",
-        "_WorkoutKit_SwiftUI",
-    } | _DEPRECATED_MOBILE | _DRIVERKIT_SUB | _DEV_TOOLS,
 }
-
-# ── Simulator-only exclusions ────────────────────────────────────
-_SIM_ONLY_EXCLUDED: set[str] = {
-    # Hardware-only frameworks
-    "CoreMediaIO", "DockKit", "ThreadNetwork",
-    "StickerFoundation", "StickerKit",
-    # Frameworks not in iOS Simulator SDK
-    "_ManagedAppDistribution_SwiftUI",
-    "Assignables", "Cinematic", "CreateML",
-    "JournalingSuggestions", "LightweightCodeRequirements",
-    "MediaSetup", "MetalFX", "MLCompute",
-}
-PLATFORM_EXCLUDED_MODULES["ios-simulator"] = PLATFORM_EXCLUDED_MODULES["ios"] | _SIM_ONLY_EXCLUDED
-PLATFORM_EXCLUDED_MODULES["tvos-simulator"] = PLATFORM_EXCLUDED_MODULES["tvos"] | _SIM_ONLY_EXCLUDED | {
-    "MetalPerformanceShadersGraph",  # not in tvOS Simulator SDK
-}
-PLATFORM_EXCLUDED_MODULES["watchos-simulator"] = PLATFORM_EXCLUDED_MODULES["watchos"] | _SIM_ONLY_EXCLUDED
-PLATFORM_EXCLUDED_MODULES["visionos-simulator"] = PLATFORM_EXCLUDED_MODULES["visionos"] | _SIM_ONLY_EXCLUDED
 
 
 # Known framework re-export relationships

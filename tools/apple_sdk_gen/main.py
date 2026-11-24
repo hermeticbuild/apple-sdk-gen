@@ -4,7 +4,6 @@ import asyncio
 import argparse
 import logging
 import sys
-import tempfile
 from pathlib import Path
 
 from .assembler.sdk_layout import assemble_sdk
@@ -23,18 +22,9 @@ from .models.availability import is_available
 from .models.symbol import Symbol
 from .supplements.commoncrypto import install_commoncrypto_headers
 from .supplements.darwin_libs import install_darwin_lib_stubs, select_darwin_libraries
-from .supplements.swift_frameworks import install_framework_swiftmodules
 from .supplements.libc import install_libc_headers
 from .supplements.libcxx import install_libcxx_headers
 from .supplements.platform_headers import install_platform_headers
-from .supplements.reference_framework_headers import install_reference_framework_headers
-from .supplements.reference_headers import install_reference_headers
-from .supplements.reference_libs import install_reference_libs
-from .supplements.reference_toolchain import install_reference_clang_resource
-from .supplements.rewrite_swiftinterface import rewrite_swiftinterface_versions
-from .supplements.swift_org import SwiftRuntime
-from .supplements.swift_shims import install_swift_shims
-from .supplements.swift_stdlib import install_swift_stdlib
 from .supplements.system_libs import install_system_lib_stubs
 from .supplements.system_modulemaps import install_system_modulemaps
 
@@ -44,24 +34,10 @@ logger = logging.getLogger(__name__)
 async def run(args: argparse.Namespace) -> None:
     try:
         darwin_libraries = select_darwin_libraries(
-            args.sdk_version, args.platforms, args.darwin_library_metadata,
+            args.sdk_version, args.darwin_library_metadata,
         )
     except (OSError, ValueError) as exc:
         raise SystemExit(f"Darwin library metadata: {exc}") from None
-    swift_work = None
-    if args.swift_version:
-        Path(args.cache_dir).mkdir(parents=True, exist_ok=True)
-        swift_work = tempfile.TemporaryDirectory(prefix="swift-org-", dir=args.cache_dir)
-    try:
-        await _run(args, Path(swift_work.name) if swift_work else None, darwin_libraries)
-    finally:
-        if swift_work:
-            swift_work.cleanup()
-
-
-async def _run(
-    args: argparse.Namespace, swift_work: Path | None, darwin_libraries: dict[str, dict[str, str]],
-) -> None:
     # Configure logging
     level = logging.WARNING
     if args.verbose >= 1:
@@ -80,17 +56,6 @@ async def _run(
 
     cache = CacheDB(cache_dir)
     logger.info("Cache: %d entries", cache.size())
-
-    runtime = None
-    if swift_work:
-        print(f"Installing the Swift {args.swift_version} Darwin runtime...", file=sys.stderr)
-        runtime = SwiftRuntime.from_package(
-            args.swift_version,
-            Path(args.swift_pkg) if args.swift_pkg else None,
-            args.swift_pkg_sha256,
-            swift_work,
-        )
-        runtime.install_toolchain(output_dir, args.platforms)
 
     async with APIClient(
         concurrency=args.concurrency,
@@ -159,164 +124,85 @@ async def _run(
             file=sys.stderr,
         )
 
-        # Copy clang resource directory from reference toolchain (once)
-        if args.swift_stdlib_path:
-            print("Installing clang resource directory...", file=sys.stderr)
-            install_reference_clang_resource(
-                output_dir=output_dir,
-                reference_root=Path(args.swift_stdlib_path),
-            )
-
         # Phase 4: Filter by platform availability and generate SDKs
-        for platform_key in args.platforms:
-            cfg = PLATFORM_CONFIGS[platform_key]
-            print(
-                f"Generating SDK for {cfg.sdk_prefix} {args.sdk_version}...",
-                file=sys.stderr,
-            )
+        platform_key = args.platforms
+        cfg = PLATFORM_CONFIGS[platform_key]
+        print(
+            f"Generating SDK for {cfg.sdk_prefix} {args.sdk_version}...",
+            file=sys.stderr,
+        )
 
-            # Filter symbols by availability
-            excluded = PLATFORM_EXCLUDED_MODULES.get(platform_key, set())
-            platform_frameworks: dict[str, list[Symbol]] = {}
-            for fw_name, symbols in framework_symbols.items():
-                # Check both the doc API name and the mapped framework name
-                mapped_name = FRAMEWORK_NAME_MAPPINGS.get(fw_name, fw_name)
-                if fw_name in excluded or mapped_name in excluded:
-                    continue
-                available = [
-                    sym for sym in symbols
-                    if is_available(sym, cfg.name, args.sdk_version)
-                ]
-                if available:
-                    platform_frameworks[fw_name] = available
+        # Filter symbols by availability
+        excluded = PLATFORM_EXCLUDED_MODULES.get(platform_key, set())
+        platform_frameworks: dict[str, list[Symbol]] = {}
+        for fw_name, symbols in framework_symbols.items():
+            # Check both the doc API name and the mapped framework name
+            mapped_name = FRAMEWORK_NAME_MAPPINGS.get(fw_name, fw_name)
+            if fw_name in excluded or mapped_name in excluded:
+                continue
+            available = [
+                sym for sym in symbols
+                if is_available(sym, cfg.name, args.sdk_version)
+            ]
+            if available:
+                platform_frameworks[fw_name] = available
 
-            # Assemble SDK
-            sdk_path = assemble_sdk(
-                output_dir=output_dir,
-                platform_key=platform_key,
-                sdk_version=args.sdk_version,
-                frameworks=platform_frameworks,
-                include_swift=args.include_swift,
-                xcode_version=args.xcode_version,
-                xcode_build=args.xcode_build,
-                include_cocoa="Cocoa" not in (args.exclude_frameworks or ()),
-            )
+        # Assemble SDK
+        sdk_path = assemble_sdk(
+            output_dir=output_dir,
+            platform_key=platform_key,
+            sdk_version=args.sdk_version,
+            frameworks=platform_frameworks,
+            xcode_version=args.xcode_version,
+            xcode_build=args.xcode_build,
+            include_cocoa="Cocoa" not in (args.exclude_frameworks or ()),
+        )
 
-            tbd_targets = tbd_targets_for_platform(platform_key, args.sdk_version)
+        tbd_targets = tbd_targets_for_platform(platform_key)
 
-            print("Installing Darwin library stubs...", file=sys.stderr)
-            install_darwin_lib_stubs(sdk_path, darwin_libraries[platform_key])
+        print("Installing Darwin library stubs...", file=sys.stderr)
+        install_darwin_lib_stubs(sdk_path, darwin_libraries)
 
-            # Always generate system library TBD stubs (libz, libsqlite3, etc.)
-            print("Installing system library stubs...", file=sys.stderr)
-            install_system_lib_stubs(
+        # Always generate system library TBD stubs (libz, libsqlite3, etc.)
+        print("Installing system library stubs...", file=sys.stderr)
+        install_system_lib_stubs(
+            sdk_root=sdk_path,
+            tbd_targets=tbd_targets,
+        )
+
+        # CommonCrypto headers (always useful, small) — must run before
+        # system modulemaps so the CommonCrypto directory exists for the
+        # conditional modulemap check.
+        print("Installing CommonCrypto headers...", file=sys.stderr)
+        install_commoncrypto_headers(sdk_path)
+
+        # Install C stdlib/POSIX headers if requested
+        if args.include_libc:
+            print("Installing libc headers...", file=sys.stderr)
+            install_libc_headers(
                 sdk_root=sdk_path,
-                tbd_targets=tbd_targets,
-                include_swift=args.include_swift,
+                sdk_version=args.sdk_version,
+                cache_dir=cache_dir,
             )
 
-            # CommonCrypto headers (always useful, small) — must run before
-            # system modulemaps so the CommonCrypto directory exists for the
-            # conditional modulemap check.
-            print("Installing CommonCrypto headers...", file=sys.stderr)
-            install_commoncrypto_headers(sdk_path)
+            # Platform headers (TargetConditionals, Block.h, dlfcn.h, math.h)
+            print("Installing platform headers...", file=sys.stderr)
+            install_platform_headers(sdk_path)
 
-            # Install C stdlib/POSIX headers if requested
-            if args.include_libc:
-                print("Installing libc headers...", file=sys.stderr)
-                install_libc_headers(
-                    sdk_root=sdk_path,
-                    sdk_version=args.sdk_version,
-                    cache_dir=cache_dir,
-                )
+            # System module maps (Darwin, Dispatch, ObjectiveC, os)
+            print("Installing system module maps...", file=sys.stderr)
+            install_system_modulemaps(sdk_path)
 
-                # Platform headers (TargetConditionals, Block.h, dlfcn.h, math.h)
-                print("Installing platform headers...", file=sys.stderr)
-                install_platform_headers(sdk_path, platform_key)
+        # Install C++ standard library headers if requested
+        if args.include_cxx:
+            print("Installing libc++ headers...", file=sys.stderr)
+            install_libcxx_headers(
+                sdk_root=sdk_path,
+                sdk_version=args.sdk_version,
+                cache_dir=cache_dir,
+            )
 
-                # System module maps (Darwin, Dispatch, ObjectiveC, os)
-                print("Installing system module maps...", file=sys.stderr)
-                install_system_modulemaps(sdk_path)
-
-            # If a reference SDK is available, copy real headers/modulemaps
-            if args.swift_stdlib_path:
-                print("Installing reference headers...", file=sys.stderr)
-                install_reference_headers(
-                    sdk_root=sdk_path,
-                    platform_key=platform_key,
-                    reference_root=Path(args.swift_stdlib_path),
-                )
-                print("Installing reference framework headers...", file=sys.stderr)
-                install_reference_framework_headers(
-                    sdk_root=sdk_path,
-                    platform_key=platform_key,
-                    reference_root=Path(args.swift_stdlib_path),
-                    sdk_version=args.sdk_version,
-                )
-                print("Installing reference library stubs...", file=sys.stderr)
-                install_reference_libs(
-                    sdk_root=sdk_path,
-                    platform_key=platform_key,
-                    reference_root=Path(args.swift_stdlib_path),
-                )
-
-            # Install C++ standard library headers if requested
-            if args.include_cxx:
-                print("Installing libc++ headers...", file=sys.stderr)
-                install_libcxx_headers(
-                    sdk_root=sdk_path,
-                    sdk_version=args.sdk_version,
-                    cache_dir=cache_dir,
-                    platform_key=platform_key,
-                )
-
-            # Install Swift shim headers if Swift is enabled
-            if args.include_swift and runtime is None:
-                print("Installing Swift shim headers...", file=sys.stderr)
-                install_swift_shims(
-                    sdk_root=sdk_path,
-                    sdk_version=args.sdk_version,
-                    cache_dir=cache_dir,
-                )
-
-            # Copy Swift stdlib .swiftinterface files from reference SDK
-            if args.swift_stdlib_path and args.include_swift:
-                print("Installing Swift stdlib interfaces...", file=sys.stderr)
-                install_swift_stdlib(
-                    sdk_root=sdk_path,
-                    platform_key=platform_key,
-                    reference_root=Path(args.swift_stdlib_path),
-                )
-
-            # Copy real framework .swiftmodule dirs from reference SDK
-            if args.swift_stdlib_path and args.include_swift:
-                print("Installing framework swiftmodules...", file=sys.stderr)
-                install_framework_swiftmodules(
-                    sdk_root=sdk_path,
-                    platform_key=platform_key,
-                    reference_root=Path(args.swift_stdlib_path),
-                )
-
-            # Rewrite swift-compiler-version in all .swiftinterface files
-            # to match the host compiler (Apple vs open-source version mismatch)
-            if args.swift_stdlib_path and args.include_swift:
-                print("Rewriting swiftinterface compiler versions...", file=sys.stderr)
-                count = rewrite_swiftinterface_versions(sdk_path)
-                # Also rewrite Developer/usr/lib/*.swiftmodule (XCTest etc.)
-                platform_dir = sdk_path.parent.parent.parent
-                count += rewrite_swiftinterface_versions(
-                    platform_dir / "Developer" / "usr" / "lib"
-                )
-                count += rewrite_swiftinterface_versions(
-                    platform_dir / "Developer" / "Library" / "Frameworks"
-                )
-                logger.info("Rewrote %d .swiftinterface files", count)
-
-            if runtime:
-                print("Installing the Swift Darwin runtime...", file=sys.stderr)
-                runtime.install_sdk(sdk_path, platform_key)
-
-            print(f"SDK generated at: {sdk_path}", file=sys.stderr)
+        print(f"SDK generated at: {sdk_path}", file=sys.stderr)
 
         # Print stats
         stats = client.stats

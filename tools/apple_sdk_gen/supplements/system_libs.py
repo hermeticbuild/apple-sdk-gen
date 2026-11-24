@@ -1297,110 +1297,9 @@ _SYSTEM_LIBRARIES: list[tuple[str, str, list[str], list[str]]] = [
 ]
 
 
-# ── Swift overlay libraries ────────────────────────────────────────
-# Install-name-only TBDs (Swift mangled symbols are impractical to
-# embed; runtime resolution handles them).
-
-_SWIFT_LIBRARIES: list[tuple[str, str]] = [
-    ("libswiftCore", "/usr/lib/swift/libswiftCore.dylib"),
-    ("libswiftFoundation", "/usr/lib/swift/libswiftFoundation.dylib"),
-    ("libswiftDarwin", "/usr/lib/swift/libswiftDarwin.dylib"),
-    ("libswiftDispatch", "/usr/lib/swift/libswiftDispatch.dylib"),
-    ("libswiftObjectiveC", "/usr/lib/swift/libswiftObjectiveC.dylib"),
-    ("libswiftCoreFoundation", "/usr/lib/swift/libswiftCoreFoundation.dylib"),
-    ("libswiftCoreGraphics", "/usr/lib/swift/libswiftCoreGraphics.dylib"),
-    ("libswiftCoreImage", "/usr/lib/swift/libswiftCoreImage.dylib"),
-    ("libswiftCoreLocation", "/usr/lib/swift/libswiftCoreLocation.dylib"),
-    ("libswiftCoreMedia", "/usr/lib/swift/libswiftCoreMedia.dylib"),
-    ("libswiftCoreData", "/usr/lib/swift/libswiftCoreData.dylib"),
-    ("libswiftCoreAudio", "/usr/lib/swift/libswiftCoreAudio.dylib"),
-    ("libswiftCoreMIDI", "/usr/lib/swift/libswiftCoreMIDI.dylib"),
-    ("libswiftCoreML", "/usr/lib/swift/libswiftCoreML.dylib"),
-    ("libswiftCoreNFC", "/usr/lib/swift/libswiftCoreNFC.dylib"),
-    ("libswiftCryptoTokenKit", "/usr/lib/swift/libswiftCryptoTokenKit.dylib"),
-    ("libswiftMetal", "/usr/lib/swift/libswiftMetal.dylib"),
-    ("libswiftMetalKit", "/usr/lib/swift/libswiftMetalKit.dylib"),
-    ("libswiftUIKit", "/usr/lib/swift/libswiftUIKit.dylib"),
-    ("libswiftAVFoundation", "/usr/lib/swift/libswiftAVFoundation.dylib"),
-    ("libswiftARKit", "/usr/lib/swift/libswiftARKit.dylib"),
-    ("libswiftAccelerate", "/usr/lib/swift/libswiftAccelerate.dylib"),
-    ("libswiftAppleArchive", "/usr/lib/swift/libswiftAppleArchive.dylib"),
-    ("libswiftAssetsLibrary", "/usr/lib/swift/libswiftAssetsLibrary.dylib"),
-    ("libswiftCallKit", "/usr/lib/swift/libswiftCallKit.dylib"),
-    ("libswiftCarPlay", "/usr/lib/swift/libswiftCarPlay.dylib"),
-    ("libswiftCloudKit", "/usr/lib/swift/libswiftCloudKit.dylib"),
-    ("libswiftCompatibilitySpan", "/usr/lib/swift/libswiftCompatibilitySpan.dylib"),
-    ("libswiftCompression", "/usr/lib/swift/libswiftCompression.dylib"),
-    ("libswiftContacts", "/usr/lib/swift/libswiftContacts.dylib"),
-    ("libswiftDataDetection", "/usr/lib/swift/libswiftDataDetection.dylib"),
-    ("libswiftDemangle", "/usr/lib/swift/libswiftDemangle.dylib"),
-    ("libswiftDistributed", "/usr/lib/swift/libswiftDistributed.dylib"),
-    ("libswiftExtensionFoundation", "/usr/lib/swift/libswiftExtensionFoundation.dylib"),
-    ("libswiftExtensionKit", "/usr/lib/swift/libswiftExtensionKit.dylib"),
-    ("libswiftFileProvider", "/usr/lib/swift/libswiftFileProvider.dylib"),
-    ("libswiftGameplayKit", "/usr/lib/swift/libswiftGameplayKit.dylib"),
-    ("libswiftGLKit", "/usr/lib/swift/libswiftGLKit.dylib"),
-    ("libswiftHealthKit", "/usr/lib/swift/libswiftHealthKit.dylib"),
-    ("libswiftHomeKit", "/usr/lib/swift/libswiftHomeKit.dylib"),
-    ("libswiftIdentityLookup", "/usr/lib/swift/libswiftIdentityLookup.dylib"),
-    ("libswiftIntents", "/usr/lib/swift/libswiftIntents.dylib"),
-    ("libswiftMapKit", "/usr/lib/swift/libswiftMapKit.dylib"),
-    ("libswiftMediaPlayer", "/usr/lib/swift/libswiftMediaPlayer.dylib"),
-    ("libswiftMetricKit", "/usr/lib/swift/libswiftMetricKit.dylib"),
-    ("libswiftMLCompute", "/usr/lib/swift/libswiftMLCompute.dylib"),
-    ("libswiftModelIO", "/usr/lib/swift/libswiftModelIO.dylib"),
-    ("libswiftNaturalLanguage", "/usr/lib/swift/libswiftNaturalLanguage.dylib"),
-    ("libswiftNearbyInteraction", "/usr/lib/swift/libswiftNearbyInteraction.dylib"),
-    ("libswiftNetwork", "/usr/lib/swift/libswiftNetwork.dylib"),
-    ("libswiftObservation", "/usr/lib/swift/libswiftObservation.dylib"),
-    ("libswiftOSLog", "/usr/lib/swift/libswiftOSLog.dylib"),
-    ("libswiftos", "/usr/lib/swift/libswiftos.dylib"),
-    ("libswiftPassKit", "/usr/lib/swift/libswiftPassKit.dylib"),
-    ("libswiftPencilKit", "/usr/lib/swift/libswiftPencilKit.dylib"),
-    ("libswiftPhotos", "/usr/lib/swift/libswiftPhotos.dylib"),
-    ("libswiftPhotosUI", "/usr/lib/swift/libswiftPhotosUI.dylib"),
-    ("libswiftQuartzCore", "/usr/lib/swift/libswiftQuartzCore.dylib"),
-    ("libswiftQuickLook", "/usr/lib/swift/libswiftQuickLook.dylib"),
-    ("libswiftRegexBuilder", "/usr/lib/swift/libswiftRegexBuilder.dylib"),
-    ("libswiftRemoteMirror", "/usr/lib/swift/libswiftRemoteMirror.dylib"),
-    ("libswiftSceneKit", "/usr/lib/swift/libswiftSceneKit.dylib"),
-    ("libswiftShazamKit", "/usr/lib/swift/libswiftShazamKit.dylib"),
-    ("libswiftSoundAnalysis", "/usr/lib/swift/libswiftSoundAnalysis.dylib"),
-    ("libswiftSoundAnalysis_Private", "/usr/lib/swift/libswiftSoundAnalysis_Private.dylib"),
-    ("libswiftSpatial", "/usr/lib/swift/libswiftSpatial.dylib"),
-    ("libswiftSpeech", "/usr/lib/swift/libswiftSpeech.dylib"),
-    ("libswiftSpriteKit", "/usr/lib/swift/libswiftSpriteKit.dylib"),
-    ("libswiftSwiftOnoneSupport", "/usr/lib/swift/libswiftSwiftOnoneSupport.dylib"),
-    ("libswiftSynchronization", "/usr/lib/swift/libswiftSynchronization.dylib"),
-    ("libswiftSystem", "/usr/lib/swift/libswiftSystem.dylib"),
-    ("libswiftSystem_Foundation", "/usr/lib/swift/libswiftSystem_Foundation.dylib"),
-    ("libswiftUniformTypeIdentifiers", "/usr/lib/swift/libswiftUniformTypeIdentifiers.dylib"),
-    ("libswiftVideoToolbox", "/usr/lib/swift/libswiftVideoToolbox.dylib"),
-    ("libswiftVision", "/usr/lib/swift/libswiftVision.dylib"),
-    ("libswiftXPC", "/usr/lib/swift/libswiftXPC.dylib"),
-    ("libswiftsimd", "/usr/lib/swift/libswiftsimd.dylib"),
-    ("libswift_Concurrency", "/usr/lib/swift/libswift_Concurrency.dylib"),
-    ("libswift_StringProcessing", "/usr/lib/swift/libswift_StringProcessing.dylib"),
-    ("libswift_RegexParser", "/usr/lib/swift/libswift_RegexParser.dylib"),
-    ("libswift_Builtin_float", "/usr/lib/swift/libswift_Builtin_float.dylib"),
-    ("libswift_Volatile", "/usr/lib/swift/libswift_Volatile.dylib"),
-    ("libswift_DarwinFoundation1", "/usr/lib/swift/libswift_DarwinFoundation1.dylib"),
-    ("libswift_DarwinFoundation2", "/usr/lib/swift/libswift_DarwinFoundation2.dylib"),
-    ("libswift_DarwinFoundation3", "/usr/lib/swift/libswift_DarwinFoundation3.dylib"),
-    ("libswift_errno", "/usr/lib/swift/libswift_errno.dylib"),
-    ("libswift_math", "/usr/lib/swift/libswift_math.dylib"),
-    ("libswift_signal", "/usr/lib/swift/libswift_signal.dylib"),
-    ("libswift_stdio", "/usr/lib/swift/libswift_stdio.dylib"),
-    ("libswift_time", "/usr/lib/swift/libswift_time.dylib"),
-    ("libswiftunistd", "/usr/lib/swift/libswiftunistd.dylib"),
-    ("libswiftsys_time", "/usr/lib/swift/libswiftsys_time.dylib"),
-]
-
-
 def install_system_lib_stubs(
     sdk_root: Path,
     tbd_targets: list[str],
-    include_swift: bool = False,
 ) -> None:
     """Generate TBD stubs for public system libraries."""
     usr_lib = sdk_root / "usr" / "lib"
@@ -1456,18 +1355,6 @@ def install_system_lib_stubs(
             _write_reexport_tbd(alias_path, reexport_target, targets_str)
             generated += 1
 
-    if include_swift:
-        swift_dir = usr_lib / "swift"
-        swift_dir.mkdir(parents=True, exist_ok=True)
-        for name, install_name in _SWIFT_LIBRARIES:
-            tbd_path = swift_dir / f"{name}.tbd"
-            if not tbd_path.exists():
-                _write_tbd(
-                    tbd_path, install_name, targets_str, [],
-                    swift_abi_version=7,
-                )
-                generated += 1
-
     logger.info("Generated %d system library TBD stubs", generated)
 
 
@@ -1476,7 +1363,6 @@ def _write_tbd(
     install_name: str,
     targets_str: str,
     symbols: list[str],
-    swift_abi_version: int | None = None,
 ) -> None:
     """Write a TBD v4 stub file."""
     parts = [
@@ -1485,8 +1371,6 @@ def _write_tbd(
         f"targets:         [{targets_str}]",
         f"install-name:    '{install_name}'",
     ]
-    if swift_abi_version is not None:
-        parts.append(f"swift-abi-version: {swift_abi_version}")
     if symbols:
         parts.append("exports:")
         parts.append(f"  - targets:     [{targets_str}]")

@@ -12,14 +12,12 @@ from ..config import (
     PLATFORM_EXCLUDED_MODULES,
     REEXPORTS,
     SUPPLEMENTARY_FRAMEWORKS,
-    SWIFT_OVERLAY_FRAMEWORKS,
     PlatformConfig,
     tbd_targets_for_platform,
 )
 from ..generators.modulemap import generate_modulemap
 from ..generators.objc_header import generate_umbrella_header
 from ..generators.sdk_metadata import generate_info_plist, generate_sdk_settings, generate_sdk_settings_plist, generate_system_version_plist, generate_xcode_version_plist
-from ..generators.swiftinterface import generate_swiftinterface
 from ..generators.tbd import generate_tbd
 from ..models.symbol import Symbol
 from ..models.types import PlatformName
@@ -51,7 +49,6 @@ def assemble_sdk(
     platform_key: str,
     sdk_version: str,
     frameworks: dict[str, list[Symbol]],
-    include_swift: bool = False,
     xcode_version: str = "",
     xcode_build: str = "",
     *,
@@ -76,8 +73,7 @@ def assemble_sdk(
         xcode_contents.mkdir(parents=True, exist_ok=True)
         version_plist.write_bytes(generate_xcode_version_plist(xcode_version, xcode_build))
 
-    # Create Toolchains directory structure so the repo rule can copy
-    # Swift binaries and ported tools into it without mkdir failures.
+    # Use the standard Xcode layout for separately supplied tools.
     toolchain_dir = developer_dir / "Toolchains" / "XcodeDefault.xctoolchain"
     toolchain_bin = toolchain_dir / "usr" / "bin"
     toolchain_lib = toolchain_bin.parent / "lib"
@@ -143,7 +139,7 @@ def assemble_sdk(
         directory.mkdir(parents=True, exist_ok=True)
 
     # TBD targets for this platform
-    tbd_targets = tbd_targets_for_platform(platform_key, sdk_version)
+    tbd_targets = tbd_targets_for_platform(platform_key)
     excluded = PLATFORM_EXCLUDED_MODULES.get(platform_key, set())
 
     frameworks = {
@@ -163,7 +159,6 @@ def assemble_sdk(
             symbols=symbols,
             all_frameworks=frameworks,
             tbd_targets=tbd_targets,
-            include_swift=include_swift,
             platform_config=cfg,
         )
 
@@ -189,12 +184,6 @@ def assemble_sdk(
         if supp_name not in excluded:
             _assemble_tbd_only_framework(sdk_root, supp_name, tbd_targets)
 
-    # Generate TBD-only overlay frameworks for SwiftUI integration
-    if include_swift:
-        for overlay_name in SWIFT_OVERLAY_FRAMEWORKS:
-            if overlay_name not in excluded:
-                _assemble_tbd_only_framework(sdk_root, overlay_name, tbd_targets)
-
     logger.info("Assembled SDK at %s (%d frameworks)", sdk_root, len(frameworks))
     return sdk_root
 
@@ -206,7 +195,6 @@ def _assemble_framework(
     symbols: list[Symbol],
     all_frameworks: dict[str, list[Symbol]],
     tbd_targets: list[str],
-    include_swift: bool,
     platform_config: PlatformConfig,
 ) -> None:
     fw_dir = sdk_root / "System" / "Library" / "Frameworks" / f"{framework_name}.framework"
@@ -255,15 +243,6 @@ def _assemble_framework(
 
     modulemap = generate_modulemap(framework_name)
     (modules_dir / "module.modulemap").write_text(modulemap)
-
-    # Swift interfaces
-    if include_swift:
-        for triple in platform_config.swift_triples:
-            swift_mod_dir = modules_dir / f"{framework_name}.swiftmodule"
-            swift_mod_dir.mkdir(parents=True, exist_ok=True)
-
-            swiftinterface = generate_swiftinterface(framework_name, symbols, triple)
-            (swift_mod_dir / f"{triple}.swiftinterface").write_text(swiftinterface)
 
     # TBD stub — use mapped name for install path, doc name for re-export lookup
     reexports = REEXPORTS.get(framework_name) or REEXPORTS.get(doc_name) or []

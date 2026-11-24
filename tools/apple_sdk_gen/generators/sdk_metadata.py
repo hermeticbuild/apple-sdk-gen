@@ -7,27 +7,10 @@ from ..config import PLATFORM_CONFIGS
 
 DEFAULT_COMPILER = "com.apple.compilers.llvm.clang.1_0"
 
-_PHONE = {"Identifier": "1", "Name": "phone", "DisplayName": "iPhone"}
-_PAD = {"Identifier": "2", "Name": "pad", "DisplayName": "iPad"}
-_TV = {"Identifier": "3", "Name": "tv", "DisplayName": "Apple TV"}
-_WATCH = {"Identifier": "4", "Name": "watch", "DisplayName": "Apple Watch"}
 _MAC = {"Name": "mac", "DisplayName": "Mac"}
-_VISION = {"Identifier": "7", "Name": "vision", "DisplayName": "Apple Vision"}
-
-_DEVICES = {
-    "ios": {
-        "name": "iphoneos",
-        "family": "iphoneos",
-        "family_name": "iOS",
-        "display": "iOS",
-        "product": "iPhone OS",
-        "sys": "ios",
-        "runtime": "ios",
-        "build_id": "2",
-        "minimum": "15.0",
-        "families": [_PHONE, _PAD],
-    },
+PLATFORMS = {
     "macos": {
+        "env": "",
         "name": "macosx",
         "family": "macosx",
         "family_name": "macOS",
@@ -39,74 +22,7 @@ _DEVICES = {
         "minimum": "12.0",
         "families": [_MAC],
     },
-    "tvos": {
-        "name": "appletvos",
-        "family": "appletvos",
-        "family_name": "tvOS",
-        "display": "tvOS",
-        "product": "Apple TVOS",
-        "sys": "tvos",
-        "runtime": "tvos",
-        "build_id": "3",
-        "minimum": "15.0",
-        "families": [_TV],
-    },
-    "watchos": {
-        "name": "watchos",
-        "family": "watchos",
-        "family_name": "watchOS",
-        "display": "watchOS",
-        "product": "Watch OS",
-        "sys": "watchos",
-        "runtime": "watchos",
-        "build_id": "4",
-        "minimum": "9.0",
-        "families": [_WATCH],
-    },
-    "visionos": {
-        "name": "xros",
-        "family": "xros",
-        "family_name": "xrOS",
-        "display": "visionOS",
-        "product": "xrOS",
-        "sys": "xros",
-        "runtime": "xros",
-        "build_id": "11",
-        "minimum": "1.0",
-        "families": [_VISION],
-    },
 }
-
-_SIMULATORS = {
-    "ios-simulator": ("ios", "iphonesimulator", "iossim", "7"),
-    "tvos-simulator": ("tvos", "appletvsimulator", "tvossim", "8"),
-    "watchos-simulator": ("watchos", "watchsimulator", "watchossim", "9"),
-    "visionos-simulator": ("visionos", "xrsimulator", "xrossim", "12"),
-}
-
-PLATFORMS = {key: dict(value, env="") for key, value in _DEVICES.items()}
-for _key, (_device, _name, _runtime, _build_id) in _SIMULATORS.items():
-    PLATFORMS[_key] = dict(
-        _DEVICES[_device],
-        name=_name,
-        env="simulator",
-        runtime=_runtime,
-        build_id=_build_id,
-        display="Simulator - " + _DEVICES[_device]["display"],
-    )
-
-_VISIONOS_VERSIONS = [
-    ("17.1", "1.0"),
-    ("17.4", "1.1"),
-    ("17.5", "1.2"),
-    ("18.0", "2.0"),
-    ("18.1", "2.1"),
-    ("18.2", "2.2"),
-    ("18.3", "2.3"),
-    ("18.4", "2.4"),
-    ("18.5", "2.5"),
-    ("18.6", "2.6"),
-]
 
 
 def default_xcode_version(sdk_version: str) -> str:
@@ -124,39 +40,15 @@ def _archs(platform_key: str) -> list[str]:
     return [triple.split("-")[0] for triple in PLATFORM_CONFIGS[platform_key].target_triples]
 
 
-def _version_map(platform_key: str, sdk_version: str) -> dict:
-    if PLATFORMS[platform_key]["sys"] != "xros":
-        return {}
-    pairs = list(_VISIONOS_VERSIONS)
-    for major in range(26, int(sdk_version.split(".")[0]) + 1):
-        pairs.append(("{}.0".format(major), "{}.0".format(major)))
-    pairs.append((sdk_version, sdk_version))
-    forward = {ios: xros for ios, xros in pairs}
-    backward = {xros: ios for ios, xros in pairs}
-    return {
-        "VersionMap": {
-            "iOS_visionOS": forward,
-            "iOS_xrOS": forward,
-            "visionOS_iOS": backward,
-            "xrOS_iOS": backward,
-        },
-    }
-
-
 def _default_properties(platform_key: str) -> dict[str, str]:
     platform = PLATFORMS[platform_key]
-    properties = {
+    return {
+        "CODE_SIGN_IDENTITY": "-",
         "DEAD_CODE_STRIPPING": "YES",
         "DEFAULT_COMPILER": DEFAULT_COMPILER,
+        "ENTITLEMENTS_REQUIRED": "NO",
         "PLATFORM_NAME": platform["name"],
     }
-    if platform["env"] or platform["sys"] == "macos":
-        properties.update({"CODE_SIGN_IDENTITY": "-", "ENTITLEMENTS_REQUIRED": "NO"})
-    else:
-        properties.update({"CODE_SIGN_IDENTITY": "Apple Development", "ENTITLEMENTS_REQUIRED": "YES"})
-    if platform["env"]:
-        properties["AD_HOC_CODE_SIGNING_ALLOWED"] = "YES"
-    return properties
 
 
 def sdk_settings(platform_key: str, sdk_version: str) -> dict:
@@ -175,7 +67,7 @@ def sdk_settings(platform_key: str, sdk_version: str) -> dict:
         "PlatformFamilyName": platform["family_name"],
         "SystemPrefix": "",
     }
-    return dict(_version_map(platform_key, sdk_version), **{
+    return {
         "CanonicalName": platform["name"] + sdk_version,
         "CustomProperties": {},
         "DefaultDeploymentTarget": sdk_version,
@@ -186,7 +78,7 @@ def sdk_settings(platform_key: str, sdk_version: str) -> dict:
         "MinimalDisplayName": sdk_version,
         "SupportedTargets": {platform["name"]: target},
         "Version": sdk_version,
-    })
+    }
 
 
 def generate_sdk_settings(platform_key: str, sdk_version: str) -> str:
@@ -214,7 +106,7 @@ def generate_info_plist(platform_key: str, sdk_version: str) -> bytes:
             "DEFAULT_COMPILER": DEFAULT_COMPILER,
             "PLATFORM_NAME": platform["name"],
         },
-        "Description": platform["family_name"] + (" Simulator" if platform["env"] else ""),
+        "Description": platform["family_name"],
         "FamilyIdentifier": platform["family"],
         "FamilyName": platform["family_name"],
         "Identifier": "com.apple.platform." + platform["name"],

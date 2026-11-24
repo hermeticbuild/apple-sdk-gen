@@ -151,10 +151,6 @@ class Symbol:
         return self.objc_declaration is not None
 
     @property
-    def is_swift(self) -> bool:
-        return self.swift_declaration is not None
-
-    @property
     def objc_name(self) -> str:
         if self.usr:
             # Extract class name from USR like c:objc(cs)NSString

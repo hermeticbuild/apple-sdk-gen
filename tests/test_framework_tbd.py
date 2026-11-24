@@ -12,7 +12,7 @@ class FrameworkTBDTest(unittest.TestCase):
             Symbol("launch-defaults", "kLSLaunchDefaults", SymbolKind.ENUM_CASE,
                    usr="c:@E@LSLaunchFlags@kLSLaunchDefaults"),
         ]
-        stub = generate_tbd("CoreServices", symbols, ["arm64-macos", "x86_64-macos"])
+        stub = generate_tbd("CoreServices", symbols, ["arm64-macos"])
 
         self.assertIn("_kUTTagClassMIMEType", stub)
         self.assertNotIn("_kLSLaunchDefaults", stub)
@@ -22,6 +22,6 @@ class FrameworkTBDTest(unittest.TestCase):
             Symbol(name, name, SymbolKind.FUNC, usr=f"c:@F@{name}")
             for name in ("CGRectMake", "CGRectApplyAffineTransform")
         ]
-        stub = generate_tbd("CoreGraphics", symbols, ["arm64-macos", "x86_64-macos"])
+        stub = generate_tbd("CoreGraphics", symbols, ["arm64-macos"])
         self.assertNotIn("_CGRectMake", stub)
         self.assertIn("_CGRectApplyAffineTransform", stub)

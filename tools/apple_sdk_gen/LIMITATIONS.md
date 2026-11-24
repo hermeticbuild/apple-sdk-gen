@@ -209,8 +209,8 @@ for compilation but:
 
 The most practical path to fully compilable SDKs combines this tool with supplementary data:
 
-1. **Run `apple-sdk-gen`** for framework-level ObjC headers, TBD stubs, modulemaps, and
-   Swift interfaces (what this tool does)
+1. **Run `apple-sdk-gen`** for framework-level C and Objective-C headers,
+   TBD stubs and module maps
 2. **Overlay C stdlib headers** from apple-oss-distributions repos
 3. **Ship a static compatibility header** for macros and inline functions
 4. **Optionally scrape enum values** from open-source headers

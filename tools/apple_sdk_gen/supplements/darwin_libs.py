@@ -4,11 +4,11 @@ import json
 import os
 from pathlib import Path
 
-from ..config import tbd_targets_for_platform
-from ..generators.tbd import EXPORT_KEYS, tbd_document
+from ..generators.tbd import tbd_document
 
-DATA_PATH = Path(__file__).parent / "data" / "darwin_libs.json"
-BUNDLED_SDK_VERSION = "27.0"
+DATA_PATH = Path(__file__).parent / "data" / "darwin_macos_26.5.json"
+BUNDLED_SDK_VERSION = "26.5"
+TARGET = "arm64-macos"
 
 LIBRARIES = {
     "libSystem.B": "/usr/lib/libSystem.B.dylib",
@@ -25,71 +25,35 @@ LINKS = {
 }
 
 
-def _document(targets: list[str], install_name: str, record: dict, data: dict) -> str:
-    return tbd_document(
-        targets,
-        install_name,
-        exports=[(targets, {key: record.get(key, []) for key in EXPORT_KEYS})],
-        current_version=record.get("current-version"),
-        compatibility_version=record.get("compatibility-version"),
-        reexports=[name for name in record.get("reexported-libraries", []) if name in data],
-        flags=record.get("flags", []),
-    )
-
-
-def _bundled_libraries(data: dict, tbd_targets: list[str]) -> dict[str, str]:
-    libraries = {}
-    for name, install_name in LIBRARIES.items():
-        documents = []
-        pending = [install_name]
-        seen: set[str] = set()
-        while pending:
-            current = pending.pop(0)
-            if current in seen or current not in data:
-                continue
-            seen.add(current)
-            record = data[current]
-            documents.append(_document(tbd_targets, current, record, data))
-            pending.extend(record.get("reexported-libraries", []))
-        libraries[name] = "".join(documents)
-    return libraries
-
-
-def _symbol_groups(document: dict, section: str) -> list[tuple[list[str], dict[str, list[str]]]]:
-    return [(group["targets"], group) for group in document.get(section, [])]
-
+def _arm64_groups(document: dict, section: str) -> list[dict]:
+    return [group for group in document.get(section, []) if TARGET in group["targets"]]
 
 def _render_document(document: dict) -> str:
     return tbd_document(
-        document["targets"],
+        [TARGET],
         document["install-name"],
-        exports=_symbol_groups(document, "exports"),
-        reexported_symbols=_symbol_groups(document, "reexports"),
+        exports=[([TARGET], group) for group in _arm64_groups(document, "exports")],
+        reexported_symbols=[([TARGET], group) for group in _arm64_groups(document, "reexports")],
         current_version=document.get("current-version"),
         compatibility_version=document.get("compatibility-version"),
         reexported_libraries=[
-            (group["targets"], group["libraries"])
-            for group in document.get("reexported-libraries", [])
+            ([TARGET], group["libraries"])
+            for group in _arm64_groups(document, "reexported-libraries")
         ],
         flags=document.get("flags", []),
-        swift_abi_version=document.get("swift-abi-version", 0),
     )
 
 
 def select_darwin_libraries(
-    sdk_version: str, platforms: list[str], metadata_path: Path | None,
-) -> dict[str, dict[str, str]]:
+    sdk_version: str, metadata_path: Path | None,
+) -> dict[str, str]:
     if metadata_path is None:
         if sdk_version != BUNDLED_SDK_VERSION:
             raise ValueError(
                 f"SDK {sdk_version} requires --darwin-library-metadata "
                 f"(bundled inventory covers SDK {BUNDLED_SDK_VERSION})"
             )
-        data = json.loads(DATA_PATH.read_text())
-        return {
-            platform: _bundled_libraries(data, tbd_targets_for_platform(platform, sdk_version))
-            for platform in platforms
-        }
+        metadata_path = DATA_PATH
 
     data = json.loads(metadata_path.read_text())
     if not isinstance(data, dict):
@@ -98,18 +62,17 @@ def select_darwin_libraries(
     if actual_version != sdk_version:
         raise ValueError(f"{metadata_path} describes SDK {actual_version!r}, requested {sdk_version}")
 
+    libraries = data.get("platforms", {}).get("macos", {})
     selected = {}
-    for platform in platforms:
-        libraries = data.get("platforms", {}).get(platform, {})
-        missing = [name for name in LIBRARIES if not libraries.get(name)]
-        if missing:
-            raise ValueError(f"{metadata_path} is missing {platform} libraries: {', '.join(missing)}")
+    for name, install_name in LIBRARIES.items():
         try:
-            selected[platform] = {
-                name: "".join(map(_render_document, libraries[name])) for name in LIBRARIES
-            }
+            documents = [document for document in libraries.get(name, [])
+                         if TARGET in document["targets"]]
+            if not documents or documents[0]["install-name"] != install_name:
+                raise ValueError(f"{metadata_path} is missing the {TARGET} provider {install_name}")
+            selected[name] = "".join(map(_render_document, documents))
         except (KeyError, TypeError) as exc:
-            raise ValueError(f"{metadata_path} contains invalid TBD documents for {platform}: {exc}") from exc
+            raise ValueError(f"{metadata_path} contains invalid TBD documents for {name}: {exc}") from exc
     return selected
 
 

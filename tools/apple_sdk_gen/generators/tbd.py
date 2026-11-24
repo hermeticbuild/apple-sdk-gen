@@ -92,7 +92,6 @@ def tbd_document(
     compatibility_version: str | None = None,
     reexports: list[str] = (),
     flags: list[str] = (),
-    swift_abi_version: int = 0,
     reexported_libraries: list[tuple[list[str], list[str]]] = (),
     reexported_symbols: list[tuple[list[str], dict[str, list[str]]]] = (),
 ) -> str:
@@ -104,8 +103,6 @@ def tbd_document(
         lines.append(f"current-version: {current_version}")
     if compatibility_version:
         lines.append(f"compatibility-version: {compatibility_version}")
-    if swift_abi_version:
-        lines.append(f"swift-abi-version: {swift_abi_version}")
     if reexports:
         reexported_libraries = [(targets, list(reexports)), *reexported_libraries]
     if reexported_libraries:

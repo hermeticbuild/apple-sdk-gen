@@ -13,7 +13,7 @@ from apple_sdk_gen.supplements.darwin_libs import LIBRARIES
 
 TBD_FIELDS = (
     "install-name", "targets", "current-version", "compatibility-version",
-    "flags", "reexported-libraries", "exports", "reexports", "swift-abi-version",
+    "flags", "reexported-libraries", "exports", "reexports",
 )
 
 

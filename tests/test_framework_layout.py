@@ -26,12 +26,10 @@ class FrameworkLayoutTest(unittest.TestCase):
                     appkit = (frameworks / "AppKit.framework/AppKit.tbd").read_text()
                     self.assertIn("'/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation'", appkit)
 
-            ios = assemble_sdk(Path(directory), "ios", "26.5", {"Foundation": [], "UIKit": []})
-            frameworks = ios / "System/Library/Frameworks"
-            self.assertIn("'/System/Library/Frameworks/Foundation.framework/Foundation'",
-                          (frameworks / "UIKit.framework/UIKit.tbd").read_text())
-            self.assertIn("install-name:    '/System/Library/Frameworks/Foundation.framework/Foundation'",
-                          (frameworks / "Foundation.framework/Foundation.tbd").read_text())
+    def test_rejects_other_platforms(self):
+        with TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "Unknown platform: ios"):
+                assemble_sdk(Path(directory), "ios", "26.5", {})
 
     def test_umbrella_and_forwarding_headers_have_unique_casefolded_names(self):
         names = ["foundation", "NSString", "nsstring"]
@@ -63,7 +61,7 @@ class FrameworkLayoutTest(unittest.TestCase):
             self.assertIn('umbrella header "Cocoa.h"', (cocoa / "Modules/module.modulemap").read_text())
             stub = yaml.safe_load((cocoa / "Cocoa.tbd").read_text().removeprefix("--- !tapi-tbd\n"))
             self.assertEqual(stub["install-name"], "/System/Library/Frameworks/Cocoa.framework/Versions/A/Cocoa")
-            self.assertLessEqual({"arm64-macos", "x86_64-macos"}, set(stub["targets"]))
+            self.assertEqual(stub["targets"], ["arm64-macos"])
             libraries = []
             for name in ("AppKit", "CoreData"):
                 child = (root / f"{name}.framework/{name}.tbd").read_text()
@@ -73,14 +71,13 @@ class FrameworkLayoutTest(unittest.TestCase):
 
     def test_skips_cocoa_without_all_imports_or_when_excluded(self):
         frameworks = {name: [] for name in ("Foundation", "AppKit", "CoreData")}
-        for platform, selected, include_cocoa in (
-            ("macos", {"Foundation": [], "AppKit": []}, True),
-            ("macos", frameworks, False),
-            ("ios", frameworks, True),
+        for selected, include_cocoa in (
+            ({"Foundation": [], "AppKit": []}, True),
+            (frameworks, False),
         ):
-            with self.subTest(platform=platform, frameworks=selected, include_cocoa=include_cocoa):
+            with self.subTest(frameworks=selected, include_cocoa=include_cocoa):
                 with TemporaryDirectory() as directory:
-                    sdk = assemble_sdk(Path(directory), platform, "27.0", selected, include_cocoa=include_cocoa)
+                    sdk = assemble_sdk(Path(directory), "macos", "27.0", selected, include_cocoa=include_cocoa)
                     self.assertFalse((sdk / "System/Library/Frameworks/Cocoa.framework").exists())
 
     def test_selecting_cocoa_requests_the_required_documented_frameworks(self):

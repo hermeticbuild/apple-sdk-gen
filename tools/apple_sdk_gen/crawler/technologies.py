@@ -20,10 +20,6 @@ class FrameworkInfo:
         return "occ" in self.languages
 
     @property
-    def has_swift(self) -> bool:
-        return "swift" in self.languages
-
-    @property
     def module_name(self) -> str:
         """Extract the actual module name from the doc URI.
 

@@ -1,11 +1,10 @@
 # macOS 26.5 Darwin export inventory
 
-`darwin_macos_26.5.json` is a preview for arm64 and x86_64. It is an
-explicit input to the version-aware generator:
+`darwin_macos_26.5.json` is the bundled arm64 inventory for macOS 26.5.
+Generate its stubs with:
 
 ```sh
-python3 -m tools.apple_sdk_gen --platforms macos --sdk-version 26.5 \
-  --darwin-library-metadata tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.json \
+python3 -m tools.apple_sdk_gen --sdk-version 26.5 \
   --frameworks CoreGraphics,Network,Security
 ```
 
@@ -76,16 +75,7 @@ routine from libc++abi. The installed 26.5.2 dylib confirms all four as
 strong exports. The ASan and UBSan comparison links bind them directly
 to `/usr/lib/libc++abi.dylib` with Xcode 26.5.
 
-The arm64 inventory uses provider evidence from the arm64e runtime, and
-the x86_64 inventory uses the Rosetta runtime. Xcode build 25F70 was
-used for comparison only. Its export inventory and raw runtime
-captures are outside this data file.
-
-The preview contains 3,206 libSystem names on arm64 and 3,211 on
-x86_64. These are raw unique name counts across the retained library
-documents. Both architectures ran C, Objective-C ARC, and C++ samples.
-`pipe` links and runs. `pipe2` and `dup3` are undefined. The reference
-also exposes additional names whose eligibility and demand still need
-review. This input is scoped to the generated C and Objective-C
-surfaces and compiler ABI evidence. The full consumer suites and
-release approval remain open.
+The arm64 inventory uses provider evidence from the arm64e runtime.
+Xcode 26.5 is a comparison reference. The arm64 C, Objective-C ARC
+and C++ probes link against the inventory. `pipe` links and runs.
+`pipe2` and `dup3` are absent from this SDK version.
