@@ -4,11 +4,14 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from tools.apple_sdk_gen.assembler.sdk_layout import assemble_sdk
+from tools.apple_sdk_gen.cli import parse_args
 from tools.apple_sdk_gen.crawler.framework import crawl_framework_symbols
 from tools.apple_sdk_gen.crawler.symbol import parse_symbol
 from tools.apple_sdk_gen.crawler.technologies import FrameworkInfo
+from tools.apple_sdk_gen.main import run
 
 
 CLANG = os.environ.get("CLANG") or shutil.which("clang")
@@ -62,6 +65,24 @@ def address_pages(initializer):
 
 
 class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
+    async def test_generation_crawls_only_macos_c_family_frameworks(self):
+        frameworks = [
+            FrameworkInfo("SwiftUI", "/documentation/SwiftUI", ["swift"], ""),
+            FrameworkInfo("CoreFoundation", "/documentation/CoreFoundation", ["occ"], ""),
+            FrameworkInfo("Foundation", "/documentation/Foundation", ["occ", "swift"], ""),
+            FrameworkInfo("UIKit", "/documentation/UIKit", ["occ", "swift"], ""),
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            args = parse_args(["--sdk-version", "26.5", "--all-frameworks",
+                               "--output", directory, "--cache-dir", directory])
+            with (
+                patch("tools.apple_sdk_gen.main.fetch_technologies", return_value=frameworks),
+                patch("tools.apple_sdk_gen.main.crawl_framework_symbols", return_value=[]) as crawl,
+            ):
+                await run(args)
+
+        self.assertEqual([call.args[1] for call in crawl.await_args_list], frameworks[1:3])
+
     @unittest.skipUnless(CLANG, "requires Clang")
     async def test_objc_interface_omits_related_top_level_declarations(self):
         path = "/documentation/foundation/application"

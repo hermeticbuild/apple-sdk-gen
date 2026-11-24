@@ -57,6 +57,13 @@ async def run(args: argparse.Namespace) -> None:
     cache = CacheDB(cache_dir)
     logger.info("Cache: %d entries", cache.size())
 
+    platform_key = args.platforms
+    cfg = PLATFORM_CONFIGS[platform_key]
+    excluded = PLATFORM_EXCLUDED_MODULES.get(platform_key, set())
+    excluded = excluded | {
+        name for name, mapped in FRAMEWORK_NAME_MAPPINGS.items() if mapped in excluded
+    }
+
     async with APIClient(
         concurrency=args.concurrency,
         rate_limit=args.rate_limit,
@@ -69,7 +76,8 @@ async def run(args: argparse.Namespace) -> None:
         frameworks = filter_frameworks(
             all_frameworks,
             include=args.frameworks if not args.all_frameworks else None,
-            exclude=args.exclude_frameworks,
+            exclude=excluded | (args.exclude_frameworks or set()),
+            objc_only=True,
         )
 
         if not frameworks:
@@ -125,21 +133,14 @@ async def run(args: argparse.Namespace) -> None:
         )
 
         # Phase 4: Filter by platform availability and generate SDKs
-        platform_key = args.platforms
-        cfg = PLATFORM_CONFIGS[platform_key]
         print(
             f"Generating SDK for {cfg.sdk_prefix} {args.sdk_version}...",
             file=sys.stderr,
         )
 
         # Filter symbols by availability
-        excluded = PLATFORM_EXCLUDED_MODULES.get(platform_key, set())
         platform_frameworks: dict[str, list[Symbol]] = {}
         for fw_name, symbols in framework_symbols.items():
-            # Check both the doc API name and the mapped framework name
-            mapped_name = FRAMEWORK_NAME_MAPPINGS.get(fw_name, fw_name)
-            if fw_name in excluded or mapped_name in excluded:
-                continue
             available = [
                 sym for sym in symbols
                 if is_available(sym, cfg.name, args.sdk_version)

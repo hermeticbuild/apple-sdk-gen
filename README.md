@@ -27,7 +27,7 @@ AppKit and Core Data and builds an umbrella for the three.
 | `--sdk-version` | Required version of the generated SDK |
 | `--darwin-library-metadata` | Override the bundled 26.5 inventory with a matching version |
 | `--frameworks` | Generate a comma-separated set of frameworks |
-| `--all-frameworks` | Generate every discovered macOS framework |
+| `--all-frameworks` | Generate discovered macOS frameworks with a C or Objective-C DocC view |
 | `--exclude-frameworks` | Exclude selected frameworks, including Cocoa |
 | `--include-libc` | Install the generator's optional Apple OSS C header supplement |
 | `--include-cxx` | Install the macOS 26.5 LLVM C++ and ABI headers |

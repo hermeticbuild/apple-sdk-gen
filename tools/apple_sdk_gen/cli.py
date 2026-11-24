@@ -60,7 +60,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--all-frameworks",
         action="store_true",
-        help="Generate all available frameworks",
+        help="Generate all frameworks with a C or Objective-C DocC view",
     )
     parser.add_argument(
         "--frameworks",
