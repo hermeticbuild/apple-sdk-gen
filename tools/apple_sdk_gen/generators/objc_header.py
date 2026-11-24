@@ -15,6 +15,7 @@ from ..supplements.simd import TYPE_NAMES as SIMD_TYPE_NAMES
 logger = logging.getLogger(__name__)
 
 _OS_OBJECT_POINTER = re.compile(r"NSObject\s*<OS_((?:nw|dispatch|sec)_\w+)>\s*\*")
+_OBJC_SUPERCLASS = re.compile(r"@interface\s+\w+(?:\s*<[^>]+>)?\s*:\s*(\w+)")
 
 
 def _c_object_tag(name: str) -> str:
@@ -433,8 +434,8 @@ def generate_umbrella_header(
             lines.append(block)
             lines.append("")
 
-    # Emit classes
-    for sym in groups.get("class", []):
+    # A forward declaration cannot stand in for a superclass definition.
+    for sym in _ordered_objc_classes(groups["class"]):
         block = _render_interface_block(sym, symbols, all_symbols)
         if block:
             lines.append(block)
@@ -445,6 +446,26 @@ def generate_umbrella_header(
         lines.append("#undef _APPLE_SDK_GEN_OS_OBJECT_PTR")
 
     return "\n".join(lines)
+
+
+def _ordered_objc_classes(classes: list[Symbol]) -> list[Symbol]:
+    by_name = {symbol.objc_name: symbol for symbol in classes}
+    seen: set[int] = set()
+    ordered: list[Symbol] = []
+
+    def visit(symbol: Symbol) -> None:
+        if id(symbol) in seen:
+            return
+        seen.add(id(symbol))
+        heading = symbol.objc_declaration
+        superclass = _OBJC_SUPERCLASS.match(heading.render().strip()) if heading else None
+        if superclass and superclass[1] in by_name:
+            visit(by_name[superclass[1]])
+        ordered.append(symbol)
+
+    for symbol in classes:
+        visit(symbol)
+    return ordered
 
 
 def _ordered_c_types(

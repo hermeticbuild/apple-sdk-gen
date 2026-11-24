@@ -115,6 +115,29 @@ class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(contents.count("extern Application *SharedApplication;"), 1)
 
+    @unittest.skipUnless(CLANG, "requires Clang")
+    async def test_objc_classes_define_superclasses_before_subclasses(self):
+        classes = {
+            "Child": "@interface Child<ObjectType> : Parent<ObjectType>",
+            "Peer": "@interface Peer",
+            "Parent": "@interface Parent<ObjectType> : Root",
+            "Root": "@interface Root",
+        }
+        docc = DocC({
+            f"/documentation/foundation/{name.lower()}":
+                page(name, "class", declaration(heading))
+            for name, heading in classes.items()
+        })
+        with tempfile.TemporaryDirectory() as directory:
+            header = assemble_header(Path(directory), "macos", await docc.symbols())
+            result = subprocess.run(
+                [CLANG, "-target", "arm64-apple-macos11", "-ffreestanding",
+                 "-fsyntax-only", "-Werror", "-isysroot", str(header.parents[5]),
+                 "-include", str(header), "-x", "objective-c", "-"],
+                input="Child<Root *> *child;\n", text=True, capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+
     async def test_appkit_event_and_activation_values(self):
         enums = {
             "NSEventType": {"NSEventTypeApplicationDefined": 15, "NSEventTypeLeftMouseDown": 1},
