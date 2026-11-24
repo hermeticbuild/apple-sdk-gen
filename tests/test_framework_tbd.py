@@ -16,3 +16,12 @@ class FrameworkTBDTest(unittest.TestCase):
 
         self.assertIn("_kUTTagClassMIMEType", stub)
         self.assertNotIn("_kLSLaunchDefaults", stub)
+
+    def test_core_graphics_inline_constructors_are_not_exports(self):
+        symbols = [
+            Symbol(name, name, SymbolKind.FUNC, usr=f"c:@F@{name}")
+            for name in ("CGRectMake", "CGRectApplyAffineTransform")
+        ]
+        stub = generate_tbd("CoreGraphics", symbols, ["arm64-macos", "x86_64-macos"])
+        self.assertNotIn("_CGRectMake", stub)
+        self.assertIn("_CGRectApplyAffineTransform", stub)
