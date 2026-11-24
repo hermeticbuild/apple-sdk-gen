@@ -32,6 +32,14 @@ logger = logging.getLogger(__name__)
 _MACOS_FRAMEWORK_VERSIONS = {"AppKit": "C", "Foundation": "C"}
 
 
+def _macos_install_name(name: str) -> str:
+    version = _MACOS_FRAMEWORK_VERSIONS.get(name)
+    prefix = f"/System/Library/Frameworks/{name}.framework"
+    if version:
+        return f"{prefix}/Versions/{version}/{name}"
+    return f"{prefix}/{name}"
+
+
 @dataclass
 class FrameworkOutput:
     name: str
@@ -170,7 +178,11 @@ def assemble_sdk(
         and "Cocoa" not in frameworks
         and all(name in frameworks for name in COCOA_IMPORTS)
     ):
-        assemble_cocoa(sdk_root / "System" / "Library" / "Frameworks", tbd_targets)
+        assemble_cocoa(
+            sdk_root / "System" / "Library" / "Frameworks",
+            tbd_targets,
+            [_macos_install_name(name) for name in ("AppKit", "CoreData")],
+        )
 
     # Emit TBD-only stubs for supplementary frameworks (no doc API entry)
     for supp_name in SUPPLEMENTARY_FRAMEWORKS:
@@ -259,9 +271,8 @@ def _assemble_framework(
     if platform_config.name is PlatformName.MACOS:
         version = _MACOS_FRAMEWORK_VERSIONS.get(framework_name)
         canonical_paths = {
-            f"/System/Library/Frameworks/{name}.framework/{name}":
-            f"/System/Library/Frameworks/{name}.framework/Versions/{release}/{name}"
-            for name, release in _MACOS_FRAMEWORK_VERSIONS.items()
+            f"/System/Library/Frameworks/{name}.framework/{name}": _macos_install_name(name)
+            for name in _MACOS_FRAMEWORK_VERSIONS
         }
         reexports = [canonical_paths.get(library, library) for library in reexports]
 
@@ -270,7 +281,7 @@ def _assemble_framework(
     if version:
         versioned_stub = fw_dir / "Versions" / version / stub.name
         versioned_stub.parent.mkdir(parents=True, exist_ok=True)
-        install_name = f"/System/Library/Frameworks/{versioned_stub.with_suffix('').relative_to(fw_dir.parent)}"
+        install_name = _macos_install_name(framework_name)
 
     tbd_content = generate_tbd(
         framework_name,
