@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field, replace
 
 from .types import InterfaceLanguage, PlatformName, SymbolKind, TokenKind
@@ -13,6 +14,7 @@ _DECLARATION_WORD_TOKENS = {
     TokenKind.INTERNAL_PARAM,
     TokenKind.EXTERNAL_PARAM,
 }
+_C_BOOL = re.compile(r"\b_Bool\b")
 
 
 def _is_identifier_character(character: str) -> bool:
@@ -60,11 +62,16 @@ class Declaration:
         for token in self.tokens:
             if not token.text:
                 continue
+            text = token.text
+            if token.kind in (TokenKind.KEYWORD, TokenKind.TYPE_IDENTIFIER):
+                # Callback type tokens can contain a whole parameter list.
+                # The umbrella includes stdbool.h for C. C++ has built-in bool.
+                text = _C_BOOL.sub("bool", text)
             is_word = token.kind in _DECLARATION_WORD_TOKENS
-            if previous_ends_word and is_word and _is_identifier_character(token.text[0]):
+            if previous_ends_word and is_word and _is_identifier_character(text[0]):
                 parts.append(" ")
-            parts.append(token.text)
-            previous_ends_word = is_word and _is_identifier_character(token.text[-1])
+            parts.append(text)
+            previous_ends_word = is_word and _is_identifier_character(text[-1])
         return "".join(parts)
 
 

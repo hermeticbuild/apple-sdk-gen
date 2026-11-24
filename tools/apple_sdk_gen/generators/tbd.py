@@ -8,7 +8,8 @@ from ..utils.usr_parser import FrameworkTBDSymbols
 def collect_tbd_symbols(symbols: list[Symbol]) -> FrameworkTBDSymbols:
     tbd_syms = FrameworkTBDSymbols()
     for sym in symbols:
-        if sym.usr:
+        declaration = sym.objc_declaration
+        if sym.usr and not (declaration and declaration.render().lstrip().startswith("static ")):
             tbd_syms.add_from_usr(sym.usr)
     return tbd_syms
 

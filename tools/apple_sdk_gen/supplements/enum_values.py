@@ -21,6 +21,23 @@ KNOWN_ENUM_VALUES: dict[str, str] = {
     "NSApplicationActivationPolicyAccessory": "1",
     "NSApplicationActivationPolicyProhibited": "2",
 
+    # Apple's CGImage Reference publishes the CGBitmapInfo bit layout.
+    # https://leopard-adc.pepas.com/documentation/GraphicsImaging/Reference/CGImage/Reference/reference.html
+    # The maintained .NET bindings corroborate the component and pixel format masks.
+    # https://github.com/dotnet/macios/blob/36c7da52d3f0a7d66adca044040db5eb6231f5bd/src/CoreGraphics/CGImage.cs
+    "kCGBitmapAlphaInfoMask": "0x1f",
+    "kCGBitmapFloatComponents": "0x0100",
+    "kCGBitmapFloatInfoMask": "0x0f00",
+    "kCGBitmapComponentInfoMask": "0x0f00",
+    "kCGBitmapByteOrderMask": "0x7000",
+    "kCGBitmapByteOrderInfoMask": "0x7000",
+    "kCGBitmapPixelFormatInfoMask": "0xf0000",
+    "kCGBitmapByteOrderDefault": "0",
+    "kCGBitmapByteOrder16Little": "0x1000",
+    "kCGBitmapByteOrder32Little": "0x2000",
+    "kCGBitmapByteOrder16Big": "0x3000",
+    "kCGBitmapByteOrder32Big": "0x4000",
+
     # ── Foundation: NSComparisonResult ────────────────────────────────
     "NSOrderedAscending": "-1",
     "NSOrderedSame": "0",
@@ -446,9 +463,21 @@ OPTIONS_ENUMS: set[str] = {
     "UIDataDetectorTypes",
     "UIAccessibilityTraits",
     "NSLayoutFormatOptions",
-    "CGBitmapInfo",
     "CGEventFlags",
     "CGImageByteOrderInfo",
+}
+
+# DocC exposes the declarations of these internal-linkage constants
+# without their initializers.
+CORE_GRAPHICS_CONSTANT_INITIALIZERS = {
+    # The CGImage Reference defines the host variants as native byte orders.
+    # The macOS arm64 and x86_64 targets are both little-endian.
+    "kCGBitmapByteOrder16Host": "kCGBitmapByteOrder16Little",
+    "kCGBitmapByteOrder32Host": "kCGBitmapByteOrder32Little",
+    # https://leopard-adc.pepas.com/documentation/GraphicsImaging/Reference/CGFont/CGFont.pdf
+    "kCGFontIndexInvalid": "UINT16_MAX",
+    "kCGFontIndexMax": "UINT16_MAX - 1",
+    "kCGGlyphMax": "UINT16_MAX - 1",
 }
 
 

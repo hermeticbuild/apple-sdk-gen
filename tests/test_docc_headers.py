@@ -138,6 +138,59 @@ class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
             )
             self.assertEqual(result.returncode, 0, result.stderr)
 
+    @unittest.skipUnless(CLANG, "requires Clang")
+    async def test_coregraphics_callbacks_and_bitmap_constants_compile_as_objcxx(self):
+        path = "/documentation/coregraphics"
+        cases = ("kCGBitmapByteOrder32Little", "kCGBitmapAlphaInfoMask")
+        pages = {
+            f"{path}/cgbitmapinfo": {
+                **page("CGBitmapInfo", "enum", declaration("enum CGBitmapInfo : uint32_t;")),
+                "topicSections": [{"identifiers": list(cases)}],
+                "references": {
+                    name: {"kind": "symbol", "role": "symbol", "url": f"{path}/{name}"}
+                    for name in cases
+                },
+            },
+            **{f"{path}/{name}": page(name, "case", declaration(name)) for name in cases},
+            f"{path}/callback": page("CGDone", "typealias", {
+                "languages": ["occ"],
+                "tokens": [
+                    {"kind": "keyword", "text": "typedef"},
+                    {"kind": "text", "text": " "},
+                    {"kind": "typeIdentifier", "text": "void (*)(void *, _Bool)"},
+                    {"kind": "text", "text": " CGDone;"},
+                ],
+            }),
+            f"{path}/cgfontindex": page(
+                "CGFontIndex", "typealias", declaration("typedef uint16_t CGFontIndex;"),
+            ),
+            f"{path}/fontindexmax": {
+                **page("kCGFontIndexMax", "var", declaration("static const CGFontIndex kCGFontIndexMax;")),
+                "metadata": {"title": "kCGFontIndexMax", "role": "symbol", "symbolKind": "var",
+                             "externalID": "c:@kCGFontIndexMax"},
+            },
+            f"{path}/byteorder32host": page(
+                "kCGBitmapByteOrder32Host", "var",
+                declaration("static const CGBitmapInfo kCGBitmapByteOrder32Host;"),
+            ),
+        }
+        docc = DocC(pages)
+        symbols = [await parse_symbol(docc, name, "CoreGraphics") for name in pages]
+        with tempfile.TemporaryDirectory() as directory:
+            sdk = assemble_sdk(Path(directory), "macos", "26.5", {"CoreGraphics": symbols})
+            framework = sdk / "System/Library/Frameworks/CoreGraphics.framework"
+            result = subprocess.run(
+                [CLANG, "-target", "arm64-apple-macos14.0", "-ffreestanding", "-fsyntax-only",
+                 "-Werror", "-isysroot", str(sdk), "-x", "objective-c++", "-std=c++20", "-"],
+                input=("#import <CoreGraphics/CoreGraphics.h>\n"
+                       "static_assert(__is_same(CGDone, void (*)(void *, bool)));\n"
+                       "constexpr CGBitmapInfo image = kCGBitmapByteOrder32Host | kCGBitmapAlphaInfoMask;\n"
+                       "static_assert(image == 0x201f && kCGFontIndexMax == 65534);\n"),
+                text=True, capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn("_kCGFontIndexMax", (framework / "CoreGraphics.tbd").read_text())
+
     async def test_appkit_event_and_activation_values(self):
         enums = {
             "NSEventType": {"NSEventTypeApplicationDefined": 15, "NSEventTypeLeftMouseDown": 1},

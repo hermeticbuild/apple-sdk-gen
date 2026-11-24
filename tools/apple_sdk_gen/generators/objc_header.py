@@ -8,7 +8,7 @@ from ..config import FRAMEWORK_NAME_MAPPINGS
 from ..models.availability import availability_macro, deprecated_macro
 from ..models.symbol import Symbol
 from ..models.types import SymbolKind, TokenKind
-from ..supplements.enum_values import get_case_value, is_options_enum
+from ..supplements.enum_values import CORE_GRAPHICS_CONSTANT_INITIALIZERS, get_case_value, is_options_enum
 from ..supplements.inline_functions import INLINE_FUNCTIONS
 from ..supplements.simd import TYPE_NAMES as SIMD_TYPE_NAMES
 
@@ -619,7 +619,12 @@ def _render_symbol_declaration(sym: Symbol) -> str | None:
     elif avail:
         suffix = f" {avail}"
 
-    declaration = f"{decl_text.removesuffix(';')}{suffix};" if not decl_text.endswith("}") else f"{decl_text}{suffix}"
+    initializer = ""
+    if sym.kind == SymbolKind.VAR and decl_text.startswith("static const ") and "=" not in decl_text:
+        value = CORE_GRAPHICS_CONSTANT_INITIALIZERS.get(sym.objc_name)
+        if value is not None:
+            initializer = f" = {value}"
+    declaration = f"{decl_text.removesuffix(';')}{suffix}{initializer};" if not decl_text.endswith("}") else f"{decl_text}{suffix}"
     if re.search(r"\b(?:id|Class)\s*<", decl_text):
         return f"#ifdef __OBJC__\n{declaration}\n#endif"
     return declaration
@@ -701,7 +706,14 @@ def _render_enum_definition(
     alias = f" {placeholder[2]}" if placeholder else ""
     tag = re.fullmatch(r"enum\s+([A-Za-z_]\w*)(?:\s*:[^{}]+)?", header)
     typedef = f"\ntypedef enum {tag[1]} {tag[1]}{suffix};" if tag else ""
-    if tag:
+    bitmap_flags = bool(tag and tag[1] == "CGBitmapInfo")
+    if bitmap_flags:
+        # The public type is a uint32_t bitmask, with separately named flags.
+        # In C++, combining flags with | must produce a usable CGBitmapInfo.
+        typedef = f"\ntypedef uint32_t CGBitmapInfo{suffix};"
+        header = "enum : uint32_t"
+        suffix = ""
+    elif tag:
         header = f"enum{suffix} {header.removeprefix('enum').lstrip()}"
         suffix = ""
 
@@ -718,6 +730,8 @@ def _render_enum_definition(
             # DocC supplies the imported C enum's integer representation separately.
             header += f" {placeholder[2]} : {_SWIFT_TO_C_TYPES[raw_type[1]]}"
     elif not cases:
+        if bitmap_flags:
+            return typedef.lstrip()
         return f"{header}{suffix};{typedef}"
 
     # Determine if this is an NS_OPTIONS bitmask enum
