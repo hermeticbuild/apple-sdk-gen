@@ -42,6 +42,11 @@ Apple CMake preset and header install targets. It includes both
 LLVM license files. Consumers link to the macOS system dylibs.
 [LLVM release](https://github.com/llvm/llvm-project/releases/tag/llvmorg-21.1.6)
 
+Selecting Model I/O or `--include-libc` generates `<simd/simd.h>` and a
+Clang module map. This header provides the vector, matrix and quaternion
+types used by Model I/O. The generator uses C-family declarations from
+the public [SIMD documentation](https://developer.apple.com/documentation/simd).
+
 ## Darwin linker stubs
 
 The generator uses the checked-in macOS 26.5 export inventory for

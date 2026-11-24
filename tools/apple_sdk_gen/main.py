@@ -25,6 +25,7 @@ from .supplements.darwin_libs import install_darwin_lib_stubs, select_darwin_lib
 from .supplements.libc import install_libc_headers
 from .supplements.libcxx import install_libcxx_headers
 from .supplements.platform_headers import install_platform_headers
+from .supplements.simd import install_simd_headers
 from .supplements.system_libs import install_system_lib_stubs
 from .supplements.system_modulemaps import install_system_modulemaps
 
@@ -176,6 +177,13 @@ async def run(args: argparse.Namespace) -> None:
         # conditional modulemap check.
         print("Installing CommonCrypto headers...", file=sys.stderr)
         install_commoncrypto_headers(sdk_path)
+
+        if args.include_libc or "ModelIO" in platform_frameworks:
+            print("Generating SIMD headers...", file=sys.stderr)
+            try:
+                await install_simd_headers(sdk_path, client)
+            except ValueError as exc:
+                raise SystemExit(f"SIMD headers: {exc}") from None
 
         # Install C stdlib/POSIX headers if requested
         if args.include_libc:

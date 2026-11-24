@@ -472,7 +472,15 @@ class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
                 {"kind": "typeIdentifier", "text": "au_asid_t",
                  "identifier": "doc://com.apple.documentation/documentation/kernel/au_asid_t",
                  "preciseIdentifier": "c:@T@au_asid_t"},
-                {"kind": "text", "text": " audit_session);"},
+                {"kind": "text", "text": " audit_session, "},
+                {"kind": "typeIdentifier", "text": "vector_int2",
+                 "identifier": "doc://com.apple.documentation/documentation/kernel/vector_int2",
+                 "preciseIdentifier": "c:@T@vector_int2"},
+                {"kind": "text", "text": " pixels, "},
+                {"kind": "typeIdentifier", "text": "simd_quatf",
+                 "identifier": "doc://com.apple.documentation/documentation/simd/simd_quatf",
+                 "preciseIdentifier": "c:@T@simd_quatf"},
+                {"kind": "text", "text": " rotation);"},
             ],
         }
         docc = DocC({"/documentation/foundation/usetypes": page("UseTypes", "func", parameters)})
@@ -483,7 +491,7 @@ class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
             [line for line in header.splitlines() if line.startswith("#import <")],
             ["#import <CoreFoundation/CoreFoundation.h>", "#import <bsm/audit.h>",
              "#import <dispatch/dispatch.h>", "#import <mach/port.h>",
-             "#import <stddef.h>", "#import <stdint.h>", "#import <sys/types.h>"],
+             "#import <simd/simd.h>", "#import <stddef.h>", "#import <stdint.h>", "#import <sys/types.h>"],
         )
 
     async def test_c_function_availability_precedes_the_semicolon(self):

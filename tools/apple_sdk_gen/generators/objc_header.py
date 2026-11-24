@@ -10,6 +10,7 @@ from ..models.symbol import Symbol
 from ..models.types import SymbolKind, TokenKind
 from ..supplements.enum_values import get_case_value, is_options_enum
 from ..supplements.inline_functions import INLINE_FUNCTIONS
+from ..supplements.simd import TYPE_NAMES as SIMD_TYPE_NAMES
 
 logger = logging.getLogger(__name__)
 
@@ -500,6 +501,11 @@ def _collect_dependencies(
             identifier = token.identifier or ""
             _, _, path = identifier.partition("/documentation/")
             module = path.split("/", 1)[0]
+            if module.casefold() == "simd" or (
+                module.casefold() == "kernel" and token.text.strip() in SIMD_TYPE_NAMES
+            ):
+                imports.add("simd/simd.h")
+                continue
             header = _C_TYPE_HEADERS.get(token.precise_identifier)
             if header and (module.casefold() in {"kernel", "driverkit"} or
                            token.precise_identifier in {"c:@T@mach_port_t", "c:@T@CFMachPortRef", "c:@S@sockaddr"}):

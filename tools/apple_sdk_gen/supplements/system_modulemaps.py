@@ -261,7 +261,6 @@ def install_system_modulemaps(sdk_root: Path) -> None:
     # 5. Conditional modulemaps for optional directories
     _OPTIONAL_MODULES = [
         ("CommonCrypto", "CommonCrypto"),
-        ("simd", "simd"),
         ("Spatial", "Spatial"),
         ("xpc", "xpc"),
     ]
