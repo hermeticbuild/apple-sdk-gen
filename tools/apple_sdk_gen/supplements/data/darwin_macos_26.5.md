@@ -69,6 +69,13 @@ The C installation continues to ship its public headers.
 | libsystem_platform | [libplatform's lock interface](https://github.com/apple-oss-distributions/libplatform/blob/b7ed7cf5cf7dd12b98672435db2225a860f199d8/private/os/lock_private.h) and [ucontext implementation](https://github.com/apple-oss-distributions/libplatform/tree/b7ed7cf5cf7dd12b98672435db2225a860f199d8/src/ucontext) |
 | libsystem_c | Libc's [realpath](https://github.com/apple-oss-distributions/Libc/blob/4e34d0559e3a1b081afeb8604d9e204a1f31321d/stdlib/FreeBSD/realpath.c) and [fileno](https://github.com/apple-oss-distributions/Libc/blob/4e34d0559e3a1b081afeb8604d9e204a1f31321d/stdio/FreeBSD/fileno.c) |
 
+The arm64 `libc++abi.tbd` also includes the four direct exports from
+[LLVM 21.1.6's Darwin export list](https://github.com/llvm/llvm-project/blob/a832a5222e489298337fbb5876f8dcaf072c5cca/libcxxabi/lib/symbols-not-reexported.exp).
+LLVM's CMake rules export the three RTTI objects and the primary-exception
+routine from libc++abi. The installed 26.5.2 dylib confirms all four as
+strong exports. The ASan and UBSan comparison links bind them directly
+to `/usr/lib/libc++abi.dylib` with Xcode 26.5.
+
 The arm64 inventory uses provider evidence from the arm64e runtime, and
 the x86_64 inventory uses the Rosetta runtime. Xcode build 25F70 was
 used for comparison only. Its export inventory and raw runtime

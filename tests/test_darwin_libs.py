@@ -84,6 +84,28 @@ class DarwinLibrariesTest(unittest.TestCase):
         self.assertEqual(pipe_targets, {"arm64-macos", "x86_64-macos"})
         self.assertTrue({"_pipe2", "_dup3"}.isdisjoint(symbols))
 
+    def test_macos_26_5_keeps_sanitizer_abi_exports_in_libcxxabi(self):
+        metadata = Path(__file__).resolve().parents[1] / "tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.json"
+        libraries = select_darwin_libraries("26.5", ["macos"], metadata)["macos"]
+        abi = yaml.safe_load(libraries["libc++abi"].replace("--- !tapi-tbd", "---"))
+        cxx = yaml.safe_load(libraries["libc++.1"].replace("--- !tapi-tbd", "---"))
+        expected = {
+            "__ZTIN10__cxxabiv117__class_type_infoE",
+            "__ZTIN10__cxxabiv120__si_class_type_infoE",
+            "__ZTIN10__cxxabiv121__vmi_class_type_infoE",
+            "___cxa_rethrow_primary_exception",
+        }
+        abi_symbols = {
+            name for group in abi["exports"] if "arm64-macos" in group["targets"]
+            for name in group.get("symbols", [])
+        }
+        cxx_symbols = {
+            name for section in ("exports", "reexports") for group in cxx.get(section, [])
+            if "arm64-macos" in group["targets"] for name in group.get("symbols", [])
+        }
+        self.assertLessEqual(expected, abi_symbols)
+        self.assertTrue(expected.isdisjoint(cxx_symbols))
+
     def test_macos_26_5_exports_environ_through_libdyld(self):
         metadata = Path(__file__).resolve().parents[1] / "tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.json"
         libraries = select_darwin_libraries("26.5", ["macos"], metadata)["macos"]
