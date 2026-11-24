@@ -120,6 +120,12 @@ python3 -m tools.apple_sdk_gen --platforms macos --sdk-version 26.5 \
 The extractor is for local comparisons. Supply an inventory with
 appropriate provenance when producing distributable SDKs.
 
+For the arm64 macOS 26.5 SDK, add `--include-cxx` to install libc++ and
+libc++abi headers from LLVM 21.1.6. The installer checks the release
+archives' SHA-256 digests and uses LLVM's Apple CMake preset with its
+header install targets. Put CMake, Ninja, and Clang on `PATH`. The SDK
+includes both LLVM license files and links against macOS system dylibs.
+
 ## CI and releases
 
 Pushes to `main` and pull requests targeting it run the unit tests.

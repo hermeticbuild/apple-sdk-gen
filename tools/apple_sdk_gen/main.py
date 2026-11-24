@@ -267,6 +267,7 @@ async def _run(
                     sdk_root=sdk_path,
                     sdk_version=args.sdk_version,
                     cache_dir=cache_dir,
+                    platform_key=platform_key,
                 )
 
             # Install Swift shim headers if Swift is enabled
