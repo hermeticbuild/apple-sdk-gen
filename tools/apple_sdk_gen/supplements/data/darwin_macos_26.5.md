@@ -30,6 +30,14 @@ The source-backed export selection uses:
   [objc4 source](https://github.com/apple-oss-distributions/objc4/blob/ebfe77e64331034c867285a95d3ac205203291d5/runtime/objc-cache.mm#L215-L231)
   defines it as global data and both deployed runtime slices export it.
   An AppKit delegate class linked and ran on each target through this export.
+  Objective-C code that sends a message to `super` and synthesizes an
+  atomic retained property also imports `objc_msgSendSuper2`,
+  `objc_getProperty`, and `objc_setProperty_atomic`. The pinned
+  [arm64 messenger assembly](https://github.com/apple-oss-distributions/objc4/blob/ebfe77e64331034c867285a95d3ac205203291d5/runtime/Messengers.subproj/objc-msg-arm64.s#L683-L699)
+  and [property accessors](https://github.com/apple-oss-distributions/objc4/blob/ebfe77e64331034c867285a95d3ac205203291d5/runtime/objc-accessors.mm)
+  define all three, and the installed macOS 26.5.2 runtime exports them
+  from `/usr/lib/libobjc.A.dylib`. The OpenCV Cocoa backend imports
+  them through compiler-generated code.
 - [LLVM 23.1.2 Darwin libc++ ABI lists](https://github.com/llvm/llvm-project/tree/85ac560262434c9ccfc0c183ec22d4138ed647fb/libcxx/lib/abi)
   and [libc++abi export lists](https://github.com/llvm/llvm-project/tree/85ac560262434c9ccfc0c183ec22d4138ed647fb/libcxxabi/lib).
   Retain symbols present in the selected ABI and the corresponding

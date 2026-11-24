@@ -151,14 +151,17 @@ class DarwinLibrariesTest(unittest.TestCase):
         self.assertLessEqual(required, symbols)
         self.assertTrue({"__tolower", "__toupper"}.isdisjoint(symbols))
 
-    def test_macos_26_5_provides_objc_class_cache(self):
+    def test_macos_26_5_provides_objc_compiler_entry_points(self):
         metadata = Path(__file__).resolve().parents[1] / "tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.json"
         libraries = select_darwin_libraries("26.5", metadata)
         objc = yaml.safe_load(libraries["libobjc.A"].replace("--- !tapi-tbd", "---"))
-        targets = {
-            target
-            for group in objc["exports"]
-            if "__objc_empty_cache" in group.get("symbols", [])
-            for target in group["targets"]
-        }
-        self.assertEqual(targets, {"arm64-macos"})
+        required = {"__objc_empty_cache", "_objc_getProperty", "_objc_msgSendSuper2", "_objc_setProperty_atomic"}
+        for symbol in sorted(required):
+            with self.subTest(symbol=symbol):
+                targets = {
+                    target
+                    for group in objc["exports"]
+                    if symbol in group.get("symbols", [])
+                    for target in group["targets"]
+                }
+                self.assertEqual(targets, {"arm64-macos"})
