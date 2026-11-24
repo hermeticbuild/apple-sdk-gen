@@ -164,6 +164,7 @@ class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
             f"{path}/cgfontindex": page(
                 "CGFontIndex", "typealias", declaration("typedef uint16_t CGFontIndex;"),
             ),
+            f"{path}/cgdraw": page("CGDraw", "func", declaration("extern int CGDraw(void);")),
             f"{path}/fontindexmax": {
                 **page("kCGFontIndexMax", "var", declaration("static const CGFontIndex kCGFontIndexMax;")),
                 "metadata": {"title": "kCGFontIndexMax", "role": "symbol", "symbolKind": "var",
@@ -183,6 +184,7 @@ class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
                 [CLANG, "-target", "arm64-apple-macos14.0", "-ffreestanding", "-fsyntax-only",
                  "-Werror", "-isysroot", str(sdk), "-x", "objective-c++", "-std=c++20", "-"],
                 input=("#import <CoreGraphics/CoreGraphics.h>\n"
+                       "extern \"C\" int CGDraw(void);\n"
                        "static_assert(__is_same(CGDone, void (*)(void *, bool)));\n"
                        "constexpr CGBitmapInfo image = kCGBitmapByteOrder32Host | kCGBitmapAlphaInfoMask;\n"
                        "static_assert(image == 0x201f && kCGFontIndexMax == 65534);\n"),
@@ -529,6 +531,14 @@ class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
                  "identifier": "doc://com.apple.documentation/documentation/kernel/mach_port_t",
                  "preciseIdentifier": "c:@T@mach_port_t"},
                 {"kind": "text", "text": " port, "},
+                {"kind": "typeIdentifier", "text": "kern_return_t",
+                 "identifier": "doc://com.apple.driverkit/documentation/DriverKit/kern_return_t",
+                 "preciseIdentifier": "c:@T@kern_return_t"},
+                {"kind": "text", "text": " status, "},
+                {"kind": "typeIdentifier", "text": "task_id_token_t",
+                 "identifier": "doc://com.apple.documentation/documentation/kernel/task_id_token_t",
+                 "preciseIdentifier": "c:@T@task_id_token_t"},
+                {"kind": "text", "text": " identity, "},
                 {"kind": "typeIdentifier", "text": "size_t",
                  "identifier": "doc://com.apple.documentation/documentation/kernel/size_t",
                  "preciseIdentifier": "c:@T@size_t"},
@@ -566,7 +576,8 @@ class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             [line for line in header.splitlines() if line.startswith("#import <")],
             ["#import <CoreFoundation/CoreFoundation.h>", "#import <bsm/audit.h>",
-             "#import <dispatch/dispatch.h>", "#import <mach/port.h>",
+             "#import <dispatch/dispatch.h>", "#import <mach/kern_return.h>",
+             "#import <mach/mach_types.h>", "#import <mach/port.h>",
              "#import <simd/simd.h>", "#import <stddef.h>", "#import <stdint.h>", "#import <sys/types.h>"],
         )
 

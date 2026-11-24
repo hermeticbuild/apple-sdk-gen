@@ -30,7 +30,9 @@ _C_TYPE_HEADERS = {
     "c:@S@sockaddr": "sys/socket.h",
     "c:@T@CFMachPortRef": "CoreFoundation/CFMachPort.h",
     "c:@T@boolean_t": "mach/boolean.h",
+    "c:@T@kern_return_t": "mach/kern_return.h",
     "c:@T@mach_port_t": "mach/port.h",
+    "c:@T@task_id_token_t": "mach/mach_types.h",
     "c:@T@size_t": "stddef.h",
     "c:@T@va_list": "stdarg.h",
     **{f"c:@T@{name}": "stdint.h" for name in
@@ -406,6 +408,9 @@ def generate_umbrella_header(
                 lines.append(constants)
                 lines.append("")
 
+    if groups["var"] or groups["func"]:
+        lines.extend(("CF_EXTERN_C_BEGIN", ""))
+
     # Emit global variables
     for sym in groups.get("var", []):
         decl = _render_symbol_declaration(sym)
@@ -425,6 +430,8 @@ def generate_umbrella_header(
                 lines.append(decl)
                 lines.append("")
 
+    if groups["var"] or groups["func"]:
+        lines.extend(("CF_EXTERN_C_END", ""))
     if groups["protocol"] or groups["class"]:
         lines.append("#ifdef __OBJC__")
     # Emit protocols
