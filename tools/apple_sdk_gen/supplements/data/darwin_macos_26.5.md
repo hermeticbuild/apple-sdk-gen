@@ -53,12 +53,28 @@ also in Xcode 26.5. Two extra header declarations, `_tolower` and
 and have no matching runtime export. A client forced to use real
 external references ran at deployment minima 11.0 and 26.5 on both CPUs.
 
+The arm64 preview also includes the compiler-rt bindings previously
+qualified for the C SDK. The installed macOS 26.5.2 runtime confirms the
+names in each provider. A single arm64 client referencing all 21
+symbols links through libSystem with the same Mach-O import names and
+owners as the Xcode 26.5 comparison at deployment minima 11 and 26.5.
+The C installation continues to ship its public headers.
+
+| Provider | Source of the linker names |
+| --- | --- |
+| libsystem_kernel | [XNU's syscall table](https://github.com/apple-oss-distributions/xnu/blob/ac9718fb1af618d5ce8678d0dc6e8a58f252216f/bsd/kern/syscalls.master) and [Libsyscall fork assembly](https://github.com/apple-oss-distributions/xnu/blob/ac9718fb1af618d5ce8678d0dc6e8a58f252216f/libsyscall/custom/__fork.s) |
+| libsystem_malloc | [libmalloc's zone globals and implementation](https://github.com/apple-oss-distributions/libmalloc/blob/c49dafa25f1efe8607701ae6014a663ad2ee437f/src/malloc.c) |
+| libdyld | [dyld's inspection declarations](https://github.com/apple-oss-distributions/dyld/blob/fd8d0c4d52320ebf64db34f3cb280310d905c5ae/include/mach-o/dyld_priv.h) |
+| libdispatch | [libdispatch's Mach interface](https://github.com/apple-oss-distributions/libdispatch/blob/701f4d1a24ae9c6863901bbbb22624b7d1b87321/private/mach_private.h) |
+| libsystem_platform | [libplatform's lock interface](https://github.com/apple-oss-distributions/libplatform/blob/b7ed7cf5cf7dd12b98672435db2225a860f199d8/private/os/lock_private.h) and [ucontext implementation](https://github.com/apple-oss-distributions/libplatform/tree/b7ed7cf5cf7dd12b98672435db2225a860f199d8/src/ucontext) |
+| libsystem_c | Libc's [realpath](https://github.com/apple-oss-distributions/Libc/blob/4e34d0559e3a1b081afeb8604d9e204a1f31321d/stdlib/FreeBSD/realpath.c) and [fileno](https://github.com/apple-oss-distributions/Libc/blob/4e34d0559e3a1b081afeb8604d9e204a1f31321d/stdio/FreeBSD/fileno.c) |
+
 The arm64 inventory uses provider evidence from the arm64e runtime, and
 the x86_64 inventory uses the Rosetta runtime. Xcode build 25F70 was
 used for comparison only. Its export inventory and raw runtime
 captures are outside this data file.
 
-The preview contains 3,185 libSystem names on arm64 and 3,211 on
+The preview contains 3,206 libSystem names on arm64 and 3,211 on
 x86_64. These are raw unique name counts across the retained library
 documents. Both architectures ran C, Objective-C ARC, and C++ samples.
 `pipe` links and runs. `pipe2` and `dup3` are undefined. The reference
