@@ -75,6 +75,13 @@ also in Xcode 26.5. Two extra header declarations, `_tolower` and
 and have no matching runtime export. A client forced to use real
 external references ran at deployment minima 11.0 and 26.5 on both CPUs.
 
+For the wide-character calls, Apple Libc's [public header](https://github.com/apple-oss-distributions/Libc/blob/4e34d0559e3a1b081afeb8604d9e204a1f31321d/include/___wctype.h)
+supplies the declarations and implementations. Its
+[out-of-line build](https://github.com/apple-oss-distributions/Libc/blob/4e34d0559e3a1b081afeb8604d9e204a1f31321d/locale/iswctype.c)
+externalizes the inline definitions. Codex's tree-sitter scanners import
+`iswalnum`, `iswalpha`, `iswdigit`, and `iswspace` in an arm64 build.
+The macOS 26.5.2 runtime exports all four from libsystem_c.
+
 Apple Libc's [public `mpool.h`](https://github.com/apple-oss-distributions/Libc/blob/4e34d0559e3a1b081afeb8604d9e204a1f31321d/include/mpool.h)
 and [pool implementation](https://github.com/apple-oss-distributions/Libc/blob/4e34d0559e3a1b081afeb8604d9e204a1f31321d/db/mpool/FreeBSD/mpool.c)
 supply seven pool functions in the shipped client configuration.
