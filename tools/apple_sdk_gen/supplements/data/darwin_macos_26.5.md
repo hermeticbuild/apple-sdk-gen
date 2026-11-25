@@ -75,6 +75,16 @@ also in Xcode 26.5. Two extra header declarations, `_tolower` and
 and have no matching runtime export. A client forced to use real
 external references ran at deployment minima 11.0 and 26.5 on both CPUs.
 
+Apple Libc's [public `mpool.h`](https://github.com/apple-oss-distributions/Libc/blob/4e34d0559e3a1b081afeb8604d9e204a1f31321d/include/mpool.h)
+and [pool implementation](https://github.com/apple-oss-distributions/Libc/blob/4e34d0559e3a1b081afeb8604d9e204a1f31321d/db/mpool/FreeBSD/mpool.c)
+supply seven pool functions in the shipped client configuration.
+The macOS 26.5.2 runtime exports all seven from libsystem_c. Xcode's
+reference stub groups the Apple Silicon exports under `arm64e-macos`.
+Both Apple ld and LLVM LLD bind ordinary arm64 calls through libSystem
+at deployment targets 11.0 and 26.5. The generated arm64 stub matches
+the reference imports and passes a page write/read round trip with both
+linkers on the installed runtime.
+
 The arm64 preview also includes the compiler-rt bindings previously
 qualified for the C SDK. The installed macOS 26.5.2 runtime confirms the
 names in each provider. A single arm64 client referencing all 21
