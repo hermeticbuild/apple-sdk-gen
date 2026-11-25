@@ -151,7 +151,10 @@ class DarwinLibrariesTest(unittest.TestCase):
         libraries = select_darwin_libraries("26.5", metadata)
         documents = yaml.safe_load_all(libraries["libSystem.B"].replace("--- !tapi-tbd", "---"))
         libc = next(document for document in documents if document["install-name"] == "/usr/lib/system/libsystem_c.dylib")
-        required = {"_isspace", "_isalpha", "_isdigit", "_isalnum", "_tolower", "_isupper", "_toupper", "_islower"}
+        required = {
+            "_isspace", "_isalpha", "_isdigit", "_isalnum", "_tolower", "_isupper", "_toupper", "_islower",
+            "_iswalnum", "_iswalpha", "_iswdigit", "_iswspace",
+        }
         symbols = {
             name
             for group in libc["exports"]
