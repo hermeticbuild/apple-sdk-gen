@@ -161,6 +161,29 @@ class DarwinLibrariesTest(unittest.TestCase):
         self.assertLessEqual(required, symbols)
         self.assertTrue({"__tolower", "__toupper"}.isdisjoint(symbols))
 
+    def test_macos_26_5_exports_mpool_through_libsystem(self):
+        libraries = select_darwin_libraries("26.5", None)
+        documents = {
+            doc["install-name"]: doc
+            for doc in yaml.safe_load_all(libraries["libSystem.B"].replace("--- !tapi-tbd", "---"))
+        }
+        provider = "/usr/lib/system/libsystem_c.dylib"
+        target = "arm64-macos"
+        umbrella = documents["/usr/lib/libSystem.B.dylib"]
+        self.assertTrue(any(
+            provider in group["libraries"] and target in group["targets"]
+            for group in umbrella["reexported-libraries"]
+        ))
+        exports = {
+            name for group in documents[provider]["exports"] if target in group["targets"]
+            for name in group.get("symbols", [])
+        }
+        self.assertLessEqual(
+            {"_mpool_close", "_mpool_filter", "_mpool_get", "_mpool_new",
+             "_mpool_open", "_mpool_put", "_mpool_sync"},
+            exports,
+        )
+
     def test_macos_26_5_exports_public_xpc_through_libsystem(self):
         libraries = select_darwin_libraries("26.5", None)
         install_darwin_lib_stubs(self.root, libraries)
