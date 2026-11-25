@@ -184,3 +184,22 @@ class DarwinLibrariesTest(unittest.TestCase):
                     for target in group["targets"]
                 }
                 self.assertEqual(targets, {"arm64-macos"})
+
+    def test_macos_26_5_exports_log_predicates_through_libsystem(self):
+        libraries = select_darwin_libraries("26.5", None)
+        documents = {
+            doc["install-name"]: doc
+            for doc in yaml.safe_load_all(libraries["libSystem.B"].replace("--- !tapi-tbd", "---"))
+        }
+        umbrella = documents["/usr/lib/libSystem.B.dylib"]
+        provider = "/usr/lib/system/libsystem_trace.dylib"
+        required = {"_os_log_is_enabled", "_os_log_is_debug_enabled", "_os_log_type_enabled"}
+        self.assertTrue(any(
+            provider in group["libraries"] and "arm64-macos" in group["targets"]
+            for group in umbrella["reexported-libraries"]
+        ))
+        exports = {
+            name for group in documents[provider]["exports"] if "arm64-macos" in group["targets"]
+            for name in group.get("symbols", [])
+        }
+        self.assertLessEqual(required, exports)
