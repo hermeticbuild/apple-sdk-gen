@@ -151,7 +151,7 @@ class DarwinLibrariesTest(unittest.TestCase):
         self.assertLessEqual(required, symbols)
         self.assertTrue({"__tolower", "__toupper"}.isdisjoint(symbols))
 
-    def test_macos_26_5_exports_public_xpc_functions_through_libsystem(self):
+    def test_macos_26_5_exports_public_xpc_through_libsystem(self):
         libraries = select_darwin_libraries("26.5", None)
         install_darwin_lib_stubs(self.root, libraries)
         tbd = (self.root / "usr/lib/libSystem.B.tbd").read_text().replace("--- !tapi-tbd", "---")
@@ -170,6 +170,8 @@ class DarwinLibrariesTest(unittest.TestCase):
         }
         self.assertLessEqual(
             {
+                "_XPC_ACTIVITY_INTERVAL",
+                "_XPC_ACTIVITY_PRIORITY_UTILITY",
                 "_xpc_connection_create",
                 "_xpc_date_create_from_current",
                 "_xpc_dictionary_create",
