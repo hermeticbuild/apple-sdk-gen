@@ -44,6 +44,14 @@ The source-backed export selection uses:
   deployed export table. Preserve verified symbol reexports and weak
   exports.
 
+Apple's [`sandbox_init(3)` manual](https://man.freebsd.org/cgi/man.cgi?manpath=macOS+26.7&query=sandbox_init&sektion=3)
+documents two deprecated functions and five named-profile constants.
+The installed macOS 26.5.2 arm64e runtime exports all seven from
+`/usr/lib/system/libsystem_sandbox.dylib`. An arm64 client built with
+the Xcode 26.5 header has matching `libSystem` imports at deployment
+targets 11.0 and 26.5. It reads the five profile names and checks
+that an unknown profile returns an error that `sandbox_free_error` frees.
+
 GNU Make uses the POSIX process environment directly. Apple's pinned
 [dyld implementation](https://github.com/apple-oss-distributions/dyld/blob/fd8d0c4d52320ebf64db34f3cb280310d905c5ae/libdyld/libdyldGlue.cpp#L1206-L1212)
 defines the `environ` data object. Both deployed slices export it from
