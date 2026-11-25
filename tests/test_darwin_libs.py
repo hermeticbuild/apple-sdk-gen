@@ -182,6 +182,8 @@ class DarwinLibrariesTest(unittest.TestCase):
             {
                 "_XPC_ACTIVITY_INTERVAL",
                 "_XPC_ACTIVITY_PRIORITY_UTILITY",
+                "__xpc_error_connection_invalid",
+                "__xpc_type_dictionary",
                 "_xpc_connection_create",
                 "_xpc_date_create_from_current",
                 "_xpc_dictionary_create",
