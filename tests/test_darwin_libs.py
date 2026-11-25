@@ -257,7 +257,7 @@ class DarwinLibrariesTest(unittest.TestCase):
                 }
                 self.assertEqual(targets, {"arm64-macos"})
 
-    def test_macos_26_5_exports_logging_and_signposts_through_libsystem(self):
+    def test_macos_26_5_exports_trace_apis_through_libsystem(self):
         libraries = select_darwin_libraries("26.5", None)
         documents = {
             doc["install-name"]: doc
@@ -266,6 +266,17 @@ class DarwinLibrariesTest(unittest.TestCase):
         umbrella = documents["/usr/lib/libSystem.B.dylib"]
         provider = "/usr/lib/system/libsystem_trace.dylib"
         required = {
+            "__os_activity_create",
+            "__os_activity_current",
+            "__os_activity_initiate",
+            "__os_activity_initiate_f",
+            "__os_activity_label_useraction",
+            "__os_activity_none",
+            "_os_activity_apply",
+            "_os_activity_apply_f",
+            "_os_activity_get_identifier",
+            "_os_activity_scope_enter",
+            "_os_activity_scope_leave",
             "_os_log_is_enabled",
             "_os_log_is_debug_enabled",
             "_os_log_type_enabled",

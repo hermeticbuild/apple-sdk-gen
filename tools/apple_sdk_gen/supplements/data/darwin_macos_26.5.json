@@ -3706,9 +3706,20 @@
           "exports": [
             {
               "symbols": [
+                "__os_activity_create",
+                "__os_activity_current",
+                "__os_activity_initiate",
+                "__os_activity_initiate_f",
+                "__os_activity_label_useraction",
+                "__os_activity_none",
                 "__os_log_default",
                 "__os_log_internal",
                 "__os_signpost_emit_with_name_impl",
+                "_os_activity_apply",
+                "_os_activity_apply_f",
+                "_os_activity_get_identifier",
+                "_os_activity_scope_enter",
+                "_os_activity_scope_leave",
                 "_os_log_create",
                 "_os_log_is_debug_enabled",
                 "_os_log_is_enabled",

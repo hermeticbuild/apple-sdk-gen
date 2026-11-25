@@ -127,6 +127,17 @@ that creates both kinds of identifiers and uses the interval and event
 macros imports all four through `libSystem` with Xcode 26.5 and the
 generated stub at deployment targets 11.0 and 26.5.
 
+Apple's [Activity Tracing documentation](https://developer.apple.com/documentation/os/collecting-log-messages-in-activities)
+defines the public activity functions and macro behavior. An
+[MIT-licensed client](https://gist.github.com/zwaldowski/49f61292757f86d7d036a529f2d04f0c)
+identifies several backing functions and both parent activity constants.
+The installed macOS 26.5.2 (25F84) runtime exports all 11 names from
+`/usr/lib/system/libsystem_trace.dylib`. The comparison client checks
+the addresses of both constants against their runtime symbols, executes
+block and function callbacks, and retrieves an activity identifier.
+At deployment targets 11.0 and 26.5, Apple ld and LLVM LLD each produce
+the same imports with Xcode 26.5 and the generated stub.
+
 The arm64 inventory uses provider evidence from the arm64e runtime.
 Xcode 26.5 is a comparison reference. The arm64 C, Objective-C ARC
 and C++ probes link against the inventory. `pipe` links and runs.
