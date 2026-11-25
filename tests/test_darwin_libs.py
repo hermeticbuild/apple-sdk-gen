@@ -151,7 +151,7 @@ class DarwinLibrariesTest(unittest.TestCase):
         self.assertLessEqual(required, symbols)
         self.assertTrue({"__tolower", "__toupper"}.isdisjoint(symbols))
 
-    def test_macos_26_5_exports_xpc_date_through_libsystem(self):
+    def test_macos_26_5_exports_public_xpc_functions_through_libsystem(self):
         libraries = select_darwin_libraries("26.5", None)
         install_darwin_lib_stubs(self.root, libraries)
         tbd = (self.root / "usr/lib/libSystem.B.tbd").read_text().replace("--- !tapi-tbd", "---")
@@ -168,7 +168,17 @@ class DarwinLibrariesTest(unittest.TestCase):
             name for group in documents[provider].get("exports", []) if target in group["targets"]
             for name in group.get("symbols", [])
         }
-        self.assertIn("_xpc_date_create_from_current", exports)
+        self.assertLessEqual(
+            {
+                "_xpc_connection_create",
+                "_xpc_date_create_from_current",
+                "_xpc_dictionary_create",
+                "_xpc_rich_error_can_retry",
+                "_xpc_session_create_xpc_service",
+            },
+            exports,
+        )
+        self.assertNotIn("_xpc_debugger_api_misuse_info", exports)
 
     def test_macos_26_5_provides_objc_compiler_entry_points(self):
         metadata = Path(__file__).resolve().parents[1] / "tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.json"

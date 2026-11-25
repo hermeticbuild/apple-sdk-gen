@@ -93,3 +93,17 @@ as available since macOS 10.7. The arm64e export table of the installed
 macOS 26.5.2 (25F84) image lists `_xpc_date_create_from_current` as a
 strong export of `/usr/lib/system/libxpc.dylib`. A standalone arm64 C
 client targeting macOS 11 links through `libSystem` and runs on that OS.
+
+For the other XPC C functions, use the `occ` entries in Apple's
+[XPC DocC index](https://developer.apple.com/tutorials/data/index/xpc).
+Fetch the function pages, select the C-family variants, and match the
+`c:@F@` identifiers with a macOS declaration to the strong exports in
+the same runtime image. This yields 166 functions including the date API.
+`xpc_debugger_api_misuse_info` is documented for debugger use and is
+absent from the deployed export table.
+
+The arm64 link probe references all 166 names through `-lSystem` at
+deployment targets 11.0 and 26.5. Both builds have the same imports as
+the Xcode 26.5 comparison and load on macOS 26.5.2. The runtime smoke
+test calls the date, dictionary, and connection APIs. Header availability
+and the public data objects behind XPC macros are tracked separately.
