@@ -87,3 +87,9 @@ The arm64 inventory uses provider evidence from the arm64e runtime.
 Xcode 26.5 is a comparison reference. The arm64 C, Objective-C ARC
 and C++ probes link against the inventory. `pipe` links and runs.
 `pipe2` and `dup3` are absent from this SDK version.
+
+Apple documents [`xpc_date_create_from_current`](https://developer.apple.com/documentation/xpc/xpc_date_create_from_current%28%29?language=objc)
+as available since macOS 10.7. The arm64e export table of the installed
+macOS 26.5.2 (25F84) image lists `_xpc_date_create_from_current` as a
+strong export of `/usr/lib/system/libxpc.dylib`. A standalone arm64 C
+client targeting macOS 11 links through `libSystem` and runs on that OS.

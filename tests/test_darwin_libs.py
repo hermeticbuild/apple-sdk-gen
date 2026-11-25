@@ -151,6 +151,25 @@ class DarwinLibrariesTest(unittest.TestCase):
         self.assertLessEqual(required, symbols)
         self.assertTrue({"__tolower", "__toupper"}.isdisjoint(symbols))
 
+    def test_macos_26_5_exports_xpc_date_through_libsystem(self):
+        libraries = select_darwin_libraries("26.5", None)
+        install_darwin_lib_stubs(self.root, libraries)
+        tbd = (self.root / "usr/lib/libSystem.B.tbd").read_text().replace("--- !tapi-tbd", "---")
+        documents = {doc["install-name"]: doc for doc in yaml.safe_load_all(tbd)}
+        umbrella = documents["/usr/lib/libSystem.B.dylib"]
+        provider = "/usr/lib/system/libxpc.dylib"
+        target = "arm64-macos"
+        reexports = {
+            name for group in umbrella["reexported-libraries"] if target in group["targets"]
+            for name in group["libraries"]
+        }
+        self.assertIn(provider, reexports)
+        exports = {
+            name for group in documents[provider].get("exports", []) if target in group["targets"]
+            for name in group.get("symbols", [])
+        }
+        self.assertIn("_xpc_date_create_from_current", exports)
+
     def test_macos_26_5_provides_objc_compiler_entry_points(self):
         metadata = Path(__file__).resolve().parents[1] / "tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.json"
         libraries = select_darwin_libraries("26.5", metadata)
