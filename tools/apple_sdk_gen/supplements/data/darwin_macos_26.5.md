@@ -83,6 +83,14 @@ routine from libc++abi. The installed 26.5.2 dylib confirms all four as
 strong exports. The ASan and UBSan comparison links bind them directly
 to `/usr/lib/libc++abi.dylib` with Xcode 26.5.
 
+Swift's published [OS API notes](https://github.com/swiftlang/swift/blob/272c466e47507c4c6359f30ab8c9ceea5e7c216d/apinotes/os.apinotes#L45-L56)
+name `os_log_is_enabled`, `os_log_is_debug_enabled`, and
+`os_log_type_enabled`. All three are strong exports of
+`/usr/lib/system/libsystem_trace.dylib` on macOS 26.5.2 (25F84). An
+arm64 object built from the Xcode 26.5 declarations uses the same
+`libSystem` imports and returns the same three predicate results with
+the generated stub at deployment targets 11.0 and 26.5.
+
 The arm64 inventory uses provider evidence from the arm64e runtime.
 Xcode 26.5 is a comparison reference. The arm64 C, Objective-C ARC
 and C++ probes link against the inventory. `pipe` links and runs.

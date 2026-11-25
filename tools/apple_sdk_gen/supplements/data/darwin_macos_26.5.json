@@ -3684,7 +3684,10 @@
               "symbols": [
                 "__os_log_default",
                 "__os_log_internal",
-                "_os_log_create"
+                "_os_log_create",
+                "_os_log_is_debug_enabled",
+                "_os_log_is_enabled",
+                "_os_log_type_enabled"
               ],
               "targets": [
                 "arm64-macos"
