@@ -63,6 +63,29 @@ jobs:
             --cache-dir cache \
             -v
 
+      - name: Check Darwin exports against the previous release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          previous=$(gh release list --exclude-drafts --exclude-pre-releases \
+            --limit 1 --json tagName --jq '.[0].tagName // empty')
+          if [ -z "$previous" ]; then
+            echo "No published baseline for the first release."
+            exit 0
+          fi
+          baseline=$(mktemp -d)
+          asset="macos-arm64-sdk-$SDK_VERSION.tar.zst"
+          gh release download "$previous" --pattern "$asset" --dir "$baseline"
+          tar -xf "$baseline/$asset" -C "$baseline"
+          sdk="Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+          approvals="tools/darwin-removals/$previous.tsv"
+          if [ -f "$approvals" ]; then
+            set -- --approved-removals "$approvals"
+          else
+            set --
+          fi
+          python -m tools.apple_sdk_gen.compare_darwin_stubs "$baseline/$sdk" "output/$sdk" "$@"
+
       - name: Bundle the SDK
         run: |
           gtar --sort=name --owner=0 --group=0 --numeric-owner --mtime='2023-01-01 00:00Z' \
