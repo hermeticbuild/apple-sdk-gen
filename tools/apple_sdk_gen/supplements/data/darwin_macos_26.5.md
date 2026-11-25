@@ -129,4 +129,12 @@ The arm64 link probe references all 166 names through `-lSystem` at
 deployment targets 11.0 and 26.5. Both builds have the same imports as
 the Xcode 26.5 comparison and load on macOS 26.5.2. The runtime smoke
 test calls the date, dictionary, and connection APIs. Header availability
-and the public data objects behind XPC macros are tracked separately.
+is tracked separately.
+
+The same index has 22 macOS C-family activity key variables, including
+[`XPC_ACTIVITY_INTERVAL`](https://developer.apple.com/documentation/xpc/xpc_activity_interval?language=objc).
+Each page identifies the variable by its C name, and the installed
+arm64e libxpc confirms the strong data export. Arm64 probes bind all 22
+names through `-lSystem` with Xcode 26.5 and the generated stub at
+deployment targets 11.0 and 26.5. The runtime smoke test reads two keys.
+The backing data for XPC type and error macros needs separate evidence.
