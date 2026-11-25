@@ -136,6 +136,16 @@ class DarwinLibrariesTest(unittest.TestCase):
         self.assertEqual(reexport_targets, expected)
         self.assertEqual(environ_targets, expected)
 
+    def test_macos_26_5_provides_dnssd_peer_release(self):
+        libraries = select_darwin_libraries("26.5", None)
+        documents = yaml.safe_load_all(libraries["libSystem.B"].replace("--- !tapi-tbd", "---"))
+        dnssd = next(doc for doc in documents if doc["install-name"] == "/usr/lib/system/libsystem_dnssd.dylib")
+        exports = {
+            name for group in dnssd["exports"] if "arm64-macos" in group["targets"]
+            for name in group.get("symbols", [])
+        }
+        self.assertIn("_PeerConnectionRelease", exports)
+
     def test_macos_26_5_provides_out_of_line_ctype(self):
         metadata = Path(__file__).resolve().parents[1] / "tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.json"
         libraries = select_darwin_libraries("26.5", metadata)
