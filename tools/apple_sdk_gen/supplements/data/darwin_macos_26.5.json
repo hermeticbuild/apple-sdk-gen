@@ -3653,6 +3653,22 @@
         },
         {
           "current-version": "2680.120.12",
+          "exports": [
+            {
+              "symbols": [
+                "_kSBXProfileNoInternet",
+                "_kSBXProfileNoNetwork",
+                "_kSBXProfileNoWrite",
+                "_kSBXProfileNoWriteExceptTemporary",
+                "_kSBXProfilePureComputation",
+                "_sandbox_free_error",
+                "_sandbox_init"
+              ],
+              "targets": [
+                "arm64-macos"
+              ]
+            }
+          ],
           "install-name": "/usr/lib/system/libsystem_sandbox.dylib",
           "targets": [
             "arm64-macos"

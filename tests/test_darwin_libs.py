@@ -180,6 +180,27 @@ class DarwinLibrariesTest(unittest.TestCase):
         )
         self.assertNotIn("_xpc_debugger_api_misuse_info", exports)
 
+    def test_macos_26_5_exports_documented_sandbox_apis(self):
+        libraries = select_darwin_libraries("26.5", None)
+        documents = yaml.safe_load_all(libraries["libSystem.B"].replace("--- !tapi-tbd", "---"))
+        sandbox = next(doc for doc in documents if doc["install-name"] == "/usr/lib/system/libsystem_sandbox.dylib")
+        exports = {
+            name for group in sandbox.get("exports", []) if "arm64-macos" in group["targets"]
+            for name in group.get("symbols", [])
+        }
+        self.assertLessEqual(
+            {
+                "_kSBXProfileNoInternet",
+                "_kSBXProfileNoNetwork",
+                "_kSBXProfileNoWrite",
+                "_kSBXProfileNoWriteExceptTemporary",
+                "_kSBXProfilePureComputation",
+                "_sandbox_free_error",
+                "_sandbox_init",
+            },
+            exports,
+        )
+
     def test_macos_26_5_provides_objc_compiler_entry_points(self):
         metadata = Path(__file__).resolve().parents[1] / "tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.json"
         libraries = select_darwin_libraries("26.5", metadata)
