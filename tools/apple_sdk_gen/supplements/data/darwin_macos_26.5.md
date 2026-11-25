@@ -50,6 +50,13 @@ defines the `environ` data object. Both deployed slices export it from
 libdyld. A C client linked through libSystem and read the same environment
 as `_NSGetEnviron()` at deployment minima 11.0 and 26.5 on both CPUs.
 
+The public DNS-SD API
+[`PeerConnectionRelease`](https://developer.apple.com/documentation/dnssd/peerconnectionrelease%28_%3A_%3A_%3A_%3A%29?language=objc)
+is documented as available since macOS 10.12. The installed macOS 26.5.2
+arm64e runtime exports it from `/usr/lib/system/libsystem_dnssd.dylib`.
+An arm64 client references its address and binds through `-lSystem`, as
+with Xcode 26.5, at deployment targets 11.0 and 26.5.
+
 Apple Libc builds out-of-line character classification and conversion
 functions through [isctype.c](https://github.com/apple-oss-distributions/Libc/blob/4e34d0559e3a1b081afeb8604d9e204a1f31321d/locale/isctype.c).
 Run clang-installapi over the installed `_ctype.h` with

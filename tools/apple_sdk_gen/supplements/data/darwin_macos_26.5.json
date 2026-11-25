@@ -1924,6 +1924,7 @@
                 "_DNSServiceSleepKeepalive",
                 "_DNSServiceUpdateRecord",
                 "_DNSServiceUpdateRecordWithAttribute",
+                "_PeerConnectionRelease",
                 "_TXTRecordContainsKey",
                 "_TXTRecordCreate",
                 "_TXTRecordDeallocate",
