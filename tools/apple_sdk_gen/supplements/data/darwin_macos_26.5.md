@@ -146,4 +146,18 @@ object. The installed arm64e libxpc exports all 11 as strong data.
 Arm64 clients bind them through `-lSystem` with the same imports as Xcode
 26.5 at deployment targets 11.0 and 26.5. A runtime client checks the
 dictionary and error object types and reads the error description key.
-The other macro-backed objects remain under review.
+
+The remaining 16 public macro bindings use the installed macOS 26.5.2
+libxpc export table and per-object runtime checks. The
+[XPC DocC index](https://developer.apple.com/tutorials/data/index/xpc) names
+the public macros. The two Boolean constructors return the exported
+singletons. `xpc_type_get_name` describes 11 of the 12 type objects, and
+an inactive session and a rich error from failed activation confirm the
+respective type identities through `xpc_get_type`. The peer-signing export
+is an XPC error object, and the exported event key is a data pointer.
+A comparison client built using Xcode 26.5 checks that each public macro
+has the same value as the corresponding object looked up in libxpc.
+All 16 strong imports bind through `-lSystem` with the generated stub and
+the reference at deployment targets 11.0 and 26.5. Executions used macOS
+26.5.2. The release inventory records the bindings without importing
+Xcode headers or tables.
