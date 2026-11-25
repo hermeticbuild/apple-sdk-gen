@@ -106,6 +106,17 @@ arm64 object built from the Xcode 26.5 declarations uses the same
 `libSystem` imports and returns the same three predicate results with
 the generated stub at deployment targets 11.0 and 26.5.
 
+Swift's [OS API notes](https://github.com/swiftlang/swift/blob/272c466e47507c4c6359f30ab8c9ceea5e7c216d/apinotes/os.apinotes#L57-L67)
+also name `os_signpost_enabled`, `os_signpost_id_generate`,
+`os_signpost_id_make_with_pointer`, and the helper
+`_os_signpost_emit_with_name_impl`. Apple's
+[signpost documentation](https://developer.apple.com/documentation/os/os_signpost_emit_with_type)
+describes the public emit macro. The macOS 26.5.2 runtime exports all
+four names from `/usr/lib/system/libsystem_trace.dylib`. An arm64 client
+that creates both kinds of identifiers and uses the interval and event
+macros imports all four through `libSystem` with Xcode 26.5 and the
+generated stub at deployment targets 11.0 and 26.5.
+
 The arm64 inventory uses provider evidence from the arm64e runtime.
 Xcode 26.5 is a comparison reference. The arm64 C, Objective-C ARC
 and C++ probes link against the inventory. `pipe` links and runs.

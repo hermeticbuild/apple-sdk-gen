@@ -3701,10 +3701,14 @@
               "symbols": [
                 "__os_log_default",
                 "__os_log_internal",
+                "__os_signpost_emit_with_name_impl",
                 "_os_log_create",
                 "_os_log_is_debug_enabled",
                 "_os_log_is_enabled",
-                "_os_log_type_enabled"
+                "_os_log_type_enabled",
+                "_os_signpost_enabled",
+                "_os_signpost_id_generate",
+                "_os_signpost_id_make_with_pointer"
               ],
               "targets": [
                 "arm64-macos"
