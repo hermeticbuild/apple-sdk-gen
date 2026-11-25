@@ -3755,6 +3755,16 @@
         },
         {
           "current-version": "3102.120.13",
+          "exports": [
+            {
+              "symbols": [
+                "_xpc_date_create_from_current"
+              ],
+              "targets": [
+                "arm64-macos"
+              ]
+            }
+          ],
           "install-name": "/usr/lib/system/libxpc.dylib",
           "targets": [
             "arm64-macos"
