@@ -1,0 +1,3 @@
+build:remote --config=remote_default
+build:remote --host_platform=@llvm//:rbe_platform
+build:remote --extra_execution_platforms=@llvm//:rbe_platform

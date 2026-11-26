@@ -1,0 +1,16 @@
+The pinned CF source predates the publicly documented managed preferences
+query. Keep its declaration in CFPreferences.h so InstallAPI emits the
+export used by Codex. SDK Gen 0.0.7 already lists the symbol.
+https://developer.apple.com/documentation/corefoundation/cfpreferencesappvalueisforced(_:_:)?language=objc
+
+--- a/Headers/CFPreferences.h
++++ b/Headers/CFPreferences.h
+@@ -93,4 +93,7 @@
+ CF_EXPORT
+ void CFPreferencesRemoveSuitePreferencesFromApp(CFStringRef applicationID, CFStringRef suiteID);
+-
++
++CF_EXPORT
++Boolean CFPreferencesAppValueIsForced(CFStringRef key, CFStringRef applicationID);
++
+ /* Writes all changes in all sources of application defaults.

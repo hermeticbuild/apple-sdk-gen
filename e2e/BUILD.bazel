@@ -1,0 +1,75 @@
+load("@bazel_binaries//:defs.bzl", "bazel_binaries")
+load(":workspace.bzl", "consumer_test", "workspace_runfiles")
+
+workspace_runfiles(
+    name = "llvm_workspace",
+    directory = "@llvm_workspace//:workspace",
+)
+
+workspace_runfiles(
+    name = "rules_rs_workspace",
+    directory = "@rules_rs_workspace//:workspace",
+)
+
+consumer_test(
+    name = "libomp",
+    args = [
+        "--platforms=@llvm//platforms:macos_arm64",
+        "//:libomp_test",
+    ],
+    bazel_binaries = bazel_binaries,
+    bazel_version = "9.3.2",
+    manual = True,
+    sdk_path = "../../../sdk",
+    workspace = ":llvm_workspace",
+)
+
+consumer_test(
+    name = "hermetic_llvm_arm64",
+    args = [
+        "--platforms=@llvm//platforms:macos_arm64",
+        "--keep_going",
+        "//...",
+        "//:main_default",
+        "//header_order:precedence",
+        "//header_order:libcxx_c_wrappers",
+        "//:tsan_fail",
+        "//:lsan_fail",
+        "@llvm//tests/cxxstdlib_settings:defaults",
+        "@llvm//tests/cxxstdlib_settings:headers_only",
+        "@llvm//tests/cxxstdlib_settings:libraries_only",
+        "@llvm//tests/cxxstdlib_settings:both",
+    ],
+    bazel_binaries = bazel_binaries,
+    bazel_version = "9.3.2",
+    sdk_path = "../../../sdk",
+    workspace = ":llvm_workspace",
+)
+
+test_suite(
+    name = "hermetic_llvm",
+    tests = [":hermetic_llvm_arm64"],
+)
+
+consumer_test(
+    name = "rules_rs_arm64",
+    args = [
+        "--platforms=@rules_rs//rs/platforms:aarch64-apple-darwin",
+        "--override_module=llvm=../../llvm",
+        "--test_env=PATH",
+        "--build_tests_only",
+        "--keep_going",
+        "--",
+        "//...",
+        "-//:target_triple_constraints_test",
+    ],
+    bazel_binaries = bazel_binaries,
+    bazel_version = "9.3.1",
+    sdk_path = "../../sdk",
+    workspace = ":rules_rs_workspace",
+)
+
+test_suite(
+    name = "rules_rs",
+    tests = [":rules_rs_arm64"],
+)

@@ -1,0 +1,76 @@
+name: Build composed macOS SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      replay_tag:
+        description: Release or draft containing the pinned replay-inputs.tar.zst
+        required: true
+      release_tag:
+        description: Existing draft release to attach the tested SDK to (optional)
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Read C SDK commit
+        id: c-sdk
+        run: echo "commit=$(cat release/c-sdk.commit)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v6
+        with:
+          repository: hermeticbuild/apple-oss-c-sdk
+          ref: ${{ steps.c-sdk.outputs.commit }}
+          token: ${{ secrets.C_SDK_READ_TOKEN }}
+          path: build/c-sdk
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: |
+          pip install -e tools/
+          brew install cmake ninja zstd
+      - name: Download the verified framework inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPLAY_TAG: ${{ inputs.replay_tag }}
+        run: |
+          cd build
+          gh release download --repo "$GITHUB_REPOSITORY" --pattern replay-inputs.tar.zst -- "$REPLAY_TAG"
+          shasum -a 256 -c ../release/replay-inputs.sha256
+          tar -xf replay-inputs.tar.zst
+      - name: Build and pack
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: release/build-composed-sdk.sh build/c-sdk build/replay-inputs build/sdk
+      - name: Run the local probes
+        run: release/test-composed-sdk.sh build/c-sdk build/sdk
+      - uses: actions/upload-artifact@v7
+        with:
+          name: composed-macos-arm64-sdk
+          path: build/sdk/MacOSX.sdk.tar.zst
+          if-no-files-found: error
+
+  attach-to-draft:
+    needs: build
+    if: github.ref == 'refs/heads/main' && inputs.release_tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: composed-macos-arm64-sdk
+      - name: Attach archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          test "$(gh release view --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft -- "$RELEASE_TAG")" = true
+          gh release upload --repo "$GITHUB_REPOSITORY" -- "$RELEASE_TAG" MacOSX.sdk.tar.zst

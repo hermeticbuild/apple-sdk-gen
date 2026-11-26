@@ -1,0 +1,88 @@
+Expose the availability and Swift importer macros used by modern Apple framework headers.
+Use the exact underscore-version availability attributes and the swift_name,
+swift_private and swift_wrapper forms from Swift Corelibs Foundation.
+Preserve the original branch for compilers without underscore version support.
+Source f41070b9399539519cc0432a75972fdcfd74371f, Apache-2.0 with Runtime Library Exception.
+https://github.com/swiftlang/swift-corelibs-foundation/tree/f41070b9399539519cc0432a75972fdcfd74371f/Sources/CoreFoundation/include
+
+--- a/Headers/CFBase.h
++++ b/Headers/CFBase.h
+@@ -30,6 +30,18 @@
+
+ #include <TargetConditionals.h>
+ #include <CoreFoundation/CFAvailability.h>
++
++#if __has_attribute(swift_name)
++#define CF_SWIFT_NAME(name) __attribute__((swift_name(#name)))
++#else
++#define CF_SWIFT_NAME(name)
++#endif
++
++#if __has_attribute(swift_private)
++#define CF_REFINED_FOR_SWIFT __attribute__((swift_private))
++#else
++#define CF_REFINED_FOR_SWIFT
++#endif
+
+ #if (defined(__CYGWIN32__) || defined(_WIN32)) && !defined(__WIN32__)
+ #define __WIN32__ 1
+--- a/Headers/CFAvailability.h
++++ b/Headers/CFAvailability.h
+@@ -30,6 +30,7 @@
+
+ #include <TargetConditionals.h>
+ #include <Availability.h>
++#include <os/availability.h>
+
+ #if (TARGET_OS_MAC || TARGET_OS_EMBEDDED || TARGET_OS_IPHONE || TARGET_OS_WIN32)
+ // Even if unused, these must remain here for compatibility, because projects rely on them being included.
+@@ -127,12 +128,21 @@
+ #if (TARGET_OS_MAC && !(TARGET_OS_EMBEDDED || TARGET_OS_IPHONE))
+ // This section is for compilers targeting OS X which support attribute_availability_with_message
+
++#if __has_feature(attribute_availability_with_version_underscores)
++#define CF_AVAILABLE(_mac, _ios) __attribute__((availability(macosx,introduced=_mac)))
++#define CF_AVAILABLE_MAC(_mac) __attribute__((availability(macosx,introduced=_mac)))
++#define CF_AVAILABLE_IOS(_ios) __attribute__((availability(macosx,unavailable)))
++#define CF_DEPRECATED(_macIntro, _macDep, _iosIntro, _iosDep, ...) __attribute__((availability(macosx,introduced=_macIntro,deprecated=_macDep,message="" __VA_ARGS__)))
++#define CF_DEPRECATED_MAC(_macIntro, _macDep, ...) __attribute__((availability(macosx,introduced=_macIntro,deprecated=_macDep,message="" __VA_ARGS__)))
++#define CF_DEPRECATED_IOS(_iosIntro, _iosDep, ...) __attribute__((availability(macosx,unavailable)))
++#else
+ #define CF_AVAILABLE(_mac, _ios) __attribute__((availability(macosx,__NSi_##_mac)))
+ #define CF_AVAILABLE_MAC(_mac) __attribute__((availability(macosx,__NSi_##_mac)))
+ #define CF_AVAILABLE_IOS(_ios) __attribute__((availability(macosx,unavailable)))
+ #define CF_DEPRECATED(_macIntro, _macDep, _iosIntro, _iosDep, ...) __attribute__((availability(macosx,__NSi_##_macIntro __NSd_##_macDep,message="" __VA_ARGS__)))
+ #define CF_DEPRECATED_MAC(_macIntro, _macDep, ...) __attribute__((availability(macosx,__NSi_##_macIntro __NSd_##_macDep,message="" __VA_ARGS__)))
+ #define CF_DEPRECATED_IOS(_iosIntro, _iosDep, ...) __attribute__((availability(macosx,unavailable)))
++#endif
+
+ #elif (TARGET_OS_EMBEDDED || TARGET_OS_IPHONE)
+ // This section is for compilers targeting iOS which support attribute_availability_with_message
+@@ -214,12 +224,27 @@
+ #define __CF_ENUM_GET_MACRO(_1, _2, NAME, ...) NAME
+ #define CF_ENUM(...) __CF_ENUM_GET_MACRO(__VA_ARGS__, __CF_NAMED_ENUM, __CF_ANON_ENUM, )(__VA_ARGS__)
+
++#if __has_attribute(enum_extensibility) && (__has_feature(objc_fixed_enum) || __has_extension(cxx_fixed_enum) || (__cplusplus >= 201103L && __has_extension(cxx_strong_enums)))
++#define CF_CLOSED_ENUM(_type, _name) int __CF_ENUM_ ## _name; enum __attribute__((enum_extensibility(closed))) _name : _type; typedef enum _name _name; enum _name : _type
++#else
++#define CF_CLOSED_ENUM(_type, _name) CF_ENUM(_type, _name)
++#endif
++
+ #if __has_attribute(swift_wrapper)
++#define CF_STRING_ENUM __attribute__((swift_wrapper(enum)))
+ #define CF_EXTENSIBLE_STRING_ENUM __attribute__((swift_wrapper(struct)))
+ #else
++#define CF_STRING_ENUM
+ #define CF_EXTENSIBLE_STRING_ENUM
+ #endif
+
++#if __has_feature(attribute_availability_swift)
++#define CF_SWIFT_UNAVAILABLE(message_text) __attribute__((availability(swift, unavailable, message=message_text)))
++#else
++#define CF_SWIFT_UNAVAILABLE(message_text)
++#endif
++
++
+ // Extension availability macros
+ #define CF_EXTENSION_UNAVAILABLE(_msg)      __OS_EXTENSION_UNAVAILABLE(_msg)
+ #define CF_EXTENSION_UNAVAILABLE_MAC(_msg)  __OSX_EXTENSION_UNAVAILABLE(_msg)

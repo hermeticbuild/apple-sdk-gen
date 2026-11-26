@@ -1,0 +1,67 @@
+module(name = "apple_sdk_e2e")
+
+bazel_dep(name = "rules_bazel_integration_test", version = "0.37.1")
+bazel_dep(name = "llvm")
+git_override(
+    module_name = "llvm",
+    commit = "190fc9f5df9c86ed0f1db77e408381f427dcb829",
+    remote = "https://github.com/hermeticbuild/hermetic-llvm.git",
+)
+
+bazel_binaries = use_extension("@rules_bazel_integration_test//:extensions.bzl", "bazel_binaries")
+bazel_binaries.download(version = "9.3.1")
+bazel_binaries.download(version = "9.3.2")
+use_repo(
+    bazel_binaries,
+    "bazel_binaries",
+    "bazel_binaries_bazelisk",
+    "build_bazel_bazel_9_3_1",
+    "build_bazel_bazel_9_3_2",
+)
+
+new_local_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:local.bzl", "new_local_repository")
+
+new_local_repository(
+    name = "sdk_output",
+    build_file_content = 'exports_files(["MacOSX.sdk.tar.zst"])',
+    path = "../build/sdk",
+)
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "composed_sdk",
+    add_prefix = "sysroot",
+    build_file_content = 'exports_files(["MacOSX.sdk.tar.zst"])',
+    files = {
+        "MacOSX.sdk.tar.zst": "@sdk_output//:MacOSX.sdk.tar.zst",
+        "sysroot/BUILD.bazel": "@llvm//3rd_party/macos_sdk:CLTools_macOSNMOS_SDK.BUILD.bazel",
+    },
+    strip_prefix = "MacOSX.sdk",
+    urls = ["file:../build/sdk/MacOSX.sdk.tar.zst"],
+)
+
+workspace_repository = use_repo_rule("//:workspace.bzl", "workspace_repository")
+
+workspace_repository(
+    name = "llvm_workspace",
+    module_file = "@llvm//:MODULE.bazel",
+    sdk_archive = "@composed_sdk//:MacOSX.sdk.tar.zst",
+    subdirectory = "e2e/rules_cc",
+)
+
+git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
+git_repository(
+    name = "rules_rs_source",
+    commit = "e7d9e55555762e56b87454e7f17d70584f8968d8",
+    remote = "https://github.com/hermeticbuild/rules_rs.git",
+)
+
+workspace_repository(
+    name = "rules_rs_workspace",
+    llvm_module_file = "@llvm//:MODULE.bazel",
+    module_file = "@rules_rs_source//:MODULE.bazel",
+    sdk_archive = "@composed_sdk//:MacOSX.sdk.tar.zst",
+    subdirectory = "test",
+)

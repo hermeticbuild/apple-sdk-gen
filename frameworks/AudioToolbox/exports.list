@@ -1,0 +1,5 @@
+AudioComponentCount
+AudioComponentFindNext
+AudioComponentGetDescription
+AudioComponentInstanceDispose
+AudioComponentInstanceNew

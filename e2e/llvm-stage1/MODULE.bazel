@@ -1,0 +1,33 @@
+module(name = "apple_sdk_llvm_stage1")
+
+bazel_dep(name = "llvm")
+git_override(
+    module_name = "llvm",
+    commit = "190fc9f5df9c86ed0f1db77e408381f427dcb829",
+    remote = "https://github.com/hermeticbuild/hermetic-llvm.git",
+)
+
+# Pass the archive as a file label so Bazel tracks changes at the fixed URL.
+new_local_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:local.bzl", "new_local_repository")
+new_local_repository(
+    name = "sdk_output",
+    build_file_content = 'exports_files(["MacOSX.sdk.tar.zst"])',
+    path = "../../build/sdk",
+)
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+http_archive(
+    name = "composed_sdk",
+    add_prefix = "sysroot",
+    files = {
+        "MacOSX.sdk.tar.zst": "@sdk_output//:MacOSX.sdk.tar.zst",
+        "sysroot/BUILD.bazel": "@llvm//3rd_party/macos_sdk:CLTools_macOSNMOS_SDK.BUILD.bazel",
+    },
+    strip_prefix = "MacOSX.sdk",
+    urls = ["file:../../build/sdk/MacOSX.sdk.tar.zst"],
+)
+
+osx = use_extension("@llvm//extensions:osx.bzl", "osx")
+override_repo(osx, macos_sdk = "composed_sdk")
+
+register_toolchains("@llvm//toolchain:all")

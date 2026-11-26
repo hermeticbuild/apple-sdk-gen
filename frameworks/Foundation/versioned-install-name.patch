@@ -1,0 +1,9 @@
+The loaded Foundation dylib and the macOS 15.2, 15.5, 26.0 and 26.5 SDK
+stubs identify Foundation through Versions/C. Retain the qualified
+SDK Gen exports and use the native install name for link clients.
+
+--- a/Foundation.tbd
++++ b/Foundation.tbd
+@@ -4,1 +4,1 @@
+-install-name:    '/System/Library/Frameworks/Foundation.framework/Foundation'
++install-name:    '/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation'

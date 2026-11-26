@@ -1,0 +1,18 @@
+Model I/O's MDLMesh.submeshes uses NSMutableArray<MDLSubmesh *>.
+Preserve that type argument in the local voice Foundation declarations.
+Apple documents NSMutableArray as the mutable subclass of NSArray and
+addObject: as taking an element of that collection. Keep the mutable
+parameter invariant and pass it through to NSArray for inherited reads.
+
+https://developer.apple.com/documentation/modelio/mdlmesh/submeshes?language=objc
+https://developer.apple.com/documentation/foundation/nsmutablearray?language=objc
+
+--- a/Headers/VoiceFoundation.h
++++ b/Headers/VoiceFoundation.h
+@@ -49,4 +49,4 @@
+-@interface NSMutableArray : NSArray
++@interface NSMutableArray<ObjectType> : NSArray<ObjectType>
+ + (instancetype)arrayWithCapacity:(NSUInteger)capacity;
+-- (void)addObject:(id)object;
++- (void)addObject:(ObjectType)object;
+ @end

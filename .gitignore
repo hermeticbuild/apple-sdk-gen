@@ -3,3 +3,7 @@ __pycache__/
 .cache/
 output/
 cache/
+/build/
+bazel-*
+/e2e/MODULE.bazel.lock
+/e2e/*/MODULE.bazel.lock

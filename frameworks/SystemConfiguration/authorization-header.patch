@@ -1,0 +1,12 @@
+Import the Security header that owns AuthorizationRef.
+This public header is the only Security dependency of these configd headers.
+https://github.com/apple-oss-distributions/Security/blob/97c3a4296c1ea06b0fe1877a7e616aa84450b5b2/OSX/libsecurity_authorization/lib/Authorization.h#L135-L138
+Apply this to the staged APSL configd header.
+
+--- a/Headers/SCPreferences.h
++++ b/Headers/SCPreferences.h
+@@ -34,3 +34,3 @@
+ #if	!TARGET_OS_IPHONE
+-#include <Security/Security.h>
++#include <Security/Authorization.h>
+ #else	// !TARGET_OS_IPHONE

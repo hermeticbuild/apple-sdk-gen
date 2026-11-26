@@ -1,0 +1,91 @@
+Backport the C macros and CFErrorDomain API used by modern Apple headers.
+Use the nullability, enum and CFError declarations in Swift Corelibs Foundation,
+commit f41070b9399539519cc0432a75972fdcfd74371f (Apache-2.0 with Runtime Library Exception):
+https://github.com/swiftlang/swift-corelibs-foundation/tree/f41070b9399539519cc0432a75972fdcfd74371f/Sources/CoreFoundation/include
+Retain the existing implementation of two-argument CF_ENUM and of CF_OPTIONS.
+Apply to the staged APSL CoreFoundation headers.
+
+--- a/Headers/CFBase.h
++++ b/Headers/CFBase.h
+@@ -232,4 +232,12 @@
+ #else
+ #define CF_AUTOMATED_REFCOUNT_UNAVAILABLE
++#endif
++
++#if __has_feature(assume_nonnull)
++#define CF_ASSUME_NONNULL_BEGIN _Pragma("clang assume_nonnull begin")
++#define CF_ASSUME_NONNULL_END   _Pragma("clang assume_nonnull end")
++#else
++#define CF_ASSUME_NONNULL_BEGIN
++#define CF_ASSUME_NONNULL_END
+ #endif
+ 
+--- a/Headers/CFAvailability.h
++++ b/Headers/CFAvailability.h
+@@ -196,5 +196,5 @@
+ // Enums and Options
+ #if (__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))
+-#define CF_ENUM(_type, _name) enum _name : _type _name; enum _name : _type
++#define __CF_NAMED_ENUM(_type, _name) enum _name : _type _name; enum _name : _type
+ #if (__cplusplus)
+ #define CF_OPTIONS(_type, _name) _type _name; enum : _type
+@@ -203,6 +203,20 @@
+ #endif
+ #else
+-#define CF_ENUM(_type, _name) _type _name; enum
++#define __CF_NAMED_ENUM(_type, _name) _type _name; enum
+ #define CF_OPTIONS(_type, _name) _type _name; enum
++#endif
++
++#if __has_feature(objc_fixed_enum) || __has_extension(cxx_fixed_enum)
++#define __CF_ANON_ENUM(_type) enum : _type
++#else
++#define __CF_ANON_ENUM(_type) enum
++#endif
++#define __CF_ENUM_GET_MACRO(_1, _2, NAME, ...) NAME
++#define CF_ENUM(...) __CF_ENUM_GET_MACRO(__VA_ARGS__, __CF_NAMED_ENUM, __CF_ANON_ENUM, )(__VA_ARGS__)
++
++#if __has_attribute(swift_wrapper)
++#define CF_EXTENSIBLE_STRING_ENUM __attribute__((swift_wrapper(struct)))
++#else
++#define CF_EXTENSIBLE_STRING_ENUM
+ #endif
+ 
+--- a/Headers/CFError.h
++++ b/Headers/CFError.h
+@@ -75,8 +75,10 @@
+ 
+ // Predefined domains; value of "code" will correspond to preexisting values in these domains.
+-CF_EXPORT const CFStringRef kCFErrorDomainPOSIX		    CF_AVAILABLE(10_5, 2_0);
+-CF_EXPORT const CFStringRef kCFErrorDomainOSStatus	    CF_AVAILABLE(10_5, 2_0);
+-CF_EXPORT const CFStringRef kCFErrorDomainMach		    CF_AVAILABLE(10_5, 2_0);
+-CF_EXPORT const CFStringRef kCFErrorDomainCocoa		    CF_AVAILABLE(10_5, 2_0);
++typedef CFStringRef CFErrorDomain CF_EXTENSIBLE_STRING_ENUM;
++
++CF_EXPORT const CFErrorDomain kCFErrorDomainPOSIX		    CF_AVAILABLE(10_5, 2_0);
++CF_EXPORT const CFErrorDomain kCFErrorDomainOSStatus	    CF_AVAILABLE(10_5, 2_0);
++CF_EXPORT const CFErrorDomain kCFErrorDomainMach		    CF_AVAILABLE(10_5, 2_0);
++CF_EXPORT const CFErrorDomain kCFErrorDomainCocoa		    CF_AVAILABLE(10_5, 2_0);
+ 
+ // Keys in userInfo for localizable, end-user presentable error messages. At minimum provide one of first two; ideally provide all three.
+@@ -106,5 +108,5 @@
+ */
+ CF_EXPORT
+-CFErrorRef CFErrorCreate(CFAllocatorRef allocator, CFStringRef domain, CFIndex code, CFDictionaryRef userInfo) CF_AVAILABLE(10_5, 2_0);
++CFErrorRef CFErrorCreate(CFAllocatorRef allocator, CFErrorDomain domain, CFIndex code, CFDictionaryRef userInfo) CF_AVAILABLE(10_5, 2_0);
+ 
+ /*!
+@@ -121,5 +123,5 @@
+ */
+ CF_EXPORT
+-CFErrorRef CFErrorCreateWithUserInfoKeysAndValues(CFAllocatorRef allocator, CFStringRef domain, CFIndex code, const void *const *userInfoKeys, const void *const *userInfoValues, CFIndex numUserInfoValues) CF_AVAILABLE(10_5, 2_0);
++CFErrorRef CFErrorCreateWithUserInfoKeysAndValues(CFAllocatorRef allocator, CFErrorDomain domain, CFIndex code, const void *const *userInfoKeys, const void *const *userInfoValues, CFIndex numUserInfoValues) CF_AVAILABLE(10_5, 2_0);
+ 
+ /*!
+@@ -130,5 +132,5 @@
+ */
+ CF_EXPORT
+-CFStringRef CFErrorGetDomain(CFErrorRef err) CF_AVAILABLE(10_5, 2_0);
++CFErrorDomain CFErrorGetDomain(CFErrorRef err) CF_AVAILABLE(10_5, 2_0);
+ 
+ /*!
