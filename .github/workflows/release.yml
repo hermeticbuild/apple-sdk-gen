@@ -26,30 +26,34 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Restore DocC and LLVM source cache
-        uses: actions/cache/restore@v5
-        with:
-          path: cache
-          key: api-cache-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: api-cache-
-
       - name: Install dependencies
         run: |
           python3 -m pip install -e tools/
           brew install cmake ninja zstd bazelisk
 
+      - name: Restore the private DocC snapshot
+        env:
+          DOCC_R2_ENDPOINT: ${{ vars.DOCC_R2_ENDPOINT }}
+          DOCC_R2_BUCKET: ${{ vars.DOCC_R2_BUCKET }}
+          DOCC_R2_SNAPSHOT_KEY: ${{ vars.DOCC_R2_SNAPSHOT_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.DOCC_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DOCC_R2_SECRET_ACCESS_KEY }}
+        run: bash release/docc-cache.sh restore cache
+
       - name: Generate frameworks and linker stubs
-        id: generate
         run: |
           python3 -m tools.apple_sdk_gen --sdk-version "$SDK_VERSION" \
             --all-frameworks --include-cxx --reuse-docc-cache --cache-dir cache --output build/generated -v
 
-      - name: Save DocC and LLVM source cache
-        if: ${{ !cancelled() && steps.generate.outcome != 'skipped' }}
-        uses: actions/cache/save@v5
-        with:
-          path: cache
-          key: api-cache-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Save new DocC responses
+        if: github.ref == 'refs/heads/main'
+        env:
+          DOCC_R2_ENDPOINT: ${{ vars.DOCC_R2_ENDPOINT }}
+          DOCC_R2_BUCKET: ${{ vars.DOCC_R2_BUCKET }}
+          DOCC_R2_SNAPSHOT_KEY: ${{ vars.DOCC_R2_SNAPSHOT_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.DOCC_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DOCC_R2_SECRET_ACCESS_KEY }}
+        run: bash release/docc-cache.sh save cache
 
       - name: Read C SDK commit
         id: c-sdk
