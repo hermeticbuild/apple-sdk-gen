@@ -4,10 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       replay_tag:
-        description: Release or draft containing the pinned replay-inputs.tar.zst
+        description: Private release tag containing the pinned replay-inputs.tar.zst
         required: true
+      upload_archive:
+        description: Upload the SDK as a public workflow artifact
+        type: boolean
+        default: false
       release_tag:
-        description: Existing draft release to attach the tested SDK to (optional)
+        description: Draft release with the legacy SDK asset (requires upload_archive)
         required: false
 
 permissions:
@@ -38,11 +42,13 @@ jobs:
           brew install cmake ninja zstd
       - name: Download the verified framework inputs
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.C_SDK_READ_TOKEN }}
+          REPLAY_REPOSITORY: ${{ vars.SDK_REPLAY_REPOSITORY }}
           REPLAY_TAG: ${{ inputs.replay_tag }}
         run: |
           cd build
-          gh release download --repo "$GITHUB_REPOSITORY" --pattern replay-inputs.tar.zst -- "$REPLAY_TAG"
+          : "${REPLAY_REPOSITORY:?Set SDK_REPLAY_REPOSITORY to the replay input repository}"
+          gh release download --repo "$REPLAY_REPOSITORY" --pattern replay-inputs.tar.zst -- "$REPLAY_TAG"
           shasum -a 256 -c ../release/replay-inputs.sha256
           tar -xf replay-inputs.tar.zst
       - name: Build and pack
@@ -51,7 +57,10 @@ jobs:
         run: release/build-composed-sdk.sh build/c-sdk build/replay-inputs build/sdk
       - name: Run the local probes
         run: release/test-composed-sdk.sh build/c-sdk build/sdk
+      - name: Compare the archive with the migration baseline
+        run: shasum -a 256 -c release/composed-sdk.sha256
       - uses: actions/upload-artifact@v7
+        if: inputs.upload_archive
         with:
           name: composed-macos-arm64-sdk
           path: build/sdk/MacOSX.sdk.tar.zst
@@ -59,7 +68,7 @@ jobs:
 
   attach-to-draft:
     needs: build
-    if: github.ref == 'refs/heads/main' && inputs.release_tag != ''
+    if: github.ref == 'refs/heads/main' && inputs.upload_archive && inputs.release_tag != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -72,5 +81,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
-          test "$(gh release view --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft -- "$RELEASE_TAG")" = true
+          # The existing release job expects this asset on each published release.
+          test "$(gh release view --repo "$GITHUB_REPOSITORY" --json isDraft,assets \
+            --jq '.isDraft and any(.assets[]; .name == "macos-arm64-sdk-26.5.tar.zst")' -- "$RELEASE_TAG")" = true
           gh release upload --repo "$GITHUB_REPOSITORY" -- "$RELEASE_TAG" MacOSX.sdk.tar.zst
