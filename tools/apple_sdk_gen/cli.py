@@ -46,6 +46,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Cache directory for API responses",
     )
     parser.add_argument(
+        "--reuse-docc-cache",
+        action="store_true",
+        help="Reuse saved DocC responses without expiring them",
+    )
+    parser.add_argument(
         "--concurrency",
         type=int,
         default=10,

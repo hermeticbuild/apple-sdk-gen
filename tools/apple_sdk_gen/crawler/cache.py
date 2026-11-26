@@ -12,7 +12,7 @@ DEFAULT_TTL = 7 * 24 * 3600  # 7 days
 
 
 class CacheDB:
-    def __init__(self, cache_dir: Path, ttl: int = DEFAULT_TTL):
+    def __init__(self, cache_dir: Path, ttl: int | None = DEFAULT_TTL):
         self._ttl = ttl
         cache_dir.mkdir(parents=True, exist_ok=True)
         db_path = cache_dir / "cache.db"
@@ -36,7 +36,7 @@ class CacheDB:
             return None
 
         data_str, timestamp = row
-        if time.time() - timestamp > self._ttl:
+        if self._ttl is not None and time.time() - timestamp > self._ttl:
             self._conn.execute("DELETE FROM cache WHERE url = ?", (url,))
             self._conn.commit()
             return None
