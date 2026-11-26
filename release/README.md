@@ -47,10 +47,15 @@ checked separately with `make -k -C tests/composed_sdk test-frameworks`.
 
 ## GitHub Actions
 
-The manual **Build composed macOS SDK** workflow checks out the C producer
-with `C_SDK_READ_TOKEN`, reads the replay asset from the given release or
-draft in the SDK Gen repository, builds both projects, runs the local probes,
-and uploads the archive as a workflow artifact. On main, an optional
-existing draft release tag attaches the composed SDK to that draft.
-The existing **Release** workflow still emits the Xcode-shaped archive.
+The manual **Build composed macOS SDK** workflow checks out the C producer,
+downloads the replay asset from the private repository named by
+`SDK_REPLAY_REPOSITORY`, builds both projects, runs the local probes, and
+checks the archive against the migration baseline. Grant
+`C_SDK_READ_TOKEN` read access to the C producer and the replay input
+repository.
+
+Set `upload_archive` to make the built SDK available as a public workflow
+artifact. On main, that option also permits attaching the SDK to an
+existing draft release that already contains the legacy SDK asset. The
+existing **Release** workflow continues to emit the Xcode-shaped archive.
 The C repository has its own manual workflow for the standalone C archive.

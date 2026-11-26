@@ -7,8 +7,15 @@ if [[ $# != 3 ]]; then
 fi
 c_sdk=$(cd "$1" && pwd -P)
 inputs=$(cd "$2" && pwd -P)
+repo=$(cd "$(dirname "$0")/.." && pwd -P)
+pin=$(cat "$repo/release/c-sdk.commit")
+if [[ $(git -C "$c_sdk" rev-parse HEAD) != "$pin" ]] ||
+  ! git -C "$c_sdk" diff --quiet HEAD --; then
+  echo "Use a clean C SDK checkout at $pin." >&2
+  exit 1
+fi
 out=$(mkdir -p "$3" && cd "$3" && pwd -P)
-cd "$(dirname "$0")/.."
+cd "$repo"
 
 export PYTHONPATH="$PWD:$c_sdk"
 sdk=macosx26.5
