@@ -41,11 +41,13 @@ class APIClient:
         rate_limit: float = 10.0,
         max_retries: int = 3,
         cache: "CacheDB | None" = None,
+        cache_only: bool = False,
     ):
         self._semaphore = asyncio.Semaphore(concurrency)
         self._rate_limiter = RateLimiter(rate_limit)
         self._max_retries = max_retries
         self._cache = cache
+        self._cache_only = cache_only
         self._client: httpx.AsyncClient | None = None
         self._stats = {"requests": 0, "cache_hits": 0, "errors": 0}
 
@@ -77,6 +79,9 @@ class APIClient:
             if cached is not None:
                 self._stats["cache_hits"] += 1
                 return cached
+        if self._cache_only:
+            logger.info("DocC page absent from the pinned cache: %s", url)
+            return None
 
         async with self._semaphore:
             for attempt in range(self._max_retries):
