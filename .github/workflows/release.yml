@@ -81,6 +81,12 @@ jobs:
             --@llvm//config:macos_libcxx_headers=sdk \
             --@curl//:ssl_lib=mbedtls //:framework_consumers
 
+      - name: Test LLVM and Rust SDK consumers
+        working-directory: e2e
+        env:
+          USE_BAZEL_VERSION: "9.3.2"
+        run: bazelisk --nohome_rc test --keep_going //:hermetic_llvm //:rules_rs
+
       - name: Record SDK checksum
         working-directory: build/sdk
         run: shasum -a 256 MacOSX.sdk.tar.zst | tee MacOSX.sdk.tar.zst.sha256

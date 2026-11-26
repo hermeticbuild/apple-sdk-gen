@@ -9,7 +9,7 @@ without time-based expiry and saves the expanded cache before the build
 and tests. To refresh DocC for a release series, generate with a separate
 cache directory and use that cache for the next build.
 
-The default dispatch builds the archive and runs the C, framework, and BCR
+The default dispatch builds the archive and runs the C, framework, BCR, LLVM, and Rust
 tests. Select `publish` on main to tag the tested commit and publish the
 same `MacOSX.sdk.tar.zst` with its SHA-256 file. The
 [C SDK repository](https://github.com/hermeticbuild/apple-oss-c-sdk) builds
