@@ -16,6 +16,8 @@ dependencies = [
 apple-sdk-gen = "apple_sdk_gen.cli:main"
 
 [tool.setuptools.packages.find]
+include = ["apple_sdk_gen", "apple_sdk_gen.*"]
+
 where = ["."]
 
 [tool.setuptools.package-data]
