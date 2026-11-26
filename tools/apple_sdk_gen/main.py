@@ -13,7 +13,7 @@ from .config import (
     PLATFORM_EXCLUDED_MODULES,
     tbd_targets_for_platform,
 )
-from .crawler.cache import CacheDB
+from .crawler.cache import DEFAULT_TTL, CacheDB
 from .crawler.client import APIClient
 from .crawler.framework import crawl_framework_symbols
 from .crawler.symbol import parse_symbol
@@ -55,7 +55,7 @@ async def run(args: argparse.Namespace) -> None:
     output_dir = Path(args.output)
     cache_dir = Path(args.cache_dir)
 
-    cache = CacheDB(cache_dir)
+    cache = CacheDB(cache_dir, ttl=None if args.reuse_docc_cache else DEFAULT_TTL)
     logger.info("Cache: %d entries", cache.size())
 
     platform_key = args.platforms
