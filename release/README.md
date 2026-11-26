@@ -1,61 +1,57 @@
-# Build the full macOS 26.5 SDK
+# Release the arm64 macOS 26.5 SDK
 
-On an arm64 Mac with the Xcode command line tools, use Python 3.12+, CMake,
-Ninja, zstd, and gh. Install the SDK Gen Python dependencies with
-`python3 -m pip install -e tools/`. Check out
-[apple-oss-c-sdk](https://github.com/hermeticbuild/apple-oss-c-sdk) at the
-commit in [c-sdk.commit](c-sdk.commit). The build invokes C and objc4 Make
-targets in that checkout.
+The manual [Release workflow](../.github/workflows/release.yml) generates
+frameworks, Darwin stubs, and LLVM libc++ headers using this checkout. It
+builds the C and objc4 header trees from the source commit recorded in
+[c-sdk.commit](c-sdk.commit). The workflow uses `C_SDK_READ_TOKEN` for the
+private C Git checkout. The generation step reuses cached DocC responses
+without time-based expiry and saves the expanded cache before the build
+and tests. To refresh DocC for a release series, generate with a separate
+cache directory and use that cache for the next build.
+
+The default dispatch builds the archive and runs the C, framework, and BCR
+tests. Select `publish` on main to tag the tested commit and publish the
+same `MacOSX.sdk.tar.zst` with its SHA-256 file. The
+[C SDK repository](https://github.com/hermeticbuild/apple-oss-c-sdk) builds
+its standalone header archive separately.
+
+## Build and test locally
+
+Use an arm64 Mac with the Xcode command-line tools, Python 3.12 or newer,
+CMake, Ninja, zstd, and gh. Install SDK Gen with `python3 -m pip install -e
+tools/` and check out the pinned C SDK source.
 
 ```sh
-mkdir -p build
-(cd build && shasum -a 256 -c ../release/replay-inputs.sha256 && tar -xf replay-inputs.tar.zst)
-release/build-composed-sdk.sh /path/to/apple-oss-c-sdk build/replay-inputs build/sdk
+python3 -m tools.apple_sdk_gen --sdk-version 26.5 --all-frameworks \
+  --include-cxx --reuse-docc-cache --cache-dir cache --output build/generated -v
+generated=build/generated/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+release/build-composed-sdk.sh /path/to/apple-oss-c-sdk "$generated" build/sdk
 release/test-composed-sdk.sh /path/to/apple-oss-c-sdk build/sdk
 ```
 
-Output is `build/sdk/MacOSX.sdk.tar.zst`, which also supplies the existing
-[Bazel workspaces](../e2e/README.md). For local replays, point `C_SOURCE_CACHE`,
-`LLVM_CACHE`, `LIBCXX_CACHE`, and `FRAMEWORK_SOURCE_ROOT` at existing caches.
-`LLVM_DIR` selects an already verified official LLVM projection.
+The [Bazel workspaces](../e2e/README.md) read
+`build/sdk/MacOSX.sdk.tar.zst`. The build driver takes the generated tree
+as an argument so local recipe iterations can reuse it. Use
+`C_SOURCE_CACHE`, `LLVM_CACHE`, and `FRAMEWORK_SOURCE_ROOT` to reuse local
+source caches. `LLVM_DIR` selects a verified LLVM projection.
 
-## Replay inputs
+## Keep a portable DocC cache
 
-The byte-preserving migration uses a pinned `replay-inputs.tar.zst` containing
-these SDK Gen outputs.
+Store a completed cache as a compressed SQLite backup. The backup captures
+committed responses even when SQLite uses its WAL file.
 
-| Path | Origin |
-|---|---|
-| `frameworks/` | Extracted predecessor SDK with SHA-256 `ae7068d01df98b261a54216ec1482477934c3c1bf6bfd2f2767c17412733b8da`. The build reads its frameworks, SIMD headers, libz stub and version metadata. |
-| `Foundation.tbd` | Generated SDK Gen 26.5 Foundation stub, before the local Foundation patches. Its SHA-256 is pinned in the Foundation Makefile. |
-| `CoreGraphics.framework/` | Generated 26.5 bundle before the local geometry-header patch. |
-| `CoreServices.tbd` | Generated 26.5 CoreServices stub passed to the existing CoreServices recipe. |
-| `generated/SDKSettings.json` | The generated arm64 26.5 settings from the baseline Darwin input. |
+```sh
+sqlite3 cache/cache.db '.backup docc-macos-26.5.db'
+zstd docc-macos-26.5.db -o docc-macos-26.5.db.zst
+```
 
-Cocoa’s existing recipe reads commit
-`0d09d30194aad45f292d9759f49bb19b8aab069f` from SDK Gen Git history.
-Fetch the `cerisier/cocoa-umbrella` branch if a local checkout lacks that
-commit. See [composition licensing](../docs/composition-licensing.md) for
-the inherited distribution questions.
+The compressed file can live in durable storage outside GitHub. To
+restore it, decompress it as `cache.db` in a new cache directory and pass
+that directory to `--cache-dir`. The release build fetches any missing
+pages. LLVM source archives are cached separately by the generator in the
+same directory and can be fetched again from their pinned release.
 
-The expected full SDK SHA-256 using zstd 1.5.7 is
-`e1b32d42efb158d0a51d4c1ad43f4941fa4533f1eda3f82cb4409cc73724cd9a`.
-
-The expanded test suite also checks `AVRouting/AVCustomDeviceRoute.h` and
-`MetalKit/MTKModel.h`. Those headers are absent in this baseline. They can be
-checked separately with `make -k -C tests/composed_sdk test-frameworks`.
-
-## GitHub Actions
-
-The manual **Build composed macOS SDK** workflow checks out the C producer,
-downloads the replay asset from the private repository named by
-`SDK_REPLAY_REPOSITORY`, builds both projects, runs the local probes, and
-checks the archive against the migration baseline. Grant
-`C_SDK_READ_TOKEN` read access to the C producer and the replay input
-repository.
-
-Set `upload_archive` to make the built SDK available as a public workflow
-artifact. On main, that option also permits attaching the SDK to an
-existing draft release that already contains the legacy SDK asset. The
-existing **Release** workflow continues to emit the Xcode-shaped archive.
-The C repository has its own manual workflow for the standalone C archive.
+The earlier frozen input and archive checksums are [in Git history](https://github.com/hermeticbuild/apple-sdk-gen/tree/c66fa45/release).
+The fresh build uses the framework outputs generated in the release job.
+See [composition licensing](../docs/composition-licensing.md) for the
+source and redistribution notes.

@@ -1,6 +1,6 @@
 # Compose a macOS consumer SDK
 
-Run the [composed release build](../../release/README.md) for the tested SDK.
+Run the [release build](../../release/README.md) to generate and compose a fresh SDK.
 The commands below document individual inputs and earlier profiles.
 Set `PYTHONPATH` to include the pinned C SDK checkout.
 
@@ -83,7 +83,7 @@ CoreServices stub to its recipe to preserve its linker exports.
 make -C frameworks prepare
 make -C frameworks install CLANG="$LLVM/bin/clang" C_INSTALL="$C_INSTALL" \
   OBJC4_INSTALL="$OBJC4_INSTALL" FOUNDATION_TBD="$FOUNDATION_TBD" \
-  SDK_GEN_SOURCE="$SDK_GEN_SOURCE" OUT="$FRAMEWORKS" \
+  COCOA_FRAMEWORK="$SDK_GEN/System/Library/Frameworks/Cocoa.framework" OUT="$FRAMEWORKS" \
   CORE_SERVICES_TBD="$SDK_GEN_FRAMEWORKS/System/Library/Frameworks/CoreServices.framework/CoreServices.tbd" \
   FRAMEWORKS="CoreFoundation AudioToolbox AudioUnit CoreAudio CoreAudioTypes CoreMIDI IOKit OpenAL Security SystemConfiguration Cocoa CoreServices ApplicationServices"
 
@@ -167,14 +167,13 @@ and pack the tree as described below.
 
 Use the verified C and Objective-C runtime installations and the matching
 26.5 SDK Gen libSystem and external stubs. Set `FOUNDATION_TBD` to the
-pinned 26.5 SDK Gen Foundation stub. The older pinned input remains
-available for replaying the earlier Foundation trial.
+Foundation stub generated for macOS 26.5.
 
 ```bash
 FRAMEWORKS="$PWD/build/frameworks-objc"
 c_frameworks=(CoreFoundation AudioToolbox AudioUnit CoreAudio CoreAudioTypes CoreMIDI IOKit OpenAL Security SystemConfiguration)
 make -C frameworks install CLANG="$LLVM/bin/clang" C_INSTALL="$C_INSTALL" \
-  OBJC4_INSTALL="$OBJC4_INSTALL" SDK_GEN_SOURCE="$SDK_GEN_SOURCE" \
+  OBJC4_INSTALL="$OBJC4_INSTALL" COCOA_FRAMEWORK="$SDK_GEN/System/Library/Frameworks/Cocoa.framework" \
   FOUNDATION_TBD="$FOUNDATION_TBD" \
   FRAMEWORKS="${c_frameworks[*]} Cocoa" OUT="$FRAMEWORKS"
 
@@ -188,7 +187,7 @@ python3 -m tools.sdk_composition.compose_sdk \
   "${frameworks[@]}" "${stubs[@]}" --out "$NEW_SDK"
 ```
 
-`SDK_GEN_SOURCE` must contain the pinned Cocoa commit from PR #11. The
+Use the Cocoa bundle from the same generator run. The
 [framework recipes](../../frameworks/README.md#objective-c-framework-trial)
 declare the exact scope and provenance of the local headers. Use `test-objc`
 to exercise the Foundation and Cocoa profiles against the composed tree.

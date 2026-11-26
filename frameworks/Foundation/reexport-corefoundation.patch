@@ -1,7 +1,7 @@
 Restore the Framework's CoreFoundation reexport. The Foundation image loaded
 by macOS reports this LC_REEXPORT_DYLIB. CoreFoundation owns the constant
 string class reference emitted by Clang for Objective-C string literals.
-Apply to the pinned SDK Gen stub, preserving the qualified exports.
+Apply to the generated Foundation stub and preserve its exports.
 
 --- a/Foundation.tbd
 +++ b/Foundation.tbd

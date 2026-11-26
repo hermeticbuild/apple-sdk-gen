@@ -23,14 +23,12 @@ nonnull region on arm64.
 - [Object and collection declarations](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/FoundationTypesandCollections/FoundationTypesandCollections.html)
 - [Foundation DocC catalog](https://developer.apple.com/documentation/foundation?language=objc)
 
-The recipe accepts the pinned arm64 SDK Gen 26.5 Foundation stub and
-the earlier SDK Gen 0.0.4 input. The macOS
-26.5.2 (25F84) Foundation dylib has the `Versions/C/Foundation` install
-name and reexports CoreFoundation. The 26.5 input already has the
-versioned name. CoreFoundation owns Clang's
-Objective-C constant string symbol. The staged patch adds that reexport to
-the pinned SDK Gen input. The Foundation and CoreFoundation recipes provide
-the versioned paths the linker resolves. Xcode 26.5 is a validation reference.
+The recipe uses the Foundation stub generated during the release build.
+The macOS 26.5.2 (25F84) Foundation dylib has the `Versions/C/Foundation`
+install name and reexports CoreFoundation. The generator supplies the
+versioned install name. The staged patch adds the CoreFoundation
+reexport to resolve Clang's Objective-C constant string symbol. Xcode
+26.5 was used as a comparison.
 
 ```sh
 dyld_info -dependents /System/Library/Frameworks/Foundation.framework/Versions/C/Foundation

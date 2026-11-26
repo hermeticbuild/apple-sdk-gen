@@ -57,6 +57,15 @@ define stage-local-framework
 	$(call write-tbd,$(1),$(2))
 endef
 
+# Keep the generated audio exports alongside the C header profile's exports.
+define merge-generated-stub
+@set -eu; \
+	stub="$(STAGE)/$(1).framework/$(1).tbd"; \
+	"$(dir $(CLANG))llvm-readtapi" -merge --filetype=tbd-v4 \
+		"$(GENERATED_FRAMEWORKS)/$(1).framework/$(1).tbd" "$$stub" -o "$$stub.merged"; \
+	mv "$$stub.merged" "$$stub"
+endef
+
 # Protect the source and the final output from direct staging invocations.
 .PHONY: require-stage
 require-stage:

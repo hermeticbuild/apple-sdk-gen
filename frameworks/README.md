@@ -49,8 +49,8 @@ and symbol binding.
 
 Stage Cocoa and its dependency profiles by adding `Cocoa` to `FRAMEWORKS`.
 Pass `OBJC4_INSTALL` as the pinned Objective-C runtime header installation,
-`FOUNDATION_TBD` as the qualified SDK Gen 0.0.4 Foundation stub, and
-`SDK_GEN_SOURCE` as a Git checkout containing the Cocoa recipe from PR #11.
+`FOUNDATION_TBD` as the generated Foundation stub, and `COCOA_FRAMEWORK`
+as the generated Cocoa bundle from the same SDK tree.
 The package notes describe the selected public declarations and provenance.
 
 The Foundation probe exercises strings, an `NSRange` return value,
