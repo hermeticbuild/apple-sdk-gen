@@ -3,7 +3,7 @@
 include ../../frameworks/common.mk
 
 PYTHON ?= python3
-SOURCE_ROOT ?= $(CURDIR)/build/sources/macosx26.5
+SOURCE_ROOT ?= $(C_SDK)/build/sources/macosx26.5
 # The public header uses the built-in libSystem _res compatibility data
 # below 15.4. Scan at 15.4 so it is not declared as a libresolv export.
 # TBD v4 carries no deployment floor. Older clients bind _res via libSystem.
@@ -11,7 +11,9 @@ INSTALLAPI_MIN := 15.4
 
 .PHONY: install stage
 install:
-	"$(PYTHON)" -m tools.sources.locked_sources verify --sdk macosx26.5 --source-root "$(SOURCE_ROOT)"
+	@test -f "$(C_SDK)/locks/macosx26.5.json" || { echo "Set C_SDK to the C SDK checkout." >&2; exit 1; }
+	cd "$(C_SDK)" && "$(PYTHON)" -m tools.sources.locked_sources verify --sdk macosx26.5 \
+		--source-root "$(abspath $(SOURCE_ROOT))"
 	cmp "$(C_SDK)/locks/macosx26.5.json" "$(C_INSTALL)/source-lock.json"
 	@set -eu; \
 		test -n "$(OUT)" && test ! -e "$(OUT)" && test ! -L "$(OUT)" \
