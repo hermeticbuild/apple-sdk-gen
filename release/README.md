@@ -41,6 +41,10 @@ the inherited distribution questions.
 The expected full SDK SHA-256 using zstd 1.5.7 is
 `e1b32d42efb158d0a51d4c1ad43f4941fa4533f1eda3f82cb4409cc73724cd9a`.
 
+The expanded test suite also checks `AVRouting/AVCustomDeviceRoute.h` and
+`MetalKit/MTKModel.h`. Those headers are absent in this baseline. They can be
+checked separately with `make -k -C tests/composed_sdk test-frameworks`.
+
 ## GitHub Actions
 
 The manual **Build composed macOS SDK** workflow checks out the C producer
