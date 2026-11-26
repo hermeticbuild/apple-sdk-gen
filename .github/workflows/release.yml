@@ -2,105 +2,126 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the tested archive as a GitHub release
+        type: boolean
+        default: false
 
 concurrency: sdk-release
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   SDK_VERSION: "26.5"
 
 jobs:
-  release:
-    if: github.ref == 'refs/heads/main'
+  build:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Determine next version
-        id: version
-        run: |
-          # Get the latest tag matching X.Y.Z pattern
-          latest=$(git tag --list '[0-9]*.*.*' --sort=-v:refname | head -n1)
-          if [ -z "$latest" ]; then
-            next="0.0.1"
-          else
-            major="${latest%%.*}"
-            rest="${latest#*.}"
-            minor="${rest%%.*}"
-            patch="${rest#*.}"
-            patch=$((patch + 1))
-            next="${major}.${minor}.${patch}"
-          fi
-          echo "tag=${next}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
-      - name: Restore cache
-        uses: actions/cache@v5
+      - name: Restore DocC and LLVM source cache
+        uses: actions/cache/restore@v5
         with:
           path: cache
-          key: api-cache-${{ github.run_id }}
+          key: api-cache-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: api-cache-
 
       - name: Install dependencies
         run: |
-          pip install -e tools/
-          brew install gnu-tar ninja
+          python3 -m pip install -e tools/
+          brew install cmake ninja zstd bazelisk
 
-      - name: Build the arm64 macOS SDK
+      - name: Generate frameworks and linker stubs
+        id: generate
         run: |
-          python -m tools.apple_sdk_gen \
-            --sdk-version "$SDK_VERSION" \
-            --all-frameworks \
-            --include-libc \
-            --include-cxx \
-            --cache-dir cache \
-            -v
+          python3 -m tools.apple_sdk_gen --sdk-version "$SDK_VERSION" \
+            --all-frameworks --include-cxx --reuse-docc-cache --cache-dir cache --output build/generated -v
 
-      - name: Check Darwin exports against the previous release
+      - name: Save DocC and LLVM source cache
+        if: ${{ !cancelled() && steps.generate.outcome != 'skipped' }}
+        uses: actions/cache/save@v5
+        with:
+          path: cache
+          key: api-cache-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Read C SDK commit
+        id: c-sdk
+        run: echo "commit=$(cat release/c-sdk.commit)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v6
+        with:
+          repository: hermeticbuild/apple-oss-c-sdk
+          ref: ${{ steps.c-sdk.outputs.commit }}
+          token: ${{ secrets.C_SDK_READ_TOKEN }}
+          path: build/c-sdk
+          persist-credentials: false
+
+      - name: Build and compose the SDK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GENERATED_SDK: build/generated/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+        run: release/build-composed-sdk.sh build/c-sdk "$GENERATED_SDK" build/sdk
+
+      - name: Run the C and framework probes
+        run: release/test-composed-sdk.sh build/c-sdk build/sdk
+
+      - name: Test BCR consumers
+        working-directory: e2e/bcr
+        env:
+          USE_BAZEL_VERSION: "9.3.2"
+        run: |
+          bazelisk --nohome_rc test --platforms=@llvm//platforms:macos_arm64 \
+            --@llvm//config:macos_libcxx_headers=sdk \
+            --@curl//:ssl_lib=mbedtls //:framework_consumers
+
+      - name: Record SDK checksum
+        working-directory: build/sdk
+        run: shasum -a 256 MacOSX.sdk.tar.zst | tee MacOSX.sdk.tar.zst.sha256
+
+      - uses: actions/upload-artifact@v7
+        if: github.ref == 'refs/heads/main' && inputs.publish
+        with:
+          name: macos-arm64-sdk
+          path: |
+            build/sdk/MacOSX.sdk.tar.zst
+            build/sdk/MacOSX.sdk.tar.zst.sha256
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main' && inputs.publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: macos-arm64-sdk
+
+      - name: Publish the tested SDK
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          previous=$(gh release list --exclude-drafts --exclude-pre-releases \
-            --limit 1 --json tagName --jq '.[0].tagName // empty')
-          if [ -z "$previous" ]; then
-            echo "No published baseline for the first release."
-            exit 0
-          fi
-          baseline=$(mktemp -d)
-          asset="macos-arm64-sdk-$SDK_VERSION.tar.zst"
-          gh release download "$previous" --pattern "$asset" --dir "$baseline"
-          tar -xf "$baseline/$asset" -C "$baseline"
-          sdk="Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
-          approvals="tools/darwin-removals/$previous.tsv"
-          if [ -f "$approvals" ]; then
-            set -- --approved-removals "$approvals"
+          sha256sum -c MacOSX.sdk.tar.zst.sha256
+          latest=$(git tag --list '[0-9]*.*.*' --sort=-v:refname | head -n1)
+          if [ -z "$latest" ]; then
+            next=0.0.1
           else
-            set --
+            prefix="${latest%.*}"
+            patch="${latest##*.}"
+            next="$prefix.$((patch + 1))"
           fi
-          python -m tools.apple_sdk_gen.compare_darwin_stubs "$baseline/$sdk" "output/$sdk" "$@"
-
-      - name: Bundle the SDK
-        run: |
-          gtar --sort=name --owner=0 --group=0 --numeric-owner --mtime='2023-01-01 00:00Z' \
-            -cf - -C output Xcode.app | zstd -19 -T0 -o "macos-arm64-sdk-$SDK_VERSION.tar.zst"
-
-      - name: Create tag
-        run: |
-          git tag "${{ steps.version.outputs.tag }}"
-          git push origin "${{ steps.version.outputs.tag }}"
-
-      - name: Create release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create "${{ steps.version.outputs.tag }}" \
-            --title "${{ steps.version.outputs.tag }}" \
-            --generate-notes \
-            "macos-arm64-sdk-$SDK_VERSION.tar.zst"
+          gh release create "$next" --target "$GITHUB_SHA" --title "$next" \
+            --generate-notes MacOSX.sdk.tar.zst MacOSX.sdk.tar.zst.sha256

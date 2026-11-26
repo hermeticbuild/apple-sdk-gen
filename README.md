@@ -69,13 +69,6 @@ python -m tools.apple_sdk_gen.compare_darwin_stubs \
   "$REFERENCE_SDK" "$GENERATED_SDK" --report-only > darwin-coverage.json
 ```
 
-The release workflow also compares against the preceding published archive
-for the same SDK version. It blocks removals and changes of export kind or
-reexport path. An intentional removal needs an exact entry in
-`tools/darwin-removals/<baseline-tag>.tsv` with a source or rationale.
-The tab-separated columns are `stub`, `provider`, `kind`, `name`, and `reason`.
-Use the fields in the comparison report to identify an entry.
-
 ## CI and limitations
 
 Pushes to `main` and pull requests run the unit tests. The manual
@@ -86,7 +79,7 @@ framework APIs that need evidence beyond Apple’s documentation.
 
 ## Composed macOS SDK
 
-The HermeticBuild release can also build a standalone arm64 macOS 26.5
+The HermeticBuild release builds a standalone arm64 macOS 26.5
 `MacOSX.sdk.tar.zst`. It builds C and Objective-C runtime headers from the
 locked C SDK source checkout, then adds generated and Apple OSS frameworks
 and link stubs. See the [composed release build](release/README.md) and

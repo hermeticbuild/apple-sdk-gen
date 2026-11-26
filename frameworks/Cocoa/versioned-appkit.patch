@@ -1,8 +1,0 @@
-Cocoa reexports the AppKit dylib under its versioned install name.
-The matching AppKit recipe provides the versioned TBD lookup path.
-
---- a/Cocoa.tbd
-+++ b/Cocoa.tbd
-@@ -8,1 +8,1 @@
--    libraries: [ '/System/Library/Frameworks/AppKit.framework/AppKit', '/System/Library/Frameworks/CoreData.framework/CoreData' ]
-+    libraries: [ '/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit', '/System/Library/Frameworks/CoreData.framework/CoreData' ]
