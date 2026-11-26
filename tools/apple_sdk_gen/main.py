@@ -55,7 +55,8 @@ async def run(args: argparse.Namespace) -> None:
     output_dir = Path(args.output)
     cache_dir = Path(args.cache_dir)
 
-    cache = CacheDB(cache_dir, ttl=None if args.reuse_docc_cache else DEFAULT_TTL)
+    reuse_docc = args.reuse_docc_cache or args.docc_cache_only
+    cache = CacheDB(cache_dir, ttl=None if reuse_docc else DEFAULT_TTL)
     logger.info("Cache: %d entries", cache.size())
 
     platform_key = args.platforms
@@ -69,6 +70,7 @@ async def run(args: argparse.Namespace) -> None:
         concurrency=args.concurrency,
         rate_limit=args.rate_limit,
         cache=cache,
+        cache_only=args.docc_cache_only,
     ) as client:
         # Phase 1: Discover frameworks
         print("Discovering frameworks...", file=sys.stderr)

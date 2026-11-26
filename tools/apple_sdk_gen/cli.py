@@ -51,6 +51,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Reuse saved DocC responses without expiring them",
     )
     parser.add_argument(
+        "--docc-cache-only",
+        action="store_true",
+        help="Use saved DocC responses without expiry or network requests",
+    )
+    parser.add_argument(
         "--concurrency",
         type=int,
         default=10,

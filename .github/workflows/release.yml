@@ -19,47 +19,58 @@ env:
 jobs:
   build:
     runs-on: macos-26
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      USE_BAZEL_VERSION: "9.3.2"
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          python-version: "3.12"
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12.10"
 
       - name: Install dependencies
         run: |
-          python3 -m pip install -e tools/
-          brew install cmake ninja zstd bazelisk
+          python3 -m venv "$RUNNER_TEMP/sdk-python"
+          "$RUNNER_TEMP/sdk-python/bin/python" -m pip install \
+            --require-hashes --only-binary=:all: -r release/requirements.txt
+          echo "$RUNNER_TEMP/sdk-python/bin" >> "$GITHUB_PATH"
+
+      - name: Record runner tool versions
+        run: |
+          python3 --version
+          xcodebuild -version
+          cmake --version
+          ninja --version
+          zstd --version
+          aws --version
+          bazelisk version
 
       - name: Restore the private DocC snapshot
         env:
           DOCC_R2_ENDPOINT: ${{ vars.DOCC_R2_ENDPOINT }}
           DOCC_R2_BUCKET: ${{ vars.DOCC_R2_BUCKET }}
-          DOCC_R2_SNAPSHOT_KEY: ${{ vars.DOCC_R2_SNAPSHOT_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.DOCC_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.DOCC_R2_SECRET_ACCESS_KEY }}
-        run: bash release/docc-cache.sh restore cache
+        run: bash release/docc-cache.sh cache
 
       - name: Generate frameworks and linker stubs
         run: |
           python3 -m tools.apple_sdk_gen --sdk-version "$SDK_VERSION" \
-            --all-frameworks --include-cxx --reuse-docc-cache --cache-dir cache --output build/generated -v
-
-      - name: Save new DocC responses
-        if: github.ref == 'refs/heads/main'
-        env:
-          DOCC_R2_ENDPOINT: ${{ vars.DOCC_R2_ENDPOINT }}
-          DOCC_R2_BUCKET: ${{ vars.DOCC_R2_BUCKET }}
-          DOCC_R2_SNAPSHOT_KEY: ${{ vars.DOCC_R2_SNAPSHOT_KEY }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.DOCC_R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.DOCC_R2_SECRET_ACCESS_KEY }}
-        run: bash release/docc-cache.sh save cache
+            --all-frameworks --include-cxx --docc-cache-only --cache-dir cache --output build/generated -v
 
       - name: Read C SDK commit
         id: c-sdk
         run: echo "commit=$(cat release/c-sdk.commit)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: hermeticbuild/apple-oss-c-sdk
           ref: ${{ steps.c-sdk.outputs.commit }}
@@ -78,8 +89,6 @@ jobs:
 
       - name: Test BCR consumers
         working-directory: e2e/bcr
-        env:
-          USE_BAZEL_VERSION: "9.3.2"
         run: |
           bazelisk --nohome_rc test --test_output=errors --platforms=@llvm//platforms:macos_arm64 \
             --@llvm//config:macos_libcxx_headers=sdk \
@@ -87,36 +96,50 @@ jobs:
 
       - name: Test LLVM and Rust SDK consumers
         working-directory: e2e
-        env:
-          USE_BAZEL_VERSION: "9.3.2"
         run: bazelisk --nohome_rc test --keep_going --test_output=errors //:hermetic_llvm //:rules_rs
 
       - name: Record SDK checksum
         working-directory: build/sdk
         run: shasum -a 256 MacOSX.sdk.tar.zst | tee MacOSX.sdk.tar.zst.sha256
 
-      - uses: actions/upload-artifact@v7
+      - name: Attest the tested SDK
+        if: github.ref == 'refs/heads/main' && inputs.publish
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            build/sdk/MacOSX.sdk.tar.zst
+            build/sdk/MacOSX.sdk.tar.zst.sha256
+
+      - name: Name the attestation bundle
+        if: github.ref == 'refs/heads/main' && inputs.publish
+        env:
+          ATTESTATION_BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: cp "$ATTESTATION_BUNDLE" build/sdk/MacOSX.sdk.tar.zst.attestation.jsonl
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: github.ref == 'refs/heads/main' && inputs.publish
         with:
           name: macos-arm64-sdk
           path: |
             build/sdk/MacOSX.sdk.tar.zst
             build/sdk/MacOSX.sdk.tar.zst.sha256
+            build/sdk/MacOSX.sdk.tar.zst.attestation.jsonl
           if-no-files-found: error
 
   publish:
     needs: build
     if: github.ref == 'refs/heads/main' && inputs.publish
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: macos-arm64-sdk
 
@@ -125,6 +148,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           sha256sum -c MacOSX.sdk.tar.zst.sha256
+          for asset in MacOSX.sdk.tar.zst MacOSX.sdk.tar.zst.sha256; do
+            gh attestation verify "$asset" --repo "$GITHUB_REPOSITORY" \
+              --bundle MacOSX.sdk.tar.zst.attestation.jsonl \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
+              --source-ref refs/heads/main --source-digest "$GITHUB_SHA"
+          done
           latest=$(git tag --list '[0-9]*.*.*' --sort=-v:refname | head -n1)
           if [ -z "$latest" ]; then
             next=0.0.1
@@ -134,4 +163,5 @@ jobs:
             next="$prefix.$((patch + 1))"
           fi
           gh release create "$next" --target "$GITHUB_SHA" --title "$next" \
-            --generate-notes MacOSX.sdk.tar.zst MacOSX.sdk.tar.zst.sha256
+            --generate-notes MacOSX.sdk.tar.zst MacOSX.sdk.tar.zst.sha256 \
+            MacOSX.sdk.tar.zst.attestation.jsonl
