@@ -10,7 +10,7 @@ inputs=$(cd "$2" && pwd -P)
 repo=$(cd "$(dirname "$0")/.." && pwd -P)
 pin=$(cat "$repo/release/c-sdk.commit")
 if [[ $(git -C "$c_sdk" rev-parse HEAD) != "$pin" ]] ||
-  ! git -C "$c_sdk" diff --quiet HEAD --; then
+  [[ -n $(git -C "$c_sdk" status --porcelain) ]]; then
   echo "Use a clean C SDK checkout at $pin." >&2
   exit 1
 fi
