@@ -81,7 +81,7 @@ jobs:
         env:
           USE_BAZEL_VERSION: "9.3.2"
         run: |
-          bazelisk --nohome_rc test --platforms=@llvm//platforms:macos_arm64 \
+          bazelisk --nohome_rc test --test_output=errors --platforms=@llvm//platforms:macos_arm64 \
             --@llvm//config:macos_libcxx_headers=sdk \
             --@curl//:ssl_lib=mbedtls //:framework_consumers
 
@@ -89,7 +89,7 @@ jobs:
         working-directory: e2e
         env:
           USE_BAZEL_VERSION: "9.3.2"
-        run: bazelisk --nohome_rc test --keep_going //:hermetic_llvm //:rules_rs
+        run: bazelisk --nohome_rc test --keep_going --test_output=errors //:hermetic_llvm //:rules_rs
 
       - name: Record SDK checksum
         working-directory: build/sdk

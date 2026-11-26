@@ -50,6 +50,7 @@ def consumer_test(name, bazel_binaries, bazel_version, workspace, sdk_path, args
         bazel_cmds = [" ".join([
             "--nohome_rc",
             "test",
+            "--test_output=errors",
             "--remote_executor=",
             "--remote_cache=",
             "--experimental_remote_downloader=",
