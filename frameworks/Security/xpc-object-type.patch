@@ -1,0 +1,20 @@
+SecCode.h uses xpc_object_t from the full XPC header. When the C installation
+provides only the type, include the WebKit-derived compatibility header.
+Leave the public XPC path available for implementations of the full API.
+
+Sources
+https://github.com/apple-oss-distributions/Security/blob/97c3a4296c1ea06b0fe1877a7e616aa84450b5b2/header_symlinks/Security/SecCode.h
+https://github.com/apple-oss-distributions/WebKit/blob/2a36545bf8dd89a417b724184900270fb2f523aa/Source/WTF/wtf/spi/darwin/XPCSPI.h
+
+--- a/Headers/SecCode.h
++++ b/Headers/SecCode.h
+@@ -33,5 +33,9 @@
+ #include <Security/CSCommon.h>
+ #include <CoreFoundation/CFBase.h>
++#if __has_include(<xpc/xpc.h>)
+ #include <xpc/xpc.h>
++#else
++#include <xpc/_xpc_object.h>
++#endif
+
+ #ifdef __cplusplus

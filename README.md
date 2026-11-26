@@ -83,3 +83,11 @@ Pushes to `main` and pull requests run the unit tests. The manual
 
 The [known limitations](tools/apple_sdk_gen/LIMITATIONS.md) describe
 framework APIs that need evidence beyond Apple’s documentation.
+
+## Composed macOS SDK
+
+The HermeticBuild release can also build a standalone arm64 macOS 26.5
+`MacOSX.sdk.tar.zst`. It builds C and Objective-C runtime headers from the
+locked C SDK source checkout, then adds generated and Apple OSS frameworks
+and link stubs. See the [composed release build](release/README.md) and
+[consumer tests](e2e/README.md).

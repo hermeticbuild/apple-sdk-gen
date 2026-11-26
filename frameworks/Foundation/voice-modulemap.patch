@@ -1,0 +1,15 @@
+The local VoiceFoundation.h extends declarations in the umbrella. Keep it
+textual, like NSPathUtilities.h, so Clang's C++20 module build visits it in
+the same context as Foundation.h. This fixes the missing NSUInteger
+diagnostic in the Foundation Objective-C++ module probe.
+
+--- a/Modules/module.modulemap
++++ b/Modules/module.modulemap
+@@ -2,6 +2,7 @@
+   umbrella header "Foundation.h"
+   textual header "NSObjCRuntime.h"
+   textual header "NSPathUtilities.h"
++  textual header "VoiceFoundation.h"
+   textual header "NSRange.h"
+   textual header "NSObject.h"
+   textual header "NSString.h"

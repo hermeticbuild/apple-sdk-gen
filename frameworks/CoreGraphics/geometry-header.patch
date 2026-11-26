@@ -1,0 +1,57 @@
+Move the documented CoreGraphics geometry types to their own header.
+Foundation aliases these types on LP64, also when included from C++.
+
+--- a/Headers/CoreGraphics.h
++++ b/Headers/CoreGraphics.h
+@@ -278,14 +278,7 @@
+ #import <stdint.h>
+ #import <sys/types.h>
+
+-#ifndef CGFLOAT_DEFINED
+-#define CGFLOAT_DEFINED 1
+-#if __LP64__
+-typedef double CGFloat;
+-#else
+-typedef float CGFloat;
+-#endif
+-#endif
++#include <CoreGraphics/CGGeometry.h>
+
+ struct CGAffineTransform;
+ struct CGAffineTransformComponents;
+@@ -518,11 +511,6 @@
+ typedef uint32_t CGOpenGLDisplayMask;
+
+ typedef const struct CGPath * CGPathRef;
+-
+-typedef struct CGPoint {
+-    CGFloat x;
+-    CGFloat y;
+-} CGPoint;
+
+ enum CGPathElementType : int32_t {
+     kCGPathElementAddCurveToPoint = 0,
+@@ -609,13 +597,3 @@
+ typedef struct CGRenderingBufferProvider * CGRenderingBufferProviderRef;
+-
++
+-typedef struct CGSize {
+-    CGFloat width;
+-    CGFloat height;
+-} CGSize;
+-
+-typedef struct CGRect {
+-    CGPoint origin;
+-    CGSize size;
+-} CGRect;
+-
+ typedef void (*CGScreenRefreshCallback)(unsigned int, const struct CGRect *, void *);
+--- a/Modules/module.modulemap
++++ b/Modules/module.modulemap
+@@ -1,5 +1,6 @@
+ framework module CoreGraphics [system] {
+   umbrella header "CoreGraphics.h"
++  textual header "CGGeometry.h"
+   export *
+   module * { export * }
+ }
