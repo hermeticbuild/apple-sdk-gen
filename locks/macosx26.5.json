@@ -177,5 +177,9 @@
     "resource_headers": "lib/clang/21/include",
     "cxx_headers": "include/c++/v1",
     "darwin_builtins": "lib/clang/21/lib/darwin/libclang_rt.osx.a"
+  },
+  "docc": {
+    "key": "macos/26.5/snapshots/2026-11-26-d0d3b32afe8e.db.zst",
+    "sha256": "d0d3b32afe8eaad975fd63b3c6a270f6e224684480aeac5f4a105c7a2ae298d9"
   }
 }

@@ -71,7 +71,7 @@ def build_stub(target_name, project, src, sysroot, llvm, lock, work, libdir):
 def generate(source, headers, llvm, out):
     if out.exists() or out.is_symlink():
         raise ValueError(f"choose a new output directory: {out}")
-    lock = fetch_llvm_tools.read_llvm_lock()
+    lock = fetch_llvm_tools.read_llvm_lock(headers / "source-lock.json")
     with tempfile.TemporaryDirectory(dir=out.parent) as tmp:
         work = Path(tmp)
         # Only the pinned commit enters the header search, including quoted includes.

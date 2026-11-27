@@ -51,7 +51,7 @@ class DarwinLibrariesTest(unittest.TestCase):
         self.write_metadata("27.0")
         with self.assertRaisesRegex(ValueError, "describes SDK '27.0', requested 26.5"):
             select_darwin_libraries("26.5", self.metadata)
-        with self.assertRaisesRegex(ValueError, "requires --darwin-library-metadata"):
+        with self.assertRaisesRegex(ValueError, "requested 27.0"):
             select_darwin_libraries("27.0", None)
         self.assertIn("libSystem.B", select_darwin_libraries("26.5", None))
 

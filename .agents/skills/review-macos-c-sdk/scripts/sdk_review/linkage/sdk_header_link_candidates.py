@@ -13,6 +13,7 @@ from tempfile import TemporaryDirectory
 
 from tools.tbd import parse_v5, version
 from tools.fetch_llvm_tools import read_llvm_lock, sha256, verify_prepared
+from tools.fetch_sources import ROOT
 
 
 ARCHES = ("arm64",)
@@ -136,7 +137,7 @@ def run(args):
     if settings["CanonicalName"] != f"macosx{settings['Version']}":
         raise ValueError("expected a macOS SDK")
     build = plistlib.loads(version_path.read_bytes())["ProductBuildVersion"]
-    lock = read_llvm_lock()
+    lock = read_llvm_lock(ROOT / "locks" / f"{settings['CanonicalName']}.json")
     verify_prepared(llvm, lock)
     installapi = llvm / "bin/clang-installapi"
     resource = llvm / lock["resource_headers"]

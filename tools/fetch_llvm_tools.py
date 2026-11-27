@@ -11,12 +11,11 @@ import tempfile
 from pathlib import Path
 from urllib.request import urlopen
 
-LOCK = Path(__file__).resolve().parents[1] / "locks/macosx26.5.json"
 RECEIPT = ".archive-sha256"
 
 
-def read_llvm_lock():
-    return json.loads(LOCK.read_text())["llvm"]
+def read_llvm_lock(path):
+    return json.loads(path.read_text())["llvm"]
 
 
 def sha256(path):
@@ -83,6 +82,7 @@ def prepare(root, cache, lock, offline):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--lock", required=True, type=Path)
     parser.add_argument("--dest", required=True, type=Path)
     parser.add_argument("--cache", required=True, type=Path)
     parser.add_argument("--offline", action="store_true")
@@ -90,11 +90,11 @@ def main():
     try:
         if platform.system() != "Darwin" or platform.machine() != "arm64":
             raise ValueError("the pinned LLVM tools require arm64 macOS")
-        lock = read_llvm_lock()
+        lock = read_llvm_lock(args.lock)
         print(prepare(args.dest.absolute(), args.cache.resolve(), lock, args.offline))
     except subprocess.CalledProcessError as error:
         parser.exit(1, f"{error}\n{error.stderr or error.stdout or ''}")
-    except (OSError, ValueError) as error:
+    except (OSError, ValueError, KeyError) as error:
         parser.exit(1, f"{error}\n")
 
 

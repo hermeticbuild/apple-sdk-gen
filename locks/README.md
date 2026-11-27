@@ -6,7 +6,7 @@ SDK build describe qualification, while the distribution tag and peeled
 commit identify Apple's operating-system source snapshot. Deployment targets
 are chosen separately by the qualification commands.
 
-The 26.5 lock also records the official LLVM archive and extraction paths.
+The 26.5 lock also records the official LLVM archive, extraction paths, and DocC snapshot.
 
 ## Prepare and install
 

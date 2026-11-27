@@ -22,12 +22,9 @@ from .models.availability import is_available
 from .models.symbol import Symbol
 from .supplements.commoncrypto import install_commoncrypto_headers
 from .supplements.darwin_libs import install_darwin_lib_stubs, select_darwin_libraries
-from .supplements.libc import install_libc_headers
 from .supplements.libcxx import install_libcxx_headers
-from .supplements.platform_headers import install_platform_headers
 from .supplements.simd import install_simd_headers
 from .supplements.system_libs import install_system_lib_stubs
-from .supplements.system_modulemaps import install_system_modulemaps
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +56,7 @@ async def run(args: argparse.Namespace) -> None:
     cache = CacheDB(cache_dir, ttl=None if reuse_docc else DEFAULT_TTL)
     logger.info("Cache: %d entries", cache.size())
 
-    platform_key = args.platforms
+    platform_key = "macos"
     cfg = PLATFORM_CONFIGS[platform_key]
     excluded = PLATFORM_EXCLUDED_MODULES.get(platform_key, set())
     excluded = excluded | {
@@ -78,7 +75,7 @@ async def run(args: argparse.Namespace) -> None:
 
         frameworks = filter_frameworks(
             all_frameworks,
-            include=args.frameworks if not args.all_frameworks else None,
+            include=args.frameworks,
             exclude=excluded | (args.exclude_frameworks or set()),
             objc_only=True,
         )
@@ -180,38 +177,16 @@ async def run(args: argparse.Namespace) -> None:
         print("Installing CommonCrypto headers...", file=sys.stderr)
         install_commoncrypto_headers(sdk_path)
 
-        if args.include_libc or "ModelIO" in platform_frameworks:
+        if args.llvm_dir is not None or "ModelIO" in platform_frameworks:
             print("Generating SIMD headers...", file=sys.stderr)
             try:
                 await install_simd_headers(sdk_path, client)
             except ValueError as exc:
                 raise SystemExit(f"SIMD headers: {exc}") from None
 
-        # Install C stdlib/POSIX headers if requested
-        if args.include_libc:
-            print("Installing libc headers...", file=sys.stderr)
-            install_libc_headers(
-                sdk_root=sdk_path,
-                sdk_version=args.sdk_version,
-                cache_dir=cache_dir,
-            )
-
-            # Platform headers (TargetConditionals, Block.h, dlfcn.h, math.h)
-            print("Installing platform headers...", file=sys.stderr)
-            install_platform_headers(sdk_path)
-
-            # System module maps (Darwin, Dispatch, ObjectiveC, os)
-            print("Installing system module maps...", file=sys.stderr)
-            install_system_modulemaps(sdk_path)
-
-        # Install C++ standard library headers if requested
-        if args.include_cxx:
+        if args.llvm_dir is not None:
             print("Installing libc++ headers...", file=sys.stderr)
-            install_libcxx_headers(
-                sdk_root=sdk_path,
-                sdk_version=args.sdk_version,
-                llvm_dir=args.llvm_dir,
-            )
+            install_libcxx_headers(sdk_path, args.llvm_dir)
 
         print(f"SDK generated at: {sdk_path}", file=sys.stderr)
 

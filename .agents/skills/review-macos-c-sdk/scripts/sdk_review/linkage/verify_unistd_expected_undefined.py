@@ -120,7 +120,7 @@ def qualify(args):
     policy = read(args.policy)
     symbols = validate_policy(policy)
     identity = check_sources(sdk, install, policy)
-    llvm_lock = read_llvm_lock()
+    llvm_lock = read_llvm_lock(install / "source-lock.json")
     verify_prepared(llvm, llvm_lock)
     lookup = check_lookup(sdk, read(args.lookup), symbols, sha256(llvm / "bin/llvm-readtapi"))
     resource = llvm / llvm_lock["resource_headers"]

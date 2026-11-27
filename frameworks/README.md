@@ -14,7 +14,7 @@ From the repository root, set `C_INSTALL` to the generated C tree and
 
 ```sh
 make prepare-sources
-make -C frameworks install CLANG="$LLVM/bin/clang" C_INSTALL="$C_INSTALL" OUT="$PWD/build/frameworks"
+make -C frameworks install SDK=macosx26.5 CLANG="$LLVM/bin/clang" C_INSTALL="$C_INSTALL" OUT="$PWD/build/frameworks"
 ```
 
 `make prepare-sources` fetches the exact CF, IOAudioFamily, OpenAL, Security
@@ -25,7 +25,7 @@ for example. SystemConfiguration also stages CoreFoundation and Security.
 The recipes use Make, shell, Git, and standard tools. They take no
 official SDK path. Each framework's `provenance.md` identifies its inputs,
 the scope of the repair, and the available source evidence. The
-[composition instructions](../tools/sdk_composition/README.md#expanded-framework-trial)
+[composition instructions](../tools/sdk_composition/README.md)
 use the resulting directories as prepared bundles or overlays.
 
 ```sh

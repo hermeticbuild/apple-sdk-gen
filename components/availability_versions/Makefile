@@ -1,6 +1,5 @@
 CMAKE ?= cmake
 NINJA ?= ninja
-SDK ?= macosx26.5
 SOURCE_ROOT ?= $(CURDIR)/sources
 
 availability_root = $(STAGE)/AvailabilityVersions

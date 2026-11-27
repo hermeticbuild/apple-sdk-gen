@@ -18,7 +18,7 @@ import tempfile
 
 from tools.header_manifest import read_header_manifest
 from tools.tbd import read_install_names, read_json
-from tools.fetch_sources import ROOT as REPO_ROOT, read_lock
+from tools.fetch_sources import read_lock
 
 
 STUB = Path("usr/lib/libSystem.B.tbd")
@@ -32,9 +32,6 @@ FRAMEWORKS = Path("System/Library/Frameworks")
 CXX_HEADERS = Path("usr/include/c++/v1")
 CXX_LICENSES = tuple(Path("usr/share/licenses") / name / "LICENSE.TXT"
                      for name in ("libcxx", "libcxxabi"))
-SDK_VERSION = "26.5"
-SDK_NAME = "macosx" + SDK_VERSION
-CONSUMER_PROFILE = Path(__file__).with_name("consumer-26.5.json")
 MACHO_MAGIC = {
     b"\xfe\xed\xfa\xce", b"\xce\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xcf\xfa\xed\xfe",
     b"\xca\xfe\xba\xbe", b"\xbe\xba\xfe\xca", b"\xca\xfe\xba\xbf", b"\xbf\xba\xfe\xca",
@@ -243,13 +240,13 @@ def sdk_gen_simd_headers(plan, root):
         plan.file(path, source, root, "sdk-gen-simd")
 
 
-def sdk_settings(sdk, receipts):
-    settings = {"CanonicalName": SDK_NAME, "Version": SDK_VERSION, "MaximumDeploymentTarget": SDK_VERSION,
+def sdk_settings(sdk, receipts, name, version):
+    settings = {"CanonicalName": name, "Version": version, "MaximumDeploymentTarget": version,
                 "SupportedTargets": {"macosx": {"Archs": ["arm64"], "LLVMTargetTripleVendor": "apple",
                                                  "LLVMTargetTripleSys": "macosx"}}}
     path = sdk / "SDKSettings.json"
     path.write_text(json.dumps(settings, indent=2, sort_keys=True) + "\n")
-    receipts[path.name] = {"layer": "sdk-settings", "source": f"c-install:{SDK_NAME}", "sha256": digest(path)}
+    receipts[path.name] = {"layer": "sdk-settings", "source": f"c-install:{name}", "sha256": digest(path)}
 
 
 def framework(plan, sdk_gen, name, *, prepared=None, overlay=None):
@@ -271,14 +268,12 @@ def frameworks(plan, sdk_gen, args):
     overlays = dict(args.framework_overlay)
     if len(prepared) != len(args.prepared_framework) or len(overlays) != len(args.framework_overlay):
         raise ValueError("multiple prepared bundles or overlays for a framework")
-    if names & prepared.keys():
-        raise ValueError("a framework cannot be selected and supplied as a prepared bundle")
-    if args.all_frameworks:
+    if not names:
         root = sdk_gen / FRAMEWORKS
         if not root.is_dir():
             raise ValueError(f"missing SDK Gen framework directory: {root}")
         names.update(path.stem for path in root.glob("*.framework") if path.is_dir())
-        names.difference_update(prepared)
+    names.difference_update(prepared)
     if overlays.keys() - names:
         raise ValueError("framework overlays require a selected SDK Gen base bundle: " +
                          ", ".join(sorted(overlays.keys() - names)))
@@ -346,44 +341,32 @@ def providers(plan, root, llvm):
     return locations
 
 
-def consumer_assets(files):
-    groups = defaultdict(list)
-    for path, receipt in sorted(files.items()):
-        layer = receipt["layer"]
-        if layer in ("sdk-gen-framework", "prepared-framework", "framework-overlay"):
-            group = Path(path).parts[len(FRAMEWORKS.parts)]
-        elif layer in ("sdk-gen-libsystem", "sdk-gen-cxx", "sdk-gen-simd", "external-stub"):
-            group = layer
-        else:
-            continue
-        kind = "symlink" if "symlink" in receipt else "sha256"
-        groups[group].append([path, layer, kind, receipt[kind]])
-    return {
-        group: hashlib.sha256(json.dumps(rows, separators=(",", ":")).encode()).hexdigest()
-        for group, rows in groups.items()
-    }
-
-
-def verify_consumer_inputs(composition, profile):
-    if not composition.get("objc4_revision"):
-        raise ValueError("consumer profile requires the pinned SDK Gen version and objc4 layer")
-    actual = consumer_assets(composition["files"])
-    expected = profile["asset_sha256"]
-    mismatches = sorted(name for name in actual.keys() | expected.keys()
-                        if actual.get(name) != expected.get(name))
-    if mismatches:
-        raise ValueError("consumer assets differ from the qualified profile: " + ", ".join(mismatches))
-
-
-def check_sdk_gen_version(root, expected, option):
+def check_sdk_gen_version(root, name, version):
     settings = read_json((root / "SDKSettings.json").read_bytes())
     if not isinstance(settings, dict):
-        raise ValueError(f"{option} has invalid SDKSettings.json at {root}")
-    name, version = settings.get("CanonicalName"), settings.get("Version")
-    if name != expected or version != expected.removeprefix("macosx"):
-        raise ValueError(
-            f"{option} requires {expected}, got CanonicalName={name!r} and Version={version!r} at {root}"
-        )
+        raise ValueError(f"--sdk-gen has invalid SDKSettings.json at {root}")
+    actual_name, actual_version = settings.get("CanonicalName"), settings.get("Version")
+    if actual_name != name or actual_version != version:
+        raise ValueError(f"--sdk-gen requires {name}, got "
+                         f"CanonicalName={actual_name!r} and Version={actual_version!r} at {root}")
+
+
+def source_pins(lock):
+    return {name: (pin["url"], pin["commit"]) for name, pin in lock["projects"].items()}
+
+
+def check_source_lock(root, expected, label):
+    receipt = root / "source-lock.json"
+    actual = read_json(receipt.read_bytes()) if receipt.is_file() and not receipt.is_symlink() else {}
+    sdk = expected["sdk"]["canonical_name"]
+    try:
+        matches = (actual["sdk"]["canonical_name"] == sdk
+                   and actual.get("profile") == expected.get("profile")
+                   and source_pins(actual) == source_pins(expected))
+    except (AttributeError, KeyError, TypeError):
+        matches = False
+    if not matches:
+        raise ValueError(f"{label} does not match the {sdk} source lock")
 
 
 def compose(args):
@@ -393,23 +376,16 @@ def compose(args):
     c_root = args.c_install.resolve()
     objc_root = args.objc4_install.resolve() if args.objc4_install else None
     sdk_gen = args.sdk_gen.resolve()
-    framework_sdk = args.framework_sdk_gen.resolve() if args.framework_sdk_gen else sdk_gen
-    # Replay the older consumer archive only with its existing exact-asset check.
-    profile = read_json(CONSUMER_PROFILE.read_bytes()) if args.verify_consumer_inputs else None
-    expected_sdk_gen = profile["sdk_gen"] if profile else SDK_NAME
-    check_sdk_gen_version(sdk_gen, expected_sdk_gen, "--sdk-gen")
-    if framework_sdk != sdk_gen:
-        check_sdk_gen_version(framework_sdk, expected_sdk_gen, "--framework-sdk-gen")
-    expected_lock, _ = read_lock(REPO_ROOT / "locks" / f"{SDK_NAME}.json")
-    lock = c_root / "source-lock.json"
-    if lock.is_symlink() or lock.read_bytes() != expected_lock:
-        raise ValueError(f"composition requires the pinned {SDK_NAME} C installation")
+    lock_bytes, _ = read_lock(args.lock)
+    lock = read_json(lock_bytes)
+    name, version = (lock["sdk"][key] for key in ("canonical_name", "version"))
+    check_sdk_gen_version(sdk_gen, name, version)
+    check_source_lock(c_root, lock, "C installation")
     objc4_revision = None
     if objc_root:
-        expected_lock, projects = read_lock(REPO_ROOT / "locks" / f"{SDK_NAME}-objc4.json")
-        lock = objc_root / "source-lock.json"
-        if lock.is_symlink() or lock.read_bytes() != expected_lock:
-            raise ValueError(f"objc4 installation does not match the {SDK_NAME} source lock")
+        objc_lock = args.lock.with_name(f"{name}-objc4.json")
+        lock_bytes, projects = read_lock(objc_lock)
+        check_source_lock(objc_root, read_json(lock_bytes), "objc4 installation")
         objc4_revision = projects["objc4"]["commit"]
 
     plan = Plan()
@@ -417,10 +393,10 @@ def compose(args):
     sdk_gen_libsystem(plan, sdk_gen)
     if objc_root:
         objc4_headers(plan, objc_root)
-    if args.include_cxx:
+    sdk_gen_simd_headers(plan, sdk_gen)
+    if args.variant == "full":
         sdk_gen_cxx_headers(plan, sdk_gen)
-    sdk_gen_simd_headers(plan, framework_sdk)
-    frameworks(plan, framework_sdk, args)
+        frameworks(plan, sdk_gen, args)
     for spec in args.external_stub:
         external_stub(plan, spec)
 
@@ -429,19 +405,15 @@ def compose(args):
         sdk = Path(temporary) / "SDK"
         sdk.mkdir()
         receipts = plan.materialize(sdk)
-        sdk_settings(sdk, receipts)
+        sdk_settings(sdk, receipts, name, version)
         composition = {
             "schema": 1,
             "files": receipts,
-            "sdk_gen": expected_sdk_gen,
+            "sdk_gen": name,
             "providers": providers(plan, sdk, args.llvm.resolve()),
         }
         if objc4_revision:
             composition["objc4_revision"] = objc4_revision
-        if args.framework_sdk_gen:
-            composition["framework_sdk_gen"] = expected_sdk_gen
-        if profile:
-            verify_consumer_inputs(composition, profile)
         manifest = sdk / "composition.json"
         manifest.write_text(json.dumps(composition, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         manifest.chmod(0o644)
@@ -452,19 +424,13 @@ def compose(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ("c-install", "llvm", "out", "sdk-gen"):
+    for name in ("c-install", "llvm", "out", "sdk-gen", "lock"):
         parser.add_argument(f"--{name}", required=True, type=Path)
     parser.add_argument("--objc4-install", type=Path,
                         help="separate Objective-C runtime headers from make install-objc4")
-    parser.add_argument("--include-cxx", action="store_true",
-                        help="include the LLVM C++ and ABI headers supplied by --sdk-gen")
-    parser.add_argument("--verify-consumer-inputs", action="store_true",
-                        help="require the assets from the qualified macOS 26.5 consumer archive")
-    parser.add_argument("--framework", action="append", default=[], help="public SDK Gen framework name")
-    parser.add_argument("--all-frameworks", action="store_true",
-                        help="select every SDK Gen System/Library/Frameworks bundle")
-    parser.add_argument("--framework-sdk-gen", type=Path,
-                        help="SDK Gen framework input, separately from the libSystem input")
+    parser.add_argument("--variant", choices=("minimal", "full"), required=True)
+    parser.add_argument("--framework", action="append", default=[],
+                        help="select a generated framework for the full SDK (default: all)")
     parser.add_argument("--prepared-framework", nargs=2, action="append", default=[], metavar=("NAME", "DIRECTORY"),
                         help="supply an entire prepared framework bundle")
     parser.add_argument("--framework-overlay", nargs=2, action="append", default=[], metavar=("NAME", "DIRECTORY"),
@@ -472,6 +438,8 @@ def main():
     parser.add_argument("--external-stub", action="append", default=[], metavar="DESTINATION=SOURCE",
                         help="select one .tbd or relative alias at a path below usr/lib")
     args = parser.parse_args()
+    if args.variant == "minimal" and (args.objc4_install or args.framework or args.prepared_framework or args.framework_overlay):
+        parser.error("Objective-C and framework inputs require --variant full")
     try:
         compose(args)
     except (OSError, ValueError, KeyError) as err:

@@ -1,7 +1,6 @@
 .DEFAULT_GOAL := install
 
-FRAMEWORK_SDK ?= macosx26.5
-SOURCE_ROOT ?= $(abspath ../build/inputs/sources/$(FRAMEWORK_SDK)-frameworks)
+SOURCE_ROOT ?= $(abspath ../build/inputs/sources/$(SDK)-frameworks)
 OUT ?= $(abspath ../build/frameworks)
 C_FRAMEWORKS := CoreFoundation AudioToolbox AudioUnit CoreAudio CoreAudioTypes CoreMIDI IOKit OpenAL Security SystemConfiguration
 OBJC_FRAMEWORKS := Foundation AppKit CoreData Cocoa

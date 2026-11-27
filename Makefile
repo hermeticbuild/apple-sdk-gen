@@ -2,9 +2,12 @@
 PYTHON ?= python3
 MIG ?= /usr/bin/mig
 SDK ?= macosx26.5
+SDK_LOCK := $(CURDIR)/locks/$(SDK).json
 INPUTS ?= $(CURDIR)/build/inputs
 SOURCE_ROOT ?= $(INPUTS)/sources/$(SDK)$(if $(install-profile),-$(install-profile))
 LLVM_DIR ?= $(INPUTS)/llvm
+GENERATED ?= $(CURDIR)/build/generated
+SDK_OUTPUT ?= $(CURDIR)/build/sdk
 CLANG ?= $(LLVM_DIR)/bin/clang
 offline = $(if $(filter 1,$(OFFLINE)),--offline)
 export SOURCE_ROOT
@@ -20,10 +23,10 @@ prepare-sources: prepare-c-sources
 	"$(PYTHON)" -m tools.fetch_sources --lock "locks/$(SDK)-frameworks.json" --dest "$(INPUTS)/sources/$(SDK)-frameworks" --cache "$(INPUTS)/git" $(offline)
 
 prepare-llvm:
-	"$(PYTHON)" -m tools.fetch_llvm_tools --dest "$(LLVM_DIR)" --cache "$(INPUTS)/downloads" $(offline)
+	"$(PYTHON)" -m tools.fetch_llvm_tools --lock "$(SDK_LOCK)" --dest "$(LLVM_DIR)" --cache "$(INPUTS)/downloads" $(offline)
 
 prepare-docc:
-	SDK_VERSION="$(patsubst macosx%,%,$(SDK))" bash tools/fetch_docc_snapshot.sh "$(INPUTS)/docc" "$(INPUTS)/downloads" $(offline)
+	PYTHON="$(PYTHON)" bash tools/fetch_docc_snapshot.sh "$(SDK_LOCK)" "$(INPUTS)/docc" "$(INPUTS)/downloads" $(offline)
 
 prepare-python:
 	@set -eu; \
@@ -37,7 +40,24 @@ prepare-python:
 		printf '%s\n' "$$digest" > "$$venv/.requirements-sha256"
 
 test-llvm-tools:
-	PYTHONPATH="$(CURDIR)" "$(PYTHON)" tests/check_llvm_tools.py --llvm-dir "$(LLVM_DIR)"
+	PYTHONPATH="$(CURDIR)" "$(PYTHON)" tests/check_llvm_tools.py --lock "$(SDK_LOCK)" --llvm-dir "$(LLVM_DIR)"
+
+.PHONY: generate-sdk compose-sdk test-composed-sdk
+generate-sdk:
+	@set -eu; \
+		version=$$("$(PYTHON)" -c 'import json,sys; print(json.load(open(sys.argv[1]))["sdk"]["version"])' "$(SDK_LOCK)"); \
+		"$(INPUTS)/python/bin/python" -m tools.apple_sdk_gen --sdk-version "$$version" \
+			--llvm-dir "$(LLVM_DIR)" --docc-cache-only --cache-dir "$(INPUTS)/docc" \
+			--output "$(GENERATED)" $(if $(FRAMEWORKS),--frameworks "$(FRAMEWORKS)") -v
+
+compose-sdk:
+	INPUTS="$(INPUTS)" LLVM_DIR="$(LLVM_DIR)" FRAMEWORKS="$(FRAMEWORKS)" PATH="$(INPUTS)/python/bin:$$PATH" \
+		bash release/build-composed-sdk.sh "$(SDK_LOCK)" \
+		"$(GENERATED)/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk" "$(SDK_OUTPUT)"
+
+test-composed-sdk:
+	INPUTS="$(INPUTS)" LLVM_DIR="$(LLVM_DIR)" PATH="$(INPUTS)/python/bin:$$PATH" \
+		bash release/test-composed-sdk.sh "$(SDK_LOCK)" "$(SDK_OUTPUT)"
 
 .PHONY: install install-objc4 check-c-install-tools test
 install: check-c-install-tools

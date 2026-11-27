@@ -221,10 +221,11 @@ def verify(llvm, work, c_install, lock, run, sha256):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--lock", type=Path, required=True)
     parser.add_argument("--llvm-dir", type=Path, required=True)
     parser.add_argument("--c-install", type=Path)
     args = parser.parse_args()
-    lock = read_llvm_lock()
+    lock = read_llvm_lock(args.lock)
     verify_prepared(args.llvm_dir, lock)
     with TemporaryDirectory(prefix="llvm-smoke-") as temporary:
         result = verify(args.llvm_dir.resolve(), Path(temporary), args.c_install, lock, run, sha256)

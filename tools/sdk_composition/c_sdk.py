@@ -59,8 +59,8 @@ def check_header_inputs(sdk, sources, projects):
             raise ValueError(f"header differs from its copy source: {name}")
 
 
-def write_provenance(sdk, sources):
-    lock, projects = read_lock(REPO / "locks/macosx26.5.json")
+def write_provenance(sdk, sources, lock_path):
+    lock, projects = read_lock(lock_path)
     check_header_inputs(sdk, sources, projects)
     additional = {}
 
@@ -71,7 +71,7 @@ def write_provenance(sdk, sources):
             stream.write(contents)
         additional[name] = {"sha256": digest(file), "source": origin}
 
-    install("source-lock.json", lock, "locks/macosx26.5.json")
+    install("source-lock.json", lock, lock_path.relative_to(REPO).as_posix())
     for project in sorted(projects):
         for name in ("APPLE_LICENSE", "LICENSE"):
             source = sources / project / name
@@ -103,12 +103,12 @@ def write_provenance(sdk, sources):
                     install(name, notice + b"*/\n", path)
 
     revision = subprocess.check_output(["git", "-C", REPO, "rev-parse", "HEAD"], text=True).strip()
-    snapshot = (REPO / "release/docc.snapshot").read_text().split()
+    snapshot = json.loads(lock)["docc"]
     data = {
         "source_commit": revision,
         "additional_files": additional,
         "simd": {
-            "snapshot_sha256": snapshot[0],
+            "snapshot_sha256": snapshot["sha256"],
             "generator": "tools/apple_sdk_gen/supplements/simd.py",
             "generator_sha256": digest(REPO / "tools/apple_sdk_gen/supplements/simd.py"),
             "pages": [f"https://developer.apple.com/documentation/simd/{page}" for page in simd.docc_pages()],
@@ -166,10 +166,13 @@ def main():
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--write-provenance", metavar="SOURCE_ROOT", type=Path)
     mode.add_argument("--compare", metavar="FULL_SDK", type=Path)
+    parser.add_argument("--lock", type=Path)
     args = parser.parse_args()
+    if args.write_provenance and args.lock is None:
+        parser.error("--write-provenance requires --lock")
     try:
         if args.write_provenance:
-            write_provenance(args.c_sdk.resolve(), args.write_provenance.resolve())
+            write_provenance(args.c_sdk.resolve(), args.write_provenance.resolve(), args.lock.resolve())
         else:
             check_archives(args.c_sdk.resolve(), args.compare.resolve())
     except (OSError, ValueError, KeyError) as err:

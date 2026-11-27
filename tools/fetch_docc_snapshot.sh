@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# != 2 && $# != 3 ]] || [[ ${3:-} != "" && $3 != --offline ]]; then
-  echo "Usage: $0 CACHE_DIR DOWNLOAD_DIR [--offline]" >&2
+if [[ $# != 3 && $# != 4 ]] || [[ ${4:-} != "" && $4 != --offline ]]; then
+  echo "Usage: $0 SDK_LOCK CACHE_DIR DOWNLOAD_DIR [--offline]" >&2
   exit 2
 fi
 
-repo=$(cd "$(dirname "$0")/.." && pwd -P)
-read -r expected key < "$repo/release/docc.snapshot"
-: "${SDK_VERSION:?Set SDK_VERSION}"
-if [[ ! $expected =~ ^[0-9a-f]{64}$ || $key != "macos/$SDK_VERSION/snapshots/"*.db.zst ]]; then
-  echo "Invalid DocC snapshot pin for macOS $SDK_VERSION" >&2
-  exit 2
-fi
+read -r expected key < <("${PYTHON:-python3}" -c '
+import json, sys
+with open(sys.argv[1]) as lock:
+    docc = json.load(lock)["docc"]
+print(docc["sha256"], docc["key"])
+' "$1")
 
-mkdir -p "$1" "$2"
-cache_dir=$(cd "$1" && pwd -P)
-download_dir=$(cd "$2" && pwd -P)
+mkdir -p "$2" "$3"
+cache_dir=$(cd "$2" && pwd -P)
+download_dir=$(cd "$3" && pwd -P)
 db="$cache_dir/cache.db"
 receipt="$cache_dir/.snapshot-sha256"
 archive="$download_dir/$expected.db.zst"
@@ -41,7 +40,7 @@ check_digest() {
 scratch=$(mktemp -d "$cache_dir/docc.XXXXXX")
 trap 'rm -rf -- "$scratch"' EXIT
 if [[ ! -f $archive ]]; then
-  if [[ ${3:-} == --offline ]]; then
+  if [[ ${4:-} == --offline ]]; then
     echo "Offline mode requires cached input: $archive" >&2
     exit 1
   fi

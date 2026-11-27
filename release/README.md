@@ -4,7 +4,7 @@ The manual [Release workflow](../.github/workflows/release.yml) generates
 frameworks, Darwin stubs, and LLVM libc++ headers using this checkout. It
 builds the C and objc4 header trees with the [in-tree C SDK](../docs/c-sdk-headers.md).
 The SDK Gen commit pins both sets of build rules. The release job restores the exact private DocC
-snapshot recorded in [docc.snapshot](docc.snapshot) and uses only that
+snapshot recorded in [the macOS lock](../locks/macosx26.5.json) and uses only that
 snapshot for DocC responses. The workflow pins its GitHub actions, Xcode,
 Bazel, Python, and [Python wheels](requirements.txt). GitHub manages the
 macOS and Ubuntu runner images. The build logs record the image and its
@@ -37,22 +37,25 @@ Ninja, zstd, and gh. Set the R2 credentials below for a cold DocC download.
 
 ```sh
 make prepare PYTHON=python3.12
-source build/inputs/python/bin/activate
-python3 -m tools.apple_sdk_gen --sdk-version 26.5 --all-frameworks \
-  --include-cxx --llvm-dir build/inputs/llvm --docc-cache-only \
-  --cache-dir build/inputs/docc --output build/generated -v
-generated=build/generated/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
-release/build-composed-sdk.sh "$generated" build/sdk
-release/test-composed-sdk.sh build/sdk
+make generate-sdk
+make compose-sdk
+make test-composed-sdk
 ```
 
-The [Bazel workspaces](../e2e/README.md) read the corresponding archive under
-`build/sdk/`. The build driver takes the generated tree
-as an argument so local recipe iterations can reuse it. The build and tests
-read prepared inputs from `build/inputs`. Pass an absolute `INPUTS` path to
-Make and to the release scripts to share inputs across worktrees. Rerun
-`make prepare OFFLINE=1` to check that preparation can reuse the local inputs.
-Build each new pair of archives in a fresh output directory.
+The [Bazel workspaces](../e2e/README.md) read the archives under
+`build/sdk/`. Both build targets accept `GENERATED` for a different
+intermediate directory. Set `SDK_OUTPUT` to a fresh directory when
+recomposing. Set `INPUTS` to an absolute path to share prepared inputs
+across worktrees. Use `make prepare OFFLINE=1` to reuse the local inputs.
+
+For a smaller framework build, pass the same comma-separated selection
+to generation and composition. Framework recipes may add dependencies.
+
+```sh
+make generate-sdk FRAMEWORKS=Cocoa,AVFoundation GENERATED="$PWD/build/selected"
+make compose-sdk FRAMEWORKS=Cocoa,AVFoundation GENERATED="$PWD/build/selected" \
+  SDK_OUTPUT="$PWD/build/sdk-selected"
+```
 
 ## Keep a portable DocC cache
 
@@ -68,14 +71,14 @@ Keep snapshots in a private R2 Standard bucket without object expiration.
 Set repository Actions variables `DOCC_R2_ENDPOINT` and `DOCC_R2_BUCKET`
 and the bucket-scoped secrets `DOCC_R2_ACCESS_KEY_ID` and
 `DOCC_R2_SECRET_ACCESS_KEY`. The workflow verifies the full SHA-256 in
-`docc.snapshot` before extracting the pinned object. For a local restore,
+the macOS lock before extracting the pinned object. For a local restore,
 seed `build/inputs/downloads/<SHA-256>.db.zst` and run `make prepare-docc OFFLINE=1`.
 
 To refresh DocC, generate separately with `--reuse-docc-cache` to fetch
 missing pages. Use a fresh cache directory to refresh existing pages as
 well. Upload the checked snapshot under a new dated key in
 `macos/26.5/snapshots/`, then commit the full SHA-256 and key in
-`docc.snapshot`. Existing releases retain their snapshot pin.
+the macOS lock. Existing releases retain their snapshot pin.
 
 The earlier frozen input and archive checksums are [in Git history](https://github.com/hermeticbuild/apple-sdk-gen/tree/c66fa45/release).
 The fresh build uses the framework outputs generated in the release job.

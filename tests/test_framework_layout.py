@@ -81,7 +81,7 @@ class FrameworkLayoutTest(unittest.TestCase):
                     self.assertFalse((sdk / "System/Library/Frameworks/Cocoa.framework").exists())
 
     def test_selecting_cocoa_requests_the_required_documented_frameworks(self):
-        args = parse_args(["--platforms", "macos", "--sdk-version", "27.0", "--frameworks", "Cocoa"])
+        args = parse_args(["--sdk-version", "27.0", "--frameworks", "Cocoa"])
         self.assertEqual(args.frameworks, {"Cocoa", "Foundation", "AppKit", "CoreData"})
 
 

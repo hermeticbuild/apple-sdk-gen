@@ -26,8 +26,8 @@ make install SDK=macosx26.5 OUT=/tmp/apple-oss-c-headers
 
 Use `CLANG=/path/to/clang` to supply a compiler explicitly.
 
-The default SDK is `macosx26.5`. Select `macosx26.0` to use the older source
-set. See [the source locks](../locks/README.md) for preparation, offline operation,
+The default SDK is `macosx26.5`. To build the older C source set, run `make prepare-c-sources SDK=macosx26.0`
+and `make install SDK=macosx26.0` with the already prepared Clang. See [the source locks](../locks/README.md) for preparation, offline operation,
 and how to add a version. The output directory must be new.
 The installer copies the selected lock as `source-lock.json` and stages each upstream install
 separately, generates public MIG headers, and merges the result.

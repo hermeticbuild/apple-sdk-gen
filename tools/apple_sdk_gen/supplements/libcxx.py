@@ -7,9 +7,7 @@ from pathlib import Path
 DATA = Path(__file__).with_name("data")
 
 
-def install_libcxx_headers(sdk_root: Path, sdk_version: str, llvm_dir: Path) -> None:
-    if sdk_version != "26.5":
-        raise ValueError(f"No libc++ header configuration for macOS SDK {sdk_version}")
+def install_libcxx_headers(sdk_root: Path, llvm_dir: Path) -> None:
     source = llvm_dir / "include/c++/v1"
     destination = sdk_root / "usr/include/c++/v1"
     shutil.copytree(source, destination, dirs_exist_ok=True)

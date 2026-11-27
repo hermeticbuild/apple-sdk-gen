@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# != 1 ]]; then
-  echo "Usage: $0 OUTPUT_DIRECTORY" >&2
+if [[ $# != 2 ]]; then
+  echo "Usage: $0 SDK_LOCK OUTPUT_DIRECTORY" >&2
   exit 2
 fi
-out=$(cd "$1" && pwd -P)
+sdk=$(basename "$1" .json)
+out=$(cd "$2" && pwd -P)
 cd "$(dirname "$0")/.."
 inputs=${INPUTS:-"$PWD/build/inputs"}
 llvm=${LLVM_DIR:-"$inputs/llvm"}
 test -x "$llvm/bin/clang" || { echo "Run make prepare to install LLVM at $llvm." >&2; exit 1; }
 args=(CLANG="$llvm/bin/clang" SDK="$out/MacOSX.sdk" RUN=1)
-make test CLANG="$llvm/bin/clang" OUT="$out/c"
+make test SDK="$sdk" CLANG="$llvm/bin/clang" OUT="$out/c"
 
 work=$(mktemp -d "${TMPDIR:-/tmp}/composed-sdk-tests.XXXXXX")
 trap 'rm -rf -- "$work"' EXIT
@@ -42,5 +43,5 @@ make -C tests/composed_sdk test test-foundation-macros test-coregraphics \
   test-security test-network test-simd test-modelio test-modelio-modules \
   test-objc-property "${args[@]}"
 LLVM="$llvm" LIBSYSTEM_TEST_LLVM="$llvm" \
-  LIBSYSTEM_TEST_OBJC4="$out/objc4" ICONV_SOURCE="$inputs/sources/macosx26.5/libiconv" C_INSTALL="$out/c" \
+  LIBSYSTEM_TEST_OBJC4="$out/objc4" ICONV_SOURCE="$inputs/sources/$sdk/libiconv" C_INSTALL="$out/c" \
   python3 -m unittest tools.sdk_composition.test_compose_sdk components.libiconv.test_stubs
