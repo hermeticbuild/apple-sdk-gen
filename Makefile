@@ -2,7 +2,7 @@
 PYTHON ?= python3
 MIG ?= /usr/bin/mig
 sdk-targets := prepare prepare-sources prepare-c-sources prepare-llvm prepare-docc \
-	test-llvm-tools generate-sdk compose-sdk test-composed-sdk install install-objc4 test
+	generate-sdk compose-sdk test-composed-sdk install install-objc4 test
 ifeq ($(strip $(SDK)),)
 ifneq ($(filter $(sdk-targets),$(or $(MAKECMDGOALS),$(.DEFAULT_GOAL))),)
 $(error Pass an SDK lock name, for example SDK=macosx26.5)
@@ -19,7 +19,7 @@ CLANG ?= $(LLVM_DIR)/bin/clang
 offline = $(if $(filter 1,$(OFFLINE)),--offline)
 export SOURCE_ROOT
 
-.PHONY: prepare prepare-sources prepare-c-sources prepare-llvm prepare-docc prepare-python test-llvm-tools
+.PHONY: prepare prepare-sources prepare-c-sources prepare-llvm prepare-docc prepare-python
 prepare: prepare-sources prepare-llvm prepare-docc prepare-python
 
 prepare-c-sources:
@@ -45,8 +45,10 @@ prepare-python:
 		"$$venv/bin/python" -m pip install --require-hashes --only-binary=:all: -r release/requirements.txt; \
 		printf '%s\n' "$$digest" > "$$venv/.requirements-sha256"
 
-test-llvm-tools:
-	PYTHONPATH="$(CURDIR)" "$(PYTHON)" tests/check_llvm_tools.py --lock "$(SDK_LOCK)" --llvm-dir "$(LLVM_DIR)"
+.PHONY: test-python
+test-python:
+	"$(PYTHON)" -m unittest discover -s tools.apple_sdk_gen.tests -t .
+	"$(PYTHON)" -m unittest discover -s tests
 
 .PHONY: generate-sdk compose-sdk test-composed-sdk
 generate-sdk:
