@@ -94,6 +94,12 @@ jobs:
             --@llvm//config:macos_libcxx_headers=sdk \
             --@curl//:ssl_lib=mbedtls //:framework_consumers
 
+      # rules_rs tests SSH-form GitHub URLs for a public Git dependency.
+      - name: Fetch public GitHub SSH dependencies over HTTPS
+        run: |
+          git config --global --add url."https://github.com/".insteadOf "ssh://git@github.com/"
+          git config --global --add url."https://github.com/".insteadOf "git@github.com:"
+
       - name: Test LLVM and Rust SDK consumers
         working-directory: e2e
         run: bazelisk --nohome_rc test --keep_going --test_output=errors //:hermetic_llvm //:rules_rs
