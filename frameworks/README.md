@@ -13,7 +13,7 @@ From the repository root, set `C_INSTALL` to the generated C tree and
 `bin/clang-installapi`.
 
 ```sh
-make prepare-sources
+make prepare-sources SDK=macosx26.5
 make -C frameworks install SDK=macosx26.5 CLANG="$LLVM/bin/clang" C_INSTALL="$C_INSTALL" OUT="$PWD/build/frameworks"
 ```
 

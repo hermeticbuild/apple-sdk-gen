@@ -3,7 +3,6 @@
 include frameworks/common.mk
 
 PYTHON ?= python3
-SDK ?= macosx26.5
 SOURCE_ROOT ?= $(CURDIR)/build/inputs/sources/$(SDK)
 # The public header uses the built-in libSystem _res compatibility data
 # below 15.4. Scan at 15.4 so it is not declared as a libresolv export.
@@ -12,6 +11,7 @@ INSTALLAPI_MIN := 15.4
 
 .PHONY: install stage
 install:
+	@test -n "$(strip $(SDK))" || { echo "Pass an SDK lock name, for example SDK=macosx26.5." >&2; exit 1; }
 	"$(PYTHON)" -m tools.fetch_sources --verify --lock locks/$(SDK).json \
 		--dest "$(abspath $(SOURCE_ROOT))"
 	@cmp -s "locks/$(SDK).json" "$(C_INSTALL)/source-lock.json" \

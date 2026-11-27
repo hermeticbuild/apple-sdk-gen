@@ -1,7 +1,6 @@
 # Run from the repository root after make install and make test.
 PYTHON ?= python3
 MINIMUM ?= 11.0
-SDK ?= macosx26.5
 CLANG = $(LLVM)/bin/clang
 SKILL := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 HEADERS = $(SKILL)scripts/sdk_review/headers
@@ -12,6 +11,7 @@ export PYTHONPATH := $(SKILL)scripts$(if $(PYTHONPATH),:$(PYTHONPATH))
 
 .PHONY: header-backlog census paths discovery semantics inputs test
 inputs:
+	@test -n "$(strip $(SDK))" || { echo "Pass an SDK lock name, for example SDK=macosx26.5." >&2; exit 2; }
 	@test -x "$(CLANG)" && test -f "$(C_INSTALL)/header-manifest.tsv" && test -f "$(APPLE_SDK)/SDKSettings.json" || { echo "Set LLVM, C_INSTALL and APPLE_SDK" >&2; exit 2; }
 	@test -n "$(WORK)" || { echo "Set WORK to a local report directory" >&2; exit 2; }
 	@test "$$("/usr/bin/plutil" -extract CanonicalName raw -o - "$(APPLE_SDK)/SDKSettings.json")" = "$(SDK)" || { echo "SDK must match the reference SDK's CanonicalName" >&2; exit 2; }

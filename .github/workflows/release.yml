@@ -17,6 +17,7 @@ jobs:
   build:
     runs-on: macos-26
     env:
+      SDK: macosx26.5
       DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
       USE_BAZEL_VERSION: "9.3.2"
     permissions:

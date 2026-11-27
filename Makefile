@@ -1,7 +1,14 @@
 .DEFAULT_GOAL := install
 PYTHON ?= python3
 MIG ?= /usr/bin/mig
-SDK ?= macosx26.5
+sdk-targets := prepare prepare-sources prepare-c-sources prepare-llvm prepare-docc \
+	test-llvm-tools generate-sdk compose-sdk test-composed-sdk install install-objc4 test
+ifeq ($(strip $(SDK)),)
+ifneq ($(filter $(sdk-targets),$(or $(MAKECMDGOALS),$(.DEFAULT_GOAL))),)
+$(error Pass an SDK lock name, for example SDK=macosx26.5)
+endif
+endif
+
 SDK_LOCK := $(CURDIR)/locks/$(SDK).json
 INPUTS ?= $(CURDIR)/build/inputs
 SOURCE_ROOT ?= $(INPUTS)/sources/$(SDK)$(if $(install-profile),-$(install-profile))

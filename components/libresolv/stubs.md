@@ -1,4 +1,4 @@
-Run `make -f components/libresolv/stubs.mk` from the repository root with the 26.5 C tree and
+Run `make -f components/libresolv/stubs.mk SDK=macosx26.5` from the repository root with the 26.5 C tree and
 the pinned source and LLVM inputs. The Apple project specifies
 `__BIND_INSTALLAPI`, the extra public header `installapi.h`, and the
 private header `dns_private.h` with three exported declarations. The

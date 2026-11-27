@@ -1,6 +1,6 @@
 # LLVM tools for building the SDK
 
-`make prepare-llvm` fetches the official macOS ARM64 LLVM 21.1.6 archive
+`make prepare-llvm SDK=macosx26.5` fetches the official macOS ARM64 LLVM 21.1.6 archive
 and checks its pinned SHA-256. The release pin
 lives in [macosx26.5.json](../locks/macosx26.5.json).
 
@@ -17,5 +17,5 @@ applies LLVM's Apple preset choices for vendor availability annotations
 and the libdispatch backend for parallel algorithms. The two license
 files are from the corresponding directories at LLVM's `llvmorg-21.1.6` tag.
 
-When changing the compiler pin, run `make test-llvm-tools` to exercise
+When changing the compiler pin, run `make test-llvm-tools SDK=macosx26.5` to exercise
 InstallAPI, Mach-O imports, LLD, and the bundled Darwin builtins.

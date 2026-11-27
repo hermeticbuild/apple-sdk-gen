@@ -36,17 +36,17 @@ Use an arm64 Mac with the Xcode command-line tools, Python 3.12 and zstd.
 A cold DocC download also uses the AWS CLI and the R2 credentials below.
 
 ```sh
-make prepare PYTHON=python3.12
-make generate-sdk
-make compose-sdk
-make test-composed-sdk
+make prepare SDK=macosx26.5 PYTHON=python3.12
+make generate-sdk SDK=macosx26.5
+make compose-sdk SDK=macosx26.5
+make test-composed-sdk SDK=macosx26.5
 ```
 
 The [Bazel workspaces](../e2e/README.md) read the archives under
 `build/sdk/`. Both build targets accept `GENERATED` for a different
 intermediate directory. Set `SDK_OUTPUT` to a fresh directory when
 recomposing. Set `INPUTS` to an absolute path to share prepared inputs
-across worktrees. Use `make prepare OFFLINE=1` to reuse the local inputs.
+across worktrees. Add `OFFLINE=1` to `make prepare` to reuse the local inputs.
 
 For a smaller build, list the frameworks to generate from DocC and any
 generated inputs needed by the local recipes. List exactly the bundles
@@ -54,9 +54,9 @@ to ship when composing, including their dependencies. Use bundle names
 and a fresh `GENERATED` directory for each generation.
 
 ```sh
-make generate-sdk FRAMEWORKS=Security GENERATED="$PWD/build/selected"
-make compose-sdk FRAMEWORKS=CoreFoundation,Security,SystemConfiguration GENERATED="$PWD/build/selected" \
-  SDK_OUTPUT="$PWD/build/sdk-selected"
+make generate-sdk SDK=macosx26.5 FRAMEWORKS=Security GENERATED="$PWD/build/selected"
+make compose-sdk SDK=macosx26.5 FRAMEWORKS=CoreFoundation,Security,SystemConfiguration \
+  GENERATED="$PWD/build/selected" SDK_OUTPUT="$PWD/build/sdk-selected"
 ```
 
 If the selected recipes need no generated frameworks, pass `FRAMEWORKS=`
@@ -78,7 +78,8 @@ Set repository Actions variables `DOCC_R2_ENDPOINT` and `DOCC_R2_BUCKET`
 and the bucket-scoped secrets `DOCC_R2_ACCESS_KEY_ID` and
 `DOCC_R2_SECRET_ACCESS_KEY`. The workflow verifies the full SHA-256 in
 the macOS lock before extracting the pinned object. For a local restore,
-seed `build/inputs/downloads/<SHA-256>.db.zst` and run `make prepare-docc OFFLINE=1`.
+seed `build/inputs/downloads/<SHA-256>.db.zst` and run
+`make prepare-docc SDK=macosx26.5 OFFLINE=1`.
 For a cold download outside CI, set the same endpoint and bucket and
 export the R2 access key as `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 

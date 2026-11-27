@@ -1,6 +1,5 @@
 .DEFAULT_GOAL := install
 
-SDK ?= macosx26.5
 SOURCE_LOCK ?= $(abspath ../locks/$(SDK)-frameworks.json)
 SOURCE_ROOT ?= $(abspath ../build/inputs/sources/$(SDK)-frameworks)
 OUT ?= $(abspath ../build/frameworks)
@@ -17,6 +16,7 @@ PYTHON ?= python3
 .PHONY: install stage test test-objc check-test-tools $(SUPPORTED) $(TESTS) $(OBJC_TESTS) $(OPTIONAL_TESTS)
 
 install:
+	@test -n "$(strip $(SDK))" || { echo "Pass an SDK lock name, for example SDK=macosx26.5." >&2; exit 1; }
 	PYTHONPATH="$(abspath ..)" "$(PYTHON)" -m tools.fetch_sources --verify --lock "$(SOURCE_LOCK)" \
 		--dest "$(abspath $(SOURCE_ROOT))"
 	@set -eu; \
