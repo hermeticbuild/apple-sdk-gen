@@ -1,0 +1,29 @@
+--- a/toolchain/args/macos/BUILD.bazel
++++ b/toolchain/args/macos/BUILD.bazel
+@@ -40,9 +40,7 @@
+     actions = [
+         "@rules_cc//cc/toolchains/actions:link_actions",
+     ],
+-    args = [
+-        "-Wl,-framework,Foundation",
+-    ],
++    args = [],
+ )
+ 
+ # Make compiler-rt's public sanitizer interface headers (sanitizer/*.h)
+@@ -84,13 +82,8 @@
+     actions = [
+         "@rules_cc//cc/toolchains/actions:link_actions",
+     ],
+-    args = select({
+-        "//config:nostdlibxx_enabled": ["-nostdlib++"],
+-        # The macOS toolchain has no resource directory, so add libc++ here.
+-        # This is incorrect for C links, but rules_cc cannot distinguish C links
+-        # from C++ links.
+-        "//conditions:default": ["-lc++"],
+-    }) + [
++    args = [
++        "-nostdlib++",
+         "-headerpad_max_install_names",
+         "-Wl,-no_warn_duplicate_libraries",
+     ],

@@ -1,23 +1,45 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# != 2 ]]; then
-  echo "Usage: $0 C_SDK OUTPUT_DIRECTORY" >&2
+if [[ $# != 1 ]]; then
+  echo "Usage: $0 OUTPUT_DIRECTORY" >&2
   exit 2
 fi
-c_sdk=$(cd "$1" && pwd -P)
-out=$(cd "$2" && pwd -P)
+out=$(cd "$1" && pwd -P)
 cd "$(dirname "$0")/.."
 llvm_cache=${LLVM_CACHE:-"$PWD/build/llvm-cache"}
-llvm=${LLVM_DIR:-$(cd "$c_sdk" && python3 -m tools.toolchain.official_llvm prepare --offline --cache "$llvm_cache")}
+llvm=${LLVM_DIR:-$(python3 -m tools.toolchain.official_llvm prepare --offline --cache "$llvm_cache")}
 args=(CLANG="$llvm/bin/clang" SDK="$out/MacOSX.sdk" RUN=1)
-make -C "$c_sdk" test CLANG="$llvm/bin/clang" OUT="$out/c"
+make test CLANG="$llvm/bin/clang" OUT="$out/c"
+
+work=$(mktemp -d "${TMPDIR:-/tmp}/composed-sdk-tests.XXXXXX")
+trap 'rm -rf -- "$work"' EXIT
+mkdir "$work/c" "$work/full"
+tar -xf "$out/MacOSX-Minimal.sdk.tar.zst" -C "$work/c"
+tar -xf "$out/MacOSX.sdk.tar.zst" -C "$work/full"
+c_sdk="$work/c/MacOSX.sdk"
+python3 -m tools.sdk_composition.c_sdk "$c_sdk" --compare "$work/full/MacOSX.sdk"
+make -C tests/composed_sdk test test-c-libraries test-simd \
+  CLANG="$llvm/bin/clang" SDK="$c_sdk" RUN=1
+
+printf 'int main(void) { return 0; }\n' > "$work/client.c"
+"$llvm/bin/clang" --no-default-config -target arm64-apple-macos11 -isysroot "$c_sdk" \
+  -fuse-ld=lld -nostdlib -Wl,-Z -L"$c_sdk/usr/lib" -lSystem "$work/client.c" -o "$work/client"
+"$work/client"
+if "$llvm/bin/clang" --no-default-config -target arm64-apple-macos11 -isysroot "$c_sdk" \
+  -fuse-ld=lld -nostdlib -Wl,-Z -L"$c_sdk/usr/lib" -lSystem -framework Foundation \
+  "$work/client.c" -o "$work/framework-client" 2>"$work/framework.log"; then
+  echo "C SDK unexpectedly linked Foundation." >&2
+  exit 1
+fi
+grep -F 'framework not found for -framework Foundation' "$work/framework.log"
+
 # The expanded fixture suite also tracks the known AVRouting and MetalKit gaps.
 make -C frameworks test test-objc test-CoreServices test-ApplicationServices \
   test-CoreGraphics test-CoreVideo test-CoreMedia test-AVFoundation test-QuartzCore "${args[@]}"
 make -C tests/composed_sdk test test-foundation-macros test-coregraphics \
   test-security test-network test-simd test-modelio test-modelio-modules \
-  test-objc-property C_SDK="$c_sdk" "${args[@]}"
-PYTHONPATH="$PWD:$c_sdk" LLVM="$llvm" LIBSYSTEM_TEST_LLVM="$llvm" \
+  test-objc-property "${args[@]}"
+LLVM="$llvm" LIBSYSTEM_TEST_LLVM="$llvm" \
   LIBSYSTEM_TEST_OBJC4="$out/objc4" ICONV_SOURCE="$out/sources/libiconv" C_INSTALL="$out/c" \
-  python3 -m unittest discover -s tools/sdk_composition
+  python3 -m unittest tools.sdk_composition.test_compose_sdk components.libiconv.test_stubs

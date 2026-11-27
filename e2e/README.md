@@ -5,6 +5,28 @@ Build the [composed SDK](../tools/sdk_composition/README.md) with
 `build/sdk/MacOSX.sdk.tar.zst` directly. Bazel watches the archive file and
 refreshes the SDK repository when it changes.
 
+## Minimal macOS SDK
+
+The `c-sdk` workspace reads `build/sdk/MacOSX-Minimal.sdk.tar.zst`. It compiles
+SQLite's engine and shell from the registry's `sqlite3` module and runs an
+on-disk transaction, reopen and integrity check. The executable loads
+libSystem.
+
+```sh
+(
+  cd e2e/c-sdk
+  export USE_BAZEL_VERSION=9.3.2
+  bazel --nohome_rc run --platforms=@llvm//platforms:macos_arm64 \
+    --@llvm//config:macos_libcxx_headers=llvm \
+    --run_under="$PWD/sqlite-smoke.sh" @sqlite3//:shell
+)
+```
+
+The workspace patches the pinned hermetic-llvm link flags to remove its
+implicit Foundation and libc++ dependencies for this C-only test. The
+same defaults otherwise apply to C execution tools built by the toolchain.
+See [the test-only patch](c-sdk/framework-free-link.patch).
+
 ## Stage 1 Clang
 
 Run with Bazel 9.3.2 and a configured `remote_default` in your Bazel rc.
