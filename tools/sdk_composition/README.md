@@ -6,8 +6,8 @@ sources.
 
 The composer has two variants.
 
-- `--variant minimal` installs the C headers, SIMD headers, and system linker
-  stubs.
+- `--variant minimal` installs the C headers, the separate SIMD component
+  supplied with `--simd-install`, and the system linker stubs.
 - `--variant full` adds libc++ and libc++abi headers and generated frameworks.
   Pass `--objc4-install` for the Objective-C runtime headers.
 

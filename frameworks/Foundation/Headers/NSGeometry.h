@@ -16,6 +16,13 @@ typedef CGPoint NSPoint;
 typedef CGSize NSSize;
 typedef CGRect NSRect;
 
+typedef struct NSEdgeInsets {
+    CGFloat top;
+    CGFloat left;
+    CGFloat bottom;
+    CGFloat right;
+} NSEdgeInsets;
+
 CF_EXTERN_C_BEGIN
 CF_EXPORT const NSPoint NSZeroPoint;
 CF_EXPORT const NSRect NSZeroRect;

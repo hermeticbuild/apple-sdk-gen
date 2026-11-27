@@ -112,6 +112,14 @@ typedef struct {
 - (void)addObject:(ObjectType)object;
 @end
 
+@interface NSSet<__covariant ObjectType> : NSObject <NSFastEnumeration>
++ (instancetype)set;
++ (instancetype)setWithObject:(ObjectType)object;
++ (instancetype)setWithArray:(NSArray<ObjectType> *)array;
+@property (readonly) NSUInteger count;
+- (BOOL)containsObject:(ObjectType)object;
+@end
+
 @interface NSDictionary<__covariant KeyType, __covariant ObjectType> : NSObject <NSFastEnumeration>
 + (instancetype)dictionaryWithDictionary:(NSDictionary<KeyType, ObjectType> *)dictionary;
 + (instancetype)dictionaryWithObjectsAndKeys:(id)firstObject, ...;
@@ -149,12 +157,31 @@ typedef struct {
 @property (readonly) NSDictionary<NSString *, id> *userInfo;
 @end
 
+typedef NSUInteger NSJSONReadingOptions;
+typedef NSUInteger NSJSONWritingOptions;
+
+@interface NSJSONSerialization : NSObject
++ (BOOL)isValidJSONObject:(id)object;
++ (NSData *)dataWithJSONObject:(id)object options:(NSJSONWritingOptions)options error:(NSError **)error;
++ (id)JSONObjectWithData:(NSData *)data options:(NSJSONReadingOptions)options error:(NSError **)error;
+@end
+
 @interface NSURL : NSObject
 + (instancetype)URLWithString:(NSString *)string;
 + (instancetype)fileURLWithPath:(NSString *)path;
 @property (readonly) NSString *absoluteString;
 @property (readonly) NSString *path;
 @property (readonly, getter=isFileURL) BOOL fileURL;
+@end
+
+@interface NSFileHandle : NSObject
++ (NSFileHandle *)fileHandleWithStandardOutput;
++ (NSFileHandle *)fileHandleWithStandardError;
++ (instancetype)fileHandleForReadingAtPath:(NSString *)path;
++ (instancetype)fileHandleForWritingAtPath:(NSString *)path;
+- (NSData *)readDataToEndOfFile;
+- (void)writeData:(NSData *)data;
+- (void)closeFile;
 @end
 
 @interface NSValue : NSObject
@@ -190,6 +217,15 @@ typedef struct {
 + (instancetype)dateWithTimeIntervalSinceNow:(NSTimeInterval)interval;
 + (instancetype)dateWithTimeIntervalSince1970:(NSTimeInterval)interval;
 @property (readonly) NSTimeInterval timeIntervalSince1970;
+@end
+
+@interface NSDateComponents : NSObject
+@property NSInteger year;
+@property NSInteger month;
+@property NSInteger day;
+@property NSInteger hour;
+@property NSInteger minute;
+@property NSInteger second;
 @end
 
 @interface NSThread : NSObject

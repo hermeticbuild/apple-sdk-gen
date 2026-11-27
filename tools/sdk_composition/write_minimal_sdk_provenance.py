@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import subprocess
 
-from tools.apple_sdk_gen.supplements import simd
+from components.simd import generate_headers as simd
 from tools.fetch_sources import read_lock
 from tools.read_header_manifest import read_header_manifest
 from tools.sdk_composition.compose_sdk import SYSTEM_COMPAT_NAMES, digest, relative_path
@@ -102,13 +102,14 @@ def write_provenance(sdk, sources, lock_path):
 
     revision = subprocess.check_output(["git", "-C", REPO, "rev-parse", "HEAD"], text=True).strip()
     snapshot = json.loads(lock)["docc"]
+    simd_generator = Path(simd.__file__).resolve()
     data = {
         "source_commit": revision,
         "additional_files": additional,
         "simd": {
             "snapshot_sha256": snapshot["sha256"],
-            "generator": "tools/apple_sdk_gen/supplements/simd.py",
-            "generator_sha256": digest(REPO / "tools/apple_sdk_gen/supplements/simd.py"),
+            "generator": simd_generator.relative_to(REPO).as_posix(),
+            "generator_sha256": digest(simd_generator),
             "pages": [f"https://developer.apple.com/documentation/simd/{page}" for page in simd.docc_pages()],
         },
         "linker_stubs": {f"usr/lib/{name}.tbd": origin for name, origin in STUBS.items()},

@@ -45,3 +45,19 @@ The other CoreServices subframeworks and the rest of LaunchServices remain
 open, including direct includes of the original `UTCoreTypes.h` and
 `LSOpen.h` headers. The separate CLI diagnostic already verified selected
 FSEvents stub entries.
+
+## File system events
+
+`Headers/FSEvents.h` supplies the public C surface used by Git's Darwin
+fsmonitor. Apple's DocC declarations give the function and callback
+types, and the individual context member pages give the field names and
+types. Git's GCC compatibility header supplies independent evidence for
+the record order, event IDs and flag values. The layout and types were
+checked against Xcode 26.5. The existing CoreServices stub already
+supplies these functions, and the arm64 C fixture exercises creating,
+starting and stopping a stream through that stub.
+
+- [Apple File System Events API](https://developer.apple.com/documentation/coreservices/file_system_events)
+- [C context and member declarations](https://developer.apple.com/documentation/coreservices/fseventstreamcontext?language=objc)
+- [Git Darwin fallback declarations and flag values](https://github.com/git/git/blob/a018953688f1b10bddf91bff8747068f5f4746a4/compat/fsmonitor/fsm-darwin-gcc.h)
+- [Git Darwin fsmonitor](https://github.com/git/git/blob/a018953688f1b10bddf91bff8747068f5f4746a4/compat/fsmonitor/fsm-listen-darwin.c)

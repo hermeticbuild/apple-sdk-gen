@@ -8,7 +8,7 @@
 
 #ifdef __OBJC__
 #import <QuartzCore/CALayer.h>
-@class NSApplication, NSEvent, NSGraphicsContext, NSImageRep, NSScreen, NSWindow;
+@class NSApplication, NSButton, NSEvent, NSGraphicsContext, NSImageRep, NSScreen, NSWindow;
 
 typedef NSInteger NSApplicationActivationPolicy;
 typedef NSInteger NSLineBreakMode;
@@ -21,6 +21,8 @@ typedef short NSEventSubtype;
 typedef NSUInteger NSEventType;
 typedef NSUInteger NSWindowCollectionBehavior;
 typedef NSUInteger NSWindowStyleMask;
+typedef CGFloat NSFontWeight;
+typedef NSString *NSAppearanceName;
 
 enum {
     NSApplicationActivationPolicyRegular = 0,
@@ -66,6 +68,15 @@ CF_EXPORT NSString *const NSPasteboardTypeHTML;
 CF_EXPORT NSString *const NSPasteboardTypeString;
 CF_EXPORT NSString *const NSPasteboardTypeTIFF;
 CF_EXPORT NSString *const NSPasteboardURLReadingFileURLsOnlyKey;
+CF_EXPORT void NSBeep(void);
+CF_EXPORT const NSFontWeight NSFontWeightSemibold;
+CF_EXPORT void NSRectFill(NSRect rect);
+CF_EXPORT void NSRectFillUsingOperation(NSRect rect, NSCompositingOperation operation);
+CF_EXPORT NSNotificationName const NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification;
+CF_EXPORT NSAppearanceName const NSAppearanceNameAqua;
+CF_EXPORT NSAppearanceName const NSAppearanceNameDarkAqua;
+CF_EXPORT NSAppearanceName const NSAppearanceNameAccessibilityHighContrastAqua;
+CF_EXPORT NSAppearanceName const NSAppearanceNameAccessibilityHighContrastDarkAqua;
 CF_EXTERN_C_END
 
 #if __has_include(<CoreGraphics/CGGeometry.h>) && __has_include(<CoreGraphics/CoreGraphics.h>)
@@ -170,15 +181,25 @@ CF_EXTERN_C_END
 @property BOOL drawsBackground;
 @end
 
-@interface NSImage : NSObject
-- (instancetype)initWithSize:(NSSize)size;
-- (instancetype)initWithData:(NSData *)data;
-- (instancetype)initByReferencingFile:(NSString *)fileName;
-@property NSSize size;
-- (void)addRepresentation:(NSImageRep *)representation;
-- (void)drawInRect:(NSRect)destination fromRect:(NSRect)source
-        operation:(NSCompositingOperation)operation fraction:(CGFloat)fraction;
+typedef NSUInteger NSAlertStyle;
+typedef NSInteger NSModalResponse;
+
+enum {
+    NSAlertStyleWarning = 0,
+    NSAlertStyleInformational = 1,
+    NSAlertStyleCritical = 2,
+};
+
+@interface NSAlert : NSObject
+@property NSAlertStyle alertStyle;
+@property (copy) NSString *messageText;
+@property (copy) NSString *informativeText;
+@property (strong) NSImage *icon;
+- (NSButton *)addButtonWithTitle:(NSString *)title;
+- (NSModalResponse)runModal;
 @end
+
+#import <AppKit/NSImage.h>
 
 @interface NSImageRep : NSObject
 @end

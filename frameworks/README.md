@@ -21,6 +21,8 @@ make -C frameworks install SDK=macosx26.5 CLANG="$LLVM/bin/clang" C_INSTALL="$C_
 and configd revisions from `full_projects` in `locks/macosx26.5.json`.
 `install` reads those checkouts and writes into a new output directory. To stage a subset, pass `FRAMEWORKS="CoreFoundation OpenAL"`,
 for example. SystemConfiguration also stages CoreFoundation and Security.
+AppKit reads its generated `NSImage` declaration from `GENERATED_FRAMEWORKS`.
+The release driver passes that directory after `make generate-sdk`.
 
 The recipes use Make, shell, Git, and standard tools. They take no
 official SDK path. Each framework's `provenance.md` identifies its inputs,

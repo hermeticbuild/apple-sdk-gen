@@ -10,12 +10,23 @@ from ..models.symbol import Symbol
 from ..models.types import SymbolKind, TokenKind
 from ..supplements.enum_values import CORE_GRAPHICS_CONSTANT_INITIALIZERS, get_case_value, is_options_enum
 from ..supplements.inline_functions import INLINE_FUNCTIONS
-from ..supplements.simd import TYPE_NAMES as SIMD_TYPE_NAMES
 
 logger = logging.getLogger(__name__)
 
 _OS_OBJECT_POINTER = re.compile(r"NSObject\s*<OS_((?:nw|dispatch|sec)_\w+)>\s*\*")
 _OBJC_SUPERCLASS = re.compile(r"@interface\s+\w+(?:\s*<[^>]+>)?\s*:\s*(\w+)")
+
+# DocC can attribute these SIMD types to Kernel even though the SDK declares
+# them in <simd/simd.h>.
+_KERNEL_SIMD_TYPES = {
+    "simd_double2", "simd_double3", "simd_double4", "simd_double4x4",
+    "simd_float2", "simd_float3", "simd_float4", "simd_float4x4",
+    "simd_int2", "simd_int4", "simd_quatd", "simd_quatf", "simd_uint2", "simd_uint3",
+    "matrix_double4x4", "matrix_float4x4",
+    "vector_double2", "vector_double3", "vector_double4",
+    "vector_float2", "vector_float3", "vector_float4",
+    "vector_int2", "vector_int4", "vector_uint2", "vector_uint3",
+}
 
 
 def _c_object_tag(name: str) -> str:
@@ -530,7 +541,7 @@ def _collect_dependencies(
             _, _, path = identifier.partition("/documentation/")
             module = path.split("/", 1)[0]
             if module.casefold() == "simd" or (
-                module.casefold() == "kernel" and token.text.strip() in SIMD_TYPE_NAMES
+                module.casefold() == "kernel" and token.text.strip() in _KERNEL_SIMD_TYPES
             ):
                 imports.add("simd/simd.h")
                 continue
@@ -662,7 +673,19 @@ def _render_interface_block(
             continue
         child_avail = availability_macro(child)
         child_suffix = f" {child_avail}" if child_avail else ""
-        lines.append(f"{child_decl.removesuffix(';')}{child_suffix};")
+        declaration = child_decl.removesuffix(";")
+        if declaration == "@property (getter=isTemplate) BOOL template":
+            # Keep the public accessors in Objective-C++, where template is reserved.
+            lines.extend((
+                "#ifdef __cplusplus",
+                f"- (BOOL)isTemplate{child_suffix};",
+                f"- (void)setTemplate:(BOOL)value{child_suffix};",
+                "#else",
+                f"{declaration}{child_suffix};",
+                "#endif",
+            ))
+        else:
+            lines.append(f"{declaration}{child_suffix};")
 
     lines.append("@end")
     return "\n".join(lines)

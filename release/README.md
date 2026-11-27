@@ -84,8 +84,10 @@ For a cold download outside CI, set the same endpoint and bucket and
 export the R2 access key as `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 
 To refresh DocC, generate separately with `--reuse-docc-cache` to fetch
-missing pages. Use a fresh cache directory to refresh existing pages as
-well. Upload the checked snapshot under a new dated key in
+missing pages. Run the [SIMD component](../components/simd/README.md)
+against the same cache with `--fetch-missing` before taking the backup.
+Use a fresh cache directory to refresh existing pages as well. Upload
+the checked snapshot under a new dated key in
 `macos/26.5/snapshots/`, then commit the full SHA-256 and key in
 the macOS lock. Existing releases retain their snapshot pin.
 

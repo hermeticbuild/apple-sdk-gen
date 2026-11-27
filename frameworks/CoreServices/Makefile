@@ -32,3 +32,7 @@ endef
 
 test-CoreServices:
 	$(call test-sdk-link,CoreServices/test.c,-framework CoreServices -framework CoreFoundation,-Wno-deprecated-declarations)
+
+.PHONY: test-fsevents
+test-fsevents:
+	$(call test-sdk-link,CoreServices/test-fsevents.c,-framework CoreServices -framework CoreFoundation)

@@ -42,6 +42,7 @@ class ComposeTests(unittest.TestCase):
         self.addCleanup(temp.cleanup)
         self.work = Path(temp.name)
         self.c = self.work / "c-install"
+        self.simd = self.work / "simd"
         self.gen = self.work / "sdk-gen"
         self.out = self.work / "out.sdk"
         self.framework = self.gen / FRAMEWORK
@@ -55,13 +56,15 @@ class ComposeTests(unittest.TestCase):
         write(self.gen / "SDKSettings.json", '{"CanonicalName":"macosx26.5","Version":"26.5"}')
         write(self.gen / "usr/lib/libSystem.B.tbd", tbd(PARENT, CHILD))
         (self.gen / "usr/lib/libSystem.tbd").symlink_to("libSystem.B.tbd")
+        write(self.simd / "usr/include/simd/simd.h", "// SIMD header fixture\n")
+        write(self.simd / "usr/include/simd/module.modulemap", "// SIMD module map fixture\n")
         self.cxx_fixture()
 
     def compose(self, *extra, variant="minimal"):
         return subprocess.run([
             sys.executable, "-m", "tools.sdk_composition.compose_sdk",
             "--lock", REPO_ROOT / "locks/macosx26.5.json", "--variant", variant,
-            "--c-install", self.c,
+            "--c-install", self.c, "--simd-install", self.simd,
             "--llvm", os.getenv("LIBSYSTEM_TEST_LLVM", str(self.work)),
             "--sdk-gen", self.gen, "--out", self.out, *extra,
         ], text=True, capture_output=True)

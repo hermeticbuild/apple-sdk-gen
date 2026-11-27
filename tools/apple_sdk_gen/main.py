@@ -25,7 +25,6 @@ from .supplements.commoncrypto import install_commoncrypto_headers
 from .supplements.generate_system_library_stubs import install_system_lib_stubs
 from .supplements.install_darwin_stubs import install_darwin_lib_stubs, select_darwin_libraries
 from .supplements.install_libcxx_headers import install_libcxx_headers
-from .supplements.simd import install_simd_headers
 
 logger = logging.getLogger(__name__)
 
@@ -182,13 +181,6 @@ async def run(args: argparse.Namespace) -> None:
         # conditional modulemap check.
         print("Installing CommonCrypto headers...", file=sys.stderr)
         install_commoncrypto_headers(sdk_path)
-
-        if args.llvm_dir is not None or "ModelIO" in platform_frameworks:
-            print("Generating SIMD headers...", file=sys.stderr)
-            try:
-                await install_simd_headers(sdk_path, client)
-            except ValueError as exc:
-                raise SystemExit(f"SIMD headers: {exc}") from None
 
         if args.llvm_dir is not None:
             print("Installing libc++ headers...", file=sys.stderr)

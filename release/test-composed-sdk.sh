@@ -25,7 +25,8 @@ make -C tests/minimal_sdk_linking test \
   CLANG="$llvm/bin/clang" SDK="$c_sdk" RUN=1
 make -C tests/minimal_sdk_linking test-dns-sd test-resolver test-simd "${args[@]}"
 make -C frameworks test test-objc test-CoreServices test-ApplicationServices \
-  test-CoreGraphics test-CoreVideo test-CoreMedia test-AVFoundation test-QuartzCore "${args[@]}"
+  test-CoreGraphics test-CoreVideo test-CoreMedia test-AVFoundation test-QuartzCore \
+  test-AppKit-exports test-AppKit-image test-fsevents "${args[@]}"
 make -C tests/full_sdk_frameworks test "${args[@]}"
 LLVM="$llvm" LIBSYSTEM_TEST_LLVM="$llvm" \
   ICONV_SOURCE="$inputs/sources/$sdk/libiconv" C_INSTALL="$out/c" \

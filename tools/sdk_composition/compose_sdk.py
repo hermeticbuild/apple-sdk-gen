@@ -228,16 +228,14 @@ def sdk_gen_cxx_headers(plan, root):
         plan.file(path, root / path, root, "sdk-gen-cxx")
 
 
-def sdk_gen_simd_headers(plan, root):
+def simd_headers(plan, root):
     include = Path("usr/include/simd")
-    if not (root / include).exists():
-        return
     for name in ("simd.h", "module.modulemap"):
         path = include / name
         source = root / path
         if not source.is_file():
-            raise ValueError(f"SDK Gen SIMD installation is missing {path}")
-        plan.file(path, source, root, "sdk-gen-simd")
+            raise ValueError(f"SIMD installation is missing {path}")
+        plan.file(path, source, root, "simd")
 
 
 def sdk_settings(sdk, receipts, name, version):
@@ -392,7 +390,7 @@ def compose(args):
     sdk_gen_libsystem(plan, sdk_gen)
     if objc_root:
         objc4_headers(plan, objc_root)
-    sdk_gen_simd_headers(plan, sdk_gen)
+    simd_headers(plan, args.simd_install.resolve())
     if args.variant == "full":
         sdk_gen_cxx_headers(plan, sdk_gen)
         frameworks(plan, sdk_gen, args)
@@ -423,7 +421,7 @@ def compose(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ("c-install", "llvm", "out", "sdk-gen", "lock"):
+    for name in ("c-install", "simd-install", "llvm", "out", "sdk-gen", "lock"):
         parser.add_argument(f"--{name}", required=True, type=Path)
     parser.add_argument("--objc4-install", type=Path,
                         help="separate Objective-C runtime headers from make install-objc4")

@@ -19,10 +19,14 @@ llvm=${LLVM_DIR:-"$inputs/llvm"}
 c_install="$out/c"
 objc_install="$out/objc4"
 frameworks="$out/frameworks"
+simd_install="$out/simd"
 generated_frameworks="$generated/System/Library/Frameworks"
 
 test -x "$llvm/bin/clang" || { echo "Run make prepare to install LLVM at $llvm." >&2; exit 1; }
 clang="$llvm/bin/clang"
+bash tools/fetch_docc_snapshot.sh "$lock" "$inputs/docc" "$inputs/downloads" --verify
+python3 -m components.simd.generate_headers --cache-dir "$inputs/docc" --out "$simd_install"
+
 framework_inputs=()
 selected_recipes="Cocoa AVFoundation CoreGraphics QuartzCore ApplicationServices IOKit Security SystemConfiguration AudioToolbox AudioUnit CoreAudio CoreAudioTypes CoreMIDI OpenAL"
 requested=
@@ -75,7 +79,7 @@ for name in libresolv libresolv.9; do
 done
 
 compose=(python3 -m tools.sdk_composition.compose_sdk --c-install "$c_install"
-  --sdk-gen "$generated" --llvm "$llvm" --lock "$lock" "${stubs[@]}")
+  --simd-install "$simd_install" --sdk-gen "$generated" --llvm "$llvm" --lock "$lock" "${stubs[@]}")
 "${compose[@]}" --variant minimal --out "$out/MacOSX-Minimal.sdk"
 for name in libc++ libc++.1 libc++abi libobjc libobjc.A; do
   compose+=(--external-stub "usr/lib/$name.tbd=$generated/usr/lib/$name.tbd")

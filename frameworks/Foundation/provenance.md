@@ -72,3 +72,17 @@ existing SDK Gen Foundation stub supplies the function export. The recipe
 test calls it for the unexpanded Desktop path.
 [Apple directory search documentation](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/LowLevelFileMgmt/Articles/StandardDirectories.html)
 · [Pinned Swift Foundation values](https://github.com/swiftlang/swift-foundation/blob/511394753aa873fd390674301594b4bb8460a74b/Sources/FoundationEssentials/FileManager/SwiftFileManager.swift#L170-L215)
+## Calendar notifications and reminder support
+
+The Objective-C declarations for `NSDateComponents`, `NSFileHandle`,
+and `NSJSONSerialization` come from the pinned DocC snapshot's Foundation
+pages. Apple's public `NSSet` declaration specifies a covariant object
+parameter. That parameter is required by UserNotifications methods that
+use `NSSet<UNNotificationCategory *>`. The existing generated Foundation
+stub already provides all four classes.
+
+- [NSDateComponents](https://developer.apple.com/documentation/foundation/datecomponents?language=objc)
+- [NSSet](https://developer.apple.com/documentation/foundation/nsset?language=objc)
+- [NSFileHandle](https://developer.apple.com/documentation/foundation/filehandle?language=objc)
+- [NSJSONSerialization](https://developer.apple.com/documentation/foundation/jsonserialization?language=objc)
+- [UNUserNotificationCenter](https://developer.apple.com/documentation/usernotifications/unusernotificationcenter?language=objc)

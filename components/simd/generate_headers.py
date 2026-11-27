@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 from pathlib import Path
 
-from ..crawler.client import APIClient
-from ..crawler.symbol import parse_symbol
-from ..models.types import PlatformName
+from tools.apple_sdk_gen.crawler.cache import CacheDB
+from tools.apple_sdk_gen.crawler.client import APIClient
+from tools.apple_sdk_gen.crawler.symbol import parse_symbol
+from tools.apple_sdk_gen.models.types import PlatformName
 
 
 _VECTORS = (
@@ -26,9 +28,6 @@ _ALIASES = {
     "matrix_double4x4": "simd_double4x4",
     "matrix_float4x4": "simd_float4x4",
 }
-
-# DocC also indexes some of these aliases under Kernel.
-TYPE_NAMES = frozenset({f"simd_{name}" for name in _VECTORS} | _RECORDS.keys() | _ALIASES.keys())
 
 
 async def _declaration(client: APIClient, path: str) -> str:
@@ -79,3 +78,31 @@ async def install_simd_headers(sdk_root: Path, client: APIClient) -> None:
     (include / "module.modulemap").write_text(
         'module simd [system] {\n  header "simd.h"\n  export *\n}\n'
     )
+
+
+async def generate(out: Path, cache_dir: Path, fetch_missing: bool) -> None:
+    if not fetch_missing and not (cache_dir / "cache.db").is_file():
+        raise ValueError(f"missing DocC cache at {cache_dir}")
+    cache = CacheDB(cache_dir, ttl=None)
+    try:
+        async with APIClient(cache=cache, cache_only=not fetch_missing) as client:
+            await install_simd_headers(out, client)
+    finally:
+        cache.close()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument("--cache-dir", required=True, type=Path)
+    parser.add_argument("--fetch-missing", action="store_true",
+                        help="Fetch missing SIMD pages from Apple DocC")
+    args = parser.parse_args()
+    try:
+        asyncio.run(generate(args.out, args.cache_dir, args.fetch_missing))
+    except (OSError, ValueError) as exc:
+        parser.exit(1, f"SIMD headers: {exc}\n")
+
+
+if __name__ == "__main__":
+    main()

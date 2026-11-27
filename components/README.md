@@ -2,7 +2,9 @@
 
 Each directory owns the pinned upstream install selection and local edits
 for its component. Resolver and iconv also generate their separate linker
-stubs here after the shared C include tree is assembled. The generator
+stubs here after the shared C include tree is assembled. The release build
+runs the [SIMD component](simd/README.md) against the pinned DocC snapshot
+for both SDK archives. The generator
 owns the macOS libSystem reexport graph and the existing bundled export
 tables for zlib and objc4.
 

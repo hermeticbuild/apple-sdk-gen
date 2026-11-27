@@ -209,6 +209,36 @@ class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
         self.assertIn("NSApplicationActivationPolicyAccessory = 1,", header)
         self.assertIn("NSApplicationActivationPolicyProhibited = 2,", header)
 
+    @unittest.skipUnless(CLANG, "requires Clang")
+    async def test_nsimage_template_selectors_compile_in_both_objc_languages(self):
+        path = "/documentation/appkit/nsimage"
+        member = f"{path}/template"
+        docc = DocC({
+            path: {
+                **page("NSImage", "class", declaration("@interface NSImage")),
+                "topicSections": [{"identifiers": ["template"]}],
+                "references": {"template": {"kind": "symbol", "role": "symbol", "url": member}},
+            },
+            member: page("template", "property", declaration("@property (getter=isTemplate) BOOL template;")),
+        })
+        symbols = [await parse_symbol(docc, name, "AppKit") for name in docc.pages]
+        with tempfile.TemporaryDirectory() as directory:
+            sdk = assemble_sdk(Path(directory), "macos", "26.5", {"AppKit": symbols})
+            header = sdk / "System/Library/Frameworks/AppKit.framework/Headers/AppKit.h"
+            for language, body in (
+                ("objective-c", "image.template = 1; (void)image.isTemplate;"),
+                ("objective-c++", "[image setTemplate:1]; (void)[image isTemplate];"),
+            ):
+                with self.subTest(language=language):
+                    result = subprocess.run(
+                        [CLANG, "-target", "arm64-apple-macos11", "-ffreestanding",
+                         "-fsyntax-only", "-Werror", "-isysroot", str(sdk),
+                         "-include", str(header), "-x", language, "-"],
+                        input=f"void use_image(NSImage *image) {{ {body} }}\n",
+                        text=True, capture_output=True,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+
     async def test_enum_cases_use_their_own_names(self):
         path = "/documentation/contacts/cnauthorizationstatus"
         enum_name = "CNAuthorizationStatus"

@@ -29,8 +29,9 @@ make test-composed-sdk SDK=macosx26.5
 `make prepare` fetches the pinned Apple OSS sources, LLVM tools and C++
 headers, and the DocC snapshot, then prepares the Python environment.
 `make generate-sdk` generates framework headers and linker stubs.
-`make compose-sdk` builds the Apple OSS headers, applies the framework
-recipes, and packages both sysroots. See the
+`make compose-sdk` builds the Apple OSS headers, generates SIMD headers
+from the pinned DocC snapshot, applies the framework recipes, and
+packages both sysroots. See the
 [release build instructions](release/README.md) for offline builds and
 framework selection.
 
@@ -112,15 +113,17 @@ you need. Cocoa's umbrella uses Foundation, AppKit and Core Data.
 
 The C++ layer uses the official LLVM 21.1.6 binary release, matching the
 libc++ version reported by Xcode 26.5. The installer applies LLVM's Apple
-preset choices to `__config_site` and includes both upstream license
+preset choices to `__config_site`, backports LLVM's Apple availability
+mappings, and includes both upstream license
 files. Consumers link to the macOS system dylibs. Pass the directory from
 `make prepare-llvm` with `--llvm-dir`. The full release includes C++ headers.
 [LLVM release](https://github.com/llvm/llvm-project/releases/tag/llvmorg-21.1.6)
+· [LLVM availability patch](https://github.com/llvm/llvm-project/pull/140072)
 
-Selecting Model I/O or supplying `--llvm-dir` generates `<simd/simd.h>` and a
-Clang module map. This header provides the vector, matrix and quaternion
-types used by Model I/O. The generator uses C-family declarations from
-the public [SIMD documentation](https://developer.apple.com/documentation/simd).
+Both composed archives include `<simd/simd.h>` and its module map. If you
+generate Model I/O directly and need those headers in the intermediate
+tree, run the [SIMD component](components/simd/README.md) with the same DocC
+cache and point its `--out` at that tree's `MacOSX.sdk` directory.
 
 ## Darwin linker stubs
 

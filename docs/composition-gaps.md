@@ -135,10 +135,11 @@ by-value calling conventions. For example, `vector_float3` has 16-byte
 size and alignment. Re-run the probe from the SDK repository when
 qualifying the generated headers.
 
-SDK Gen now reads the vector declarations, the matrix `columns[4]`
-members, the quaternion `vector` members and the aliases from the public
+The [SIMD component](../components/simd/README.md) reads the vector
+declarations, the matrix `columns[4]` members, the quaternion `vector`
+members and the aliases from the public
 C-family DocC pages. It installs `usr/include/simd/simd.h` and a Clang
-module map. The composer selects those two files from the framework input.
+module map. The composer takes those two files from the component output.
 The Model I/O emitter routes both SIMD topics and the Kernel-indexed
 `vector_int2` and `vector_int4` aliases to that header.
 
@@ -446,3 +447,56 @@ c-ares and curl tests. The consumer suites ran directly in their
 pinned upstream Bazel workspaces. The native voice test exercised
 one relocated runtime case. The same archive is available at
 `build/sdk/MacOSX.sdk.tar.zst`. [Trimmed Stage 1](https://app.buildbuddy.io/invocation/e8f83229-07ec-46b2-9b38-992983e8e4d5)
+
+## Release 0.0.8 framework gaps
+
+The AppKit recipe's InstallAPI invocation covered the selected headers.
+The resulting stub omitted nine menu bar symbols already present in the
+generated DocC stub. The recipe now declares those symbols from public
+DocC, and the nine-symbol C fixture checks the packaged stub. The
+UserNotifications import and the reminder API probe exercise the added
+Foundation classes and `NSAlert`. The original report leaves the failing
+`NSImage` selector unspecified.
+
+The CoreServices umbrella now includes the public FSEvents declarations
+used by Git's Darwin fsmonitor. Its installed stub already provided the
+stream functions. LLVM's availability backport restores floating-point
+`std::from_chars` when deploying to macOS 26.0 or newer. The probe
+checks both the supported target and the macOS 15 diagnostic.
+[AppKit evidence](../frameworks/AppKit/provenance.md) ·
+[Foundation evidence](../frameworks/Foundation/provenance.md) ·
+[FSEvents evidence](../frameworks/CoreServices/provenance.md) ·
+[LLVM availability patch](https://github.com/llvm/llvm-project/pull/140072)
+
+The following samples also fail to link against 0.0.8 and link against
+Xcode 26.5. They are open export gaps. Review the exact DocC or OSS
+declaration, supported deployment versions, export kind and runtime
+provider before emitting a binding.
+
+| Framework | Sample public import | Provider to check |
+| --- | --- | --- |
+| AVFoundation | `AVPlayer` | AVFoundation reexports AVFCore |
+| CoreMedia | `CMTimeCompare` | CoreMedia |
+| IOKit | `IOServiceGetMatchingServices` | IOKit |
+| CoreVideo | `CVPixelBufferPoolCreate` | CoreVideo |
+| CoreMIDI | `MIDIClientCreate` | CoreMIDI |
+| QuartzCore | `CABasicAnimation` | QuartzCore |
+| CoreData | `NSManagedObject` | CoreData |
+| CoreFoundation | `CFAttributedStringCreate` | CoreFoundation |
+
+### Generated declarations superseded by local bundles
+
+Full composition selects a whole prepared bundle when a framework recipe
+supplies one. This lets the recipe's headers and module map agree on the
+same API surface. The generated umbrella and its forwarding headers then
+stay in the intermediate SDK. Foundation copies its generated stub,
+so this rule can affect headers independently of exports. IOKit and Security
+use file overlays, which retain the rest of their generated bundles.
+
+The generated umbrellas declare `NSRegularExpression` in Foundation,
+`NSAppearance` in AppKit, `AVPlayer` in AVFoundation, `NSManagedObject`
+in CoreData, and `CABasicAnimation` in QuartzCore. The corresponding
+prepared headers omit those class definitions. The AppKit recipe now
+stages the generated `NSImage` interface with source-backed supporting
+types. The [AppKit provenance](../frameworks/AppKit/provenance.md#nsimage)
+records how it is assembled and tested.
