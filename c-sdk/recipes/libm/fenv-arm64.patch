@@ -1,0 +1,23 @@
+Route macOS arm64 clients to the recipe's floating-point environment header.
+
+Source: Libm-2026 (17a5f9daa3f5679f7536b26f133b40cc078753c3), Source/fenv.h.
+Scope: macOS SDK 26.0 and 26.5, arm64.
+
+The upstream 32-bit ARM header describes FPSCR. The arm64 implementation
+uses separate FPSR and FPCR registers. recipes/libm/arm64_fenv.h records the
+C interface, XNU register definitions and verification against libSystem.
+
+Evidence: tests/installed_headers/fenv_abi.c and
+tests/installed_headers/check_fenv_runtime.py.
+
+--- a/usr/include/fenv.h
++++ b/usr/include/fenv.h
+@@ -26,6 +26,8 @@
+ #include "architecture/ppc/fenv.h"
+ #elif (defined (__i386__) || defined( __x86_64__ ))
+ #include "architecture/i386/fenv.h"
++#elif defined(__arm64__)
++#include "architecture/arm64/fenv.h"
+ #elif defined(__arm__)
+ #include "architecture/arm/fenv.h"
+ #else

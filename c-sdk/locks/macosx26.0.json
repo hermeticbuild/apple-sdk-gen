@@ -1,0 +1,160 @@
+{
+  "schema": 1,
+  "sdk": {
+    "canonical_name": "macosx26.0",
+    "platform": "macosx",
+    "version": "26.0",
+    "reference_build": "25A352"
+  },
+  "distribution": {
+    "url": "https://github.com/apple-oss-distributions/distribution-macOS.git",
+    "tag": "macos-260",
+    "commit": "4e290a9b9d3723c65d2a606223d41eb90ecdbf99"
+  },
+  "projects": {
+    "AvailabilityVersions": {
+      "url": "https://github.com/apple-oss-distributions/AvailabilityVersions.git",
+      "commit": "97f1225840fe7e2d97371c8e8beff6e149fce595",
+      "tag": "AvailabilityVersions-155",
+      "selection": "distribution"
+    },
+    "CarbonHeaders": {
+      "url": "https://github.com/apple-oss-distributions/CarbonHeaders.git",
+      "commit": "214a9ae7ab3c0c78ddb50328ca226e6313c4c782",
+      "tag": "CarbonHeaders-18.1",
+      "selection": "Standalone Apple release provides the public template used by the TargetConditionals derivation."
+    },
+    "CommonCrypto": {
+      "url": "https://github.com/apple-oss-distributions/CommonCrypto.git",
+      "commit": "a0ac082c490b65585ade764511acfdbf1d97bc5e",
+      "tag": "CommonCrypto-600035",
+      "selection": "distribution"
+    },
+    "Libc": {
+      "url": "https://github.com/apple-oss-distributions/Libc.git",
+      "commit": "55b54c0a0c37b3b24393b42b90a4c561d6c606b1",
+      "tag": "Libc-1725.0.11",
+      "selection": "distribution"
+    },
+    "Libinfo": {
+      "url": "https://github.com/apple-oss-distributions/Libinfo.git",
+      "commit": "39b70c515baee5b609e7e91693edbd934b6845a1",
+      "tag": "Libinfo-600",
+      "selection": "distribution"
+    },
+    "Libm": {
+      "url": "https://github.com/apple-oss-distributions/Libm.git",
+      "commit": "17a5f9daa3f5679f7536b26f133b40cc078753c3",
+      "tag": "Libm-2026",
+      "selection": "Standalone Apple release provides the public C math headers and inputs for our arm64 derivation."
+    },
+    "Libnotify": {
+      "url": "https://github.com/apple-oss-distributions/Libnotify.git",
+      "commit": "04c2b288f0591d333694b2e14b03e0cf9192b3b0",
+      "tag": "Libnotify-344.0.1",
+      "selection": "distribution"
+    },
+    "architecture": {
+      "url": "https://github.com/apple-oss-distributions/architecture.git",
+      "commit": "fe869009b9c98d9d9d6cc917dfed6fab24b0b686",
+      "tag": "architecture-282",
+      "selection": "distribution"
+    },
+    "cctools": {
+      "url": "https://github.com/apple-oss-distributions/cctools.git",
+      "commit": "e0d56624eca2a76c2ace4c21850df9e666de4ca5",
+      "tag": "cctools-1035.1.102",
+      "selection": "Keep the qualified Developer Tools 26.4 project pin for the selected Mach-O headers."
+    },
+    "copyfile": {
+      "url": "https://github.com/apple-oss-distributions/copyfile.git",
+      "commit": "c6053d8cd4df319344c7eaaf8b19c464c0016db1",
+      "tag": "copyfile-230.0.1.0.1",
+      "selection": "distribution"
+    },
+    "dyld": {
+      "url": "https://github.com/apple-oss-distributions/dyld.git",
+      "commit": "637911768f664e38e7e50b4fbf17e303e14fdc01",
+      "tag": "dyld-1323.3",
+      "selection": "distribution"
+    },
+    "hfs": {
+      "url": "https://github.com/apple-oss-distributions/hfs.git",
+      "commit": "0290c341bb23d4a1d1810e75da6d457fd9011c83",
+      "tag": "hfs-704.0.3.0.2",
+      "selection": "distribution"
+    },
+    "libdispatch": {
+      "url": "https://github.com/apple-oss-distributions/libdispatch.git",
+      "commit": "2361ffb78a76f7ee488cd052eb0bc5c767118bf9",
+      "tag": "libdispatch-1542.0.4",
+      "selection": "distribution"
+    },
+    "libiconv": {
+      "url": "https://github.com/apple-oss-distributions/libiconv.git",
+      "commit": "593134fb16998e214952a13ea0826a50eff4dfbf",
+      "tag": "libiconv-113",
+      "selection": "distribution"
+    },
+    "libmalloc": {
+      "url": "https://github.com/apple-oss-distributions/libmalloc.git",
+      "commit": "81c0f67a777adf665c667fa2bd49ff6219fdfb9e",
+      "tag": "libmalloc-792.1.1",
+      "selection": "distribution"
+    },
+    "libplatform": {
+      "url": "https://github.com/apple-oss-distributions/libplatform.git",
+      "commit": "e9e92dd1ba90c4b703c37c031e2bec1c96fd6f91",
+      "tag": "libplatform-359.1.2",
+      "selection": "distribution"
+    },
+    "libpthread": {
+      "url": "https://github.com/apple-oss-distributions/libpthread.git",
+      "commit": "42d026df5b07825070f60134b980a1ec2552dfee",
+      "tag": "libpthread-539",
+      "selection": "distribution"
+    },
+    "libresolv": {
+      "url": "https://github.com/apple-oss-distributions/libresolv.git",
+      "commit": "e5fc6ec9fdd11f1fa7c7cb9f7f2c06bc9a4f9274",
+      "tag": "libresolv-93",
+      "selection": "distribution"
+    },
+    "libunwind": {
+      "url": "https://github.com/apple-oss-distributions/libunwind.git",
+      "commit": "f709eccad023ec32db53d40146d07805cf3e4ee0",
+      "tag": "libunwind-201",
+      "selection": "Standalone Apple release supplies mach-o/compact_unwind_encoding.h."
+    },
+    "mDNSResponder": {
+      "url": "https://github.com/apple-oss-distributions/mDNSResponder.git",
+      "commit": "d4658af3f5f291311c6aee4210aa6d39bda82bbe",
+      "tag": "mDNSResponder-2881.0.25",
+      "selection": "distribution"
+    },
+    "removefile": {
+      "url": "https://github.com/apple-oss-distributions/removefile.git",
+      "commit": "169fbe5ea6f0b3d88c520b397bcf5ad82af8aab8",
+      "tag": "removefile-84",
+      "selection": "distribution"
+    },
+    "syslog": {
+      "url": "https://github.com/apple-oss-distributions/syslog.git",
+      "commit": "0c2fd4af5177d08e7f394ac2789259fc04761237",
+      "tag": "syslog-404",
+      "selection": "distribution"
+    },
+    "xnu": {
+      "url": "https://github.com/apple-oss-distributions/xnu.git",
+      "commit": "f6217f891ac0bb64f3d375211650a4c1ff8ca1ea",
+      "tag": "xnu-12377.1.9",
+      "selection": "distribution"
+    },
+    "zlib": {
+      "url": "https://github.com/apple-oss-distributions/zlib.git",
+      "commit": "06673bf7cb4066003fd14a0b87085c05739fc4ac",
+      "tag": "zlib-100",
+      "selection": "distribution"
+    }
+  }
+}

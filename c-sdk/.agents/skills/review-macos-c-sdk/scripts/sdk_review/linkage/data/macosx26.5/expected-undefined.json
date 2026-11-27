@@ -1,0 +1,13 @@
+{
+  "sdk": "macosx26.5",
+  "reference_build": "25F70",
+  "architectures": ["arm64"],
+  "header": "usr/include/unistd.h",
+  "libc_commit": "4e34d0559e3a1b081afeb8604d9e204a1f31321d",
+  "header_sha256": "8d535079658f063bcef358ef4c1c1b52b8e88dacfc22cbf4db0f6bf8abe40637",
+  "symbols": ["_add_profil", "_profil", "_unwhiteout"],
+  "reason": "Apple Libc declares these functions and installs unistd.h. SDK 26.5 publishes no linker definition for any of the three. Preserve the C declarations and omit these exports.",
+  "source": "https://github.com/apple-oss-distributions/Libc/blob/4e34d0559e3a1b081afeb8604d9e204a1f31321d/include/unistd.h",
+  "install_rule": "https://github.com/apple-oss-distributions/Libc/blob/4e34d0559e3a1b081afeb8604d9e204a1f31321d/xcodescripts/headers.sh#L144",
+  "review": "tools/sdk_review/sdk_header_linkage.md"
+}

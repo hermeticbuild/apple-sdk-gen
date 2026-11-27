@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "profile": "objc4",
+  "sdk": {
+    "canonical_name": "macosx26.5",
+    "platform": "macosx",
+    "version": "26.5",
+    "reference_build": "25F70"
+  },
+  "projects": {
+    "objc4": {
+      "url": "https://github.com/apple-oss-distributions/objc4.git",
+      "commit": "ebfe77e64331034c867285a95d3ac205203291d5",
+      "tag": "objc4-951.7",
+      "selection": "Apple release qualified as the separate macOS 26.5 Objective-C runtime header layer."
+    }
+  }
+}

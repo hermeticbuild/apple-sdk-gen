@@ -1,0 +1,25 @@
+Include the dependencies of the public dyld image types directly.
+
+Sources: dyld-1323.3 (637911768f664e38e7e50b4fbf17e303e14fdc01) and
+dyld-1378 (fd8d0c4d52320ebf64db34f3cb280310d905c5ae), include/mach-o/dyld_images.h.
+Scope: macOS SDK 26.0 and 26.5, arm64 and x86_64.
+
+The raw header uses uintptr_t, fixed-width integers, and Mach types without
+including the headers that declare them. A direct Clang include reproduces
+the unknown uintptr_t error on both targets. The existing patch supplies
+the prerequisites while retaining the image layout.
+
+Evidence: .agents/skills/review-macos-c-sdk/scripts/sdk_review/headers/fixtures/c_interfaces/dyld_images_layout.c and
+.agents/skills/review-macos-c-sdk/scripts/sdk_review/headers/data/macosx26.5/ranked-header-differences.md.
+
+--- a/usr/include/mach-o/dyld_images.h
++++ b/usr/include/mach-o/dyld_images.h
+@@ -22,6 +22,8 @@
+  */
+ #ifndef _DYLD_IMAGES_
+ #define _DYLD_IMAGES_
++#include <stdint.h>
++#include <mach/mach.h>
+ 
+ #include <stdbool.h>
+ #include <uuid/uuid.h>

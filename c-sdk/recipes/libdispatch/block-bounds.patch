@@ -1,0 +1,64 @@
+Annotate the Blocks runtime pointer bounds.
+
+Source: libdispatch-1542.100.32 (701f4d1a24ae9c6863901bbbb22624b7d1b87321),
+src/BlocksRuntime/Block.h. Scope: macOS SDK 26.5, arm64 and x86_64.
+
+The pinned licensed header needs a single-pointer boundary for raw copy
+and release under Clang bounds safety. Use Clang's documented annotations
+and forge operation in the typed wrappers, retaining the upstream notice.
+The fixture checks valid single-pointer copy and rejection of unsafe raw
+release. Ordinary C clients emitted identical objects.
+
+Evidence: https://clang.llvm.org/docs/BoundsSafety.html
+recipes/libdispatch/block-bounds.md and .agents/skills/review-macos-c-sdk/scripts/sdk_review/headers/fixtures/c_codegen/block_pointer_bounds.c.
+
+--- a/usr/include/Block.h
++++ b/usr/include/Block.h
+@@ -33,6 +33,23 @@
+ #   endif
+ #endif
+ 
++// Modified by the C SDK recipe to annotate the Blocks runtime pointer bounds.
++#if defined(__clang__)
++# if __has_feature(bounds_safety)
++#  include <ptrcheck.h>
++# endif
++#endif
++
++#if defined(__has_ptrcheck) && __has_ptrcheck
++typedef void *__single __block_runtime_result;
++typedef const void *__single __block_runtime_argument;
++# define __BLOCK_RUNTIME_CAST(expr) __unsafe_forge_single(const void *, (const void *__unsafe_indexable)(expr))
++#else
++typedef void *__block_runtime_result;
++typedef const void *__block_runtime_argument;
++# define __BLOCK_RUNTIME_CAST(expr) ((const void *)(expr))
++#endif
++
+ #if __cplusplus
+ extern "C" {
+ #endif
+@@ -40,10 +57,10 @@
+ // Create a heap based copy of a Block or simply add a reference to an existing one.
+ // This must be paired with Block_release to recover memory, even when running
+ // under Objective-C Garbage Collection.
+-BLOCK_EXPORT void *_Block_copy(const void *aBlock);
++BLOCK_EXPORT __block_runtime_result _Block_copy(__block_runtime_argument aBlock);
+ 
+ // Lose the reference, and if heap based and last reference, recover the memory
+-BLOCK_EXPORT void _Block_release(const void *aBlock);
++BLOCK_EXPORT void _Block_release(__block_runtime_argument aBlock);
+ 
+ // Used by the compiler. Do not call this function yourself.
+ BLOCK_EXPORT void _Block_object_assign(void *, const void *, const int);
+@@ -66,8 +83,8 @@
+ 
+ // Type correct macros
+ 
+-#define Block_copy(...) ((__typeof(__VA_ARGS__))_Block_copy((const void *)(__VA_ARGS__)))
+-#define Block_release(...) _Block_release((const void *)(__VA_ARGS__))
++#define Block_copy(...) ((__typeof(__VA_ARGS__))_Block_copy(__BLOCK_RUNTIME_CAST((__VA_ARGS__))))
++#define Block_release(...) _Block_release(__BLOCK_RUNTIME_CAST((__VA_ARGS__)))
+ 
+ 
+ #endif

@@ -1,0 +1,24 @@
+Declare the two no-argument callbacks with C prototypes.
+
+Source: CarbonHeaders-18.1 (214a9ae7ab3c0c78ddb50328ca226e6313c4c782), MacTypes.h.
+Scope: macOS SDK 26.5, arm64 and x86_64.
+
+Local compatibility derivation using the existing Apple typedefs. Using void
+keeps valid no-argument calls and makes the compiler reject extra arguments.
+The paired C11 probes agree with the reference SDK on both architectures.
+
+Evidence: .agents/skills/review-macos-c-sdk/scripts/sdk_review/headers/data/macosx26.5/tested-header-repairs.md.
+
+--- a/usr/include/MacTypes.h
++++ b/usr/include/MacTypes.h
+@@ -310,8 +310,8 @@
+         UniversalProcHandle     Pointer to a UniversalProcPtr
+         
+ *********************************************************************************/
+-typedef CALLBACK_API_C( long , ProcPtr )();
+-typedef CALLBACK_API( void , Register68kProcPtr )();
++typedef CALLBACK_API_C( long , ProcPtr )(void);
++typedef CALLBACK_API( void , Register68kProcPtr )(void);
+ #if TARGET_RT_MAC_CFM
+ /*  The RoutineDescriptor structure is defined in MixedMode.h */
+ typedef struct RoutineDescriptor *UniversalProcPtr;

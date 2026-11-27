@@ -1,0 +1,49 @@
+Extend Apple's availability generator input through macOS 26.5.
+
+Source: AvailabilityVersions-157.2 (149b1777f3e8c2133042d8e188f72e3adf6a7110),
+availability.dsl. Scope: macOS SDK 26.5, arm64 and x86_64.
+
+The public version table stops at 14.3, leaving the maximum version and XNU
+symbol aliases incomplete. Extend the staging copy with Apple's release
+history, including the Xcode-documented 16.0 compatibility number. The
+release references accompany the added rows below. Both Apple generators
+consume this staged DSL.
+
+Evidence: tests/installed_headers/macos_26_5_availability.c and
+.agents/skills/review-macos-c-sdk/scripts/sdk_review/headers/data/macosx26.5/ranked-header-differences.md.
+
+--- a/availability.dsl
++++ b/availability.dsl
+@@ -341,3 +341,32 @@
+ version     bridgeos            8.3
+ version     driverkit           23.3
+ set         2023_SU_D           2023.14.1    23.3.0
++
++# macOS versions needed by the 26.5 availability headers after the public
++# AvailabilityVersions-157.2 table ends at 14.3.
++# https://github.com/apple-oss-distributions/AvailabilityVersions/blob/149b1777f3e8c2133042d8e188f72e3adf6a7110/availability.dsl
++# Apple release histories:
++# https://support.apple.com/en-us/109035
++# https://support.apple.com/en-us/120283
++# https://support.apple.com/en-us/122868
++# https://developer.apple.com/documentation/macos-release-notes/macos-26_5-release-notes
++version macos 14.4
++version macos 14.5
++version macos 14.6
++version macos 14.7
++version macos 15.0
++version macos 15.1
++version macos 15.2
++version macos 15.3
++version macos 15.4
++version macos 15.5
++version macos 15.6
++# Apple's Xcode 26 release notes also refer to the 16.0 compatibility number.
++# https://developer.apple.com/documentation/xcode-release-notes/xcode-26-release-notes?changes=la_5__7_1
++version macos 16.0
++version macos 26.0
++version macos 26.1
++version macos 26.2
++version macos 26.3
++version macos 26.4
++version macos 26.5

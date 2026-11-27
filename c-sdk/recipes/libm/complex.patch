@@ -1,0 +1,39 @@
+Select the ARM branch on arm64 and supply the C11 complex constructors.
+
+Source: Libm-2026 (17a5f9daa3f5679f7536b26f133b40cc078753c3), Source/complex.h.
+Scope: macOS SDK 26.0 and 26.5, arm64 and x86_64.
+
+The old ARM selector misses Clang's arm64 predefines. The pinned header only
+implements C99. ISO C11 specifies CMPLX, CMPLXF and CMPLXL. Clang's builtin
+constructs the real and imaginary parts directly, preserving signed zero.
+
+Evidence: WG14 N1570 section 7.3.9.3
+https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf
+and tests/installed_headers/complex_abi.c.
+
+--- a/usr/include/complex.h
++++ b/usr/include/complex.h
+@@ -38,6 +38,14 @@
+ #define _Complex_I (__extension__ 1.0iF) /* constant expression of type const float _Complex */
+ #undef I
+ #define I _Complex_I
++
++/* C11 complex constructors, ISO/IEC 9899 7.3.9.3. */
++#if !defined(__cplusplus) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L \
++    && __has_builtin(__builtin_complex)
++#define CMPLX(x, y)  __builtin_complex((double)(x), (double)(y))
++#define CMPLXF(x, y) __builtin_complex((float)(x), (float)(y))
++#define CMPLXL(x, y) __builtin_complex((long double)(x), (long double)(y))
++#endif
+ 	
+ #ifdef __cplusplus
+ extern "C" {
+@@ -81,7 +89,7 @@
+ #endif
+ #endif
+ #elif defined(__i386__) || defined( __x86_64__ )
+-#elif defined(__arm__)
++#elif defined(__arm__) || defined(__arm64__) || defined(__aarch64__)
+ #define __LIBMLDBL_COMPAT(sym) /* NOTHING */
+ #else
+ #error Unknown Architecture

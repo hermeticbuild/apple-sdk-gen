@@ -1,0 +1,25 @@
+Provide the missing dyld ExclaveKit availability macro for ordinary macOS.
+
+Sources: dyld-1323.3 (637911768f664e38e7e50b4fbf17e303e14fdc01) and
+dyld-1378 (fd8d0c4d52320ebf64db34f3cb280310d905c5ae), include/mach-o/dyld.h.
+Scope: macOS SDK 26.0 and 26.5, arm64 and x86_64.
+
+The pinned header uses DYLD_EXCLAVEKIT_UNAVAILABLE in its declarations and
+has no local definition. Preserve any definition supplied by the caller.
+For an ordinary macOS C client, a standalone include of the raw header
+fails at the first such declaration. The staged header compiles on both
+architectures using the 26.5 installation and pinned Clang.
+
+--- a/usr/include/mach-o/dyld.h
++++ b/usr/include/mach-o/dyld.h
+@@ -39,6 +39,10 @@
+  #define DYLD_DRIVERKIT_UNAVAILABLE __API_UNAVAILABLE(driverkit)
+ #else
+  #define DYLD_DRIVERKIT_UNAVAILABLE
++#endif
++
++#ifndef DYLD_EXCLAVEKIT_UNAVAILABLE
++#define DYLD_EXCLAVEKIT_UNAVAILABLE
+ #endif
+ 
+ 
