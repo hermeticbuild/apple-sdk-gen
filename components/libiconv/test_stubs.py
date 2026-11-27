@@ -50,7 +50,7 @@ class IconvStubsTest(unittest.TestCase):
             "__typeof__(&locale_charset) charset = &locale_charset;\n"
         )
         tools = self.llvm / "bin"
-        resource = self.llvm / fetch_llvm_tools.read_lock(fetch_llvm_tools.PIN)["resource_headers"]["path"]
+        resource = self.llvm / fetch_llvm_tools.read_llvm_lock()["resource_headers"]
         obj = self.work / "client.o"
         client = self.work / "client.dylib"
         subprocess.run([

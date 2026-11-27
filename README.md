@@ -7,19 +7,19 @@ cross-compilers.
 
 ## Generate macOS 26.5
 
-With Python 3.12 or newer, CMake, Ninja and Clang on `PATH`:
+On arm64 macOS with Python 3.12 or newer, prepare LLVM and generate the SDK.
 
 ```sh
 python3 -m pip install -e tools/
+make prepare-llvm
 python3 -m tools.apple_sdk_gen --sdk-version 26.5 \
   --frameworks Cocoa,CoreFoundation,CoreGraphics,Network,Security \
-  --include-cxx --cache-dir cache --output output
+  --include-cxx --llvm-dir build/inputs/llvm --cache-dir cache --output output
 ```
 
 The SDK is at
 `output/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk`.
-The cache stores DocC responses and the LLVM source archives. Reuse it
-when regenerating a framework. Selecting Cocoa requests Foundation,
+The cache stores DocC responses for regenerating frameworks. Selecting Cocoa requests Foundation,
 AppKit and Core Data and builds an umbrella for the three.
 
 | Flag | Purpose |
@@ -30,7 +30,7 @@ AppKit and Core Data and builds an umbrella for the three.
 | `--all-frameworks` | Generate discovered macOS frameworks with a C or Objective-C DocC view |
 | `--exclude-frameworks` | Exclude selected frameworks, including Cocoa |
 | `--include-libc` | Install the generator's optional Apple OSS C header supplement |
-| `--include-cxx` | Install the macOS 26.5 LLVM C++ and ABI headers |
+| `--include-cxx` | Install macOS 26.5 C++ and ABI headers from `--llvm-dir` |
 | `--output`, `--cache-dir` | Choose the SDK output and download cache directories |
 | `--concurrency`, `--rate-limit` | Set the DocC request limits |
 | `--xcode-version`, `--xcode-build` | Set the version recorded in the Xcode-style metadata |
@@ -39,8 +39,8 @@ AppKit and Core Data and builds an umbrella for the three.
 The C++ layer uses the official LLVM 21.1.6 binary release, matching the
 libc++ version reported by Xcode 26.5. The installer applies LLVM's Apple
 preset choices to `__config_site` and includes both upstream license
-files. Consumers link to the macOS system dylibs. Pass `--llvm-dir` to
-reuse the directory from `make prepare-llvm`.
+files. Consumers link to the macOS system dylibs. `--include-cxx` requires
+`--llvm-dir`, which can point to the directory from `make prepare-llvm`.
 [LLVM release](https://github.com/llvm/llvm-project/releases/tag/llvmorg-21.1.6)
 
 Selecting Model I/O or `--include-libc` generates `<simd/simd.h>` and a

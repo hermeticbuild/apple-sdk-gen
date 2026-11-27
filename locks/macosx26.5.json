@@ -156,5 +156,26 @@
       "tag": "zlib-100.120.1",
       "selection": "distribution"
     }
+  },
+  "llvm": {
+    "archive": {
+      "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.6/LLVM-21.1.6-macOS-ARM64.tar.xz",
+      "sha256": "bdf036e9987b8706471b565f50178a34218909b1858a82c426269da49780b6ba",
+      "directory": "LLVM-21.1.6-macOS-ARM64"
+    },
+    "tools": [
+      "bin/clang-21",
+      "bin/clang-installapi",
+      "bin/lld",
+      "bin/llvm-lipo",
+      "bin/llvm-nm",
+      "bin/llvm-objdump",
+      "bin/llvm-readtapi",
+      "bin/clang",
+      "bin/ld64.lld"
+    ],
+    "resource_headers": "lib/clang/21/include",
+    "cxx_headers": "include/c++/v1",
+    "darwin_builtins": "lib/clang/21/lib/darwin/libclang_rt.osx.a"
   }
 }

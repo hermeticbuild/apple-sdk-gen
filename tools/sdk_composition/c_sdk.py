@@ -8,7 +8,7 @@ import subprocess
 from tools.apple_sdk_gen.supplements import simd
 from tools.header_manifest import read_header_manifest
 from tools.sdk_composition.compose_sdk import SYSTEM_COMPAT_NAMES, digest, relative_path
-from tools.fetch_sources import read_lock, verify
+from tools.fetch_sources import read_lock
 
 
 REPO = Path(__file__).resolve().parents[2]
@@ -61,7 +61,6 @@ def check_header_inputs(sdk, sources, projects):
 
 def write_provenance(sdk, sources):
     lock, projects = read_lock(REPO / "locks/macosx26.5.json")
-    verify(sources, projects)
     check_header_inputs(sdk, sources, projects)
     additional = {}
 

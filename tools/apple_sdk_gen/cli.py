@@ -92,7 +92,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--include-cxx",
         action="store_true",
-        help="Download and install C++ standard library headers from LLVM",
+        help="Install C++ standard library headers from --llvm-dir",
     )
     parser.add_argument(
         "--llvm-dir",
@@ -119,6 +119,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
 
     args = parser.parse_args(argv)
+    if args.include_cxx and args.llvm_dir is None:
+        parser.error("--include-cxx requires --llvm-dir")
 
     args.xcode_version = args.xcode_version or default_xcode_version(args.sdk_version)
     args.xcode_build = args.xcode_build or default_xcode_build(args.xcode_version)

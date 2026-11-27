@@ -210,7 +210,6 @@ async def run(args: argparse.Namespace) -> None:
             install_libcxx_headers(
                 sdk_root=sdk_path,
                 sdk_version=args.sdk_version,
-                cache_dir=cache_dir,
                 llvm_dir=args.llvm_dir,
             )
 

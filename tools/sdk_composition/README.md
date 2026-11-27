@@ -50,7 +50,7 @@ provider.
 
 ## Bundle the LLVM C++ headers
 
-Generate the macOS 26.5 SDK Gen input with its `--include-cxx` flag.
+Generate the macOS 26.5 SDK Gen input with `--include-cxx --llvm-dir`.
 It uses LLVM 21.1.6 and the upstream Apple libc++ CMake preset. Then pass
 `--include-cxx` to the composer. It selects `usr/include/c++/v1` and the
 two LLVM license files, and records them under `sdk-gen-cxx` in the manifest.
