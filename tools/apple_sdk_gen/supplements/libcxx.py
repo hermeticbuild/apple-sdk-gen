@@ -12,7 +12,10 @@ from tempfile import TemporaryDirectory
 from urllib.request import urlopen
 
 DATA = Path(__file__).with_name("data")
-LLVM_PIN = DATA / "llvm-macos-arm64.json"
+
+
+def read_llvm_lock() -> dict:
+    return json.loads((DATA / "macosx26.5.json").read_text())["llvm"]
 
 
 def sha256(path: Path) -> str:
@@ -20,36 +23,30 @@ def sha256(path: Path) -> str:
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
-def check_digest(path: Path, expected: str | None) -> None:
+def check_digest(path: Path, expected: str) -> None:
     if path.is_symlink() or not path.is_file():
         raise ValueError(f"missing regular file: {path}")
-    if expected is not None and sha256(path) != expected:
+    if sha256(path) != expected:
         raise ValueError(f"SHA-256 mismatch: {path}")
-
-
-def cache_file(path: Path, fetch, offline: bool, expected: str | None = None) -> Path:
-    if path.exists() or path.is_symlink():
-        check_digest(path, expected)
-        return path
-    if offline:
-        raise ValueError(f"offline mode requires cached input: {path}")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with TemporaryDirectory(dir=path.parent) as temporary:
-        incoming = Path(temporary) / path.name
-        fetch(incoming)
-        check_digest(incoming, expected)
-        incoming.replace(path)
-    return path
 
 
 def fetch_asset(cache: Path, asset: dict, offline: bool = False) -> Path:
     url = asset["url"]
-
-    def download(path: Path) -> None:
-        with urlopen(url, timeout=120) as response, path.open("wb") as output:
+    archive = cache / url.rsplit("/", 1)[-1]
+    expected = asset["sha256"]
+    if archive.exists() or archive.is_symlink():
+        check_digest(archive, expected)
+        return archive
+    if offline:
+        raise ValueError(f"offline mode requires cached input: {archive}")
+    cache.mkdir(parents=True, exist_ok=True)
+    with TemporaryDirectory(dir=cache) as temporary:
+        incoming = Path(temporary) / archive.name
+        with urlopen(url, timeout=120) as response, incoming.open("wb") as output:
             shutil.copyfileobj(response, output)
-
-    return cache_file(cache / url.rsplit("/", 1)[-1], download, offline, asset["sha256"])
+        check_digest(incoming, expected)
+        incoming.replace(archive)
+    return archive
 
 
 def copy_headers(source: Path, sdk_root: Path) -> None:
@@ -67,8 +64,8 @@ def install_libcxx_headers(sdk_root: Path, sdk_version: str, cache_dir: Path,
                            llvm_dir: Path | None = None) -> None:
     if sdk_version != "26.5":
         raise ValueError(f"No pinned libc++ headers for macOS SDK {sdk_version}")
-    lock = json.loads(LLVM_PIN.read_text())
-    headers = Path(lock["cxx_headers"]["path"])
+    lock = read_llvm_lock()
+    headers = Path(lock["cxx_headers"])
     if llvm_dir is not None:
         copy_headers(llvm_dir / headers, sdk_root)
         return
