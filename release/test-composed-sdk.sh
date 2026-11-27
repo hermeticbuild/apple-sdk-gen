@@ -15,7 +15,7 @@ make test CLANG="$llvm/bin/clang" OUT="$out/c"
 work=$(mktemp -d "${TMPDIR:-/tmp}/composed-sdk-tests.XXXXXX")
 trap 'rm -rf -- "$work"' EXIT
 mkdir "$work/c" "$work/full"
-tar -xf "$out/MacOSX-C.sdk.tar.zst" -C "$work/c"
+tar -xf "$out/MacOSX-Minimal.sdk.tar.zst" -C "$work/c"
 tar -xf "$out/MacOSX.sdk.tar.zst" -C "$work/full"
 c_sdk="$work/c/MacOSX.sdk"
 python3 -m tools.sdk_composition.c_sdk "$c_sdk" --compare "$work/full/MacOSX.sdk"

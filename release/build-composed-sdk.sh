@@ -58,7 +58,7 @@ done
 
 compose=(python3 -m tools.sdk_composition.compose_sdk --c-install "$c_install"
   --sdk-gen "$generated" --llvm "$llvm" "${stubs[@]}")
-"${compose[@]}" --out "$out/MacOSX-C.sdk"
+"${compose[@]}" --out "$out/MacOSX-Minimal.sdk"
 for name in libc++ libc++.1 libc++abi libobjc libobjc.A; do
   compose+=(--external-stub "usr/lib/$name.tbd=$generated/usr/lib/$name.tbd")
 done
@@ -80,8 +80,8 @@ done
 "${compose[@]}" --objc4-install "$objc_install" \
   --all-frameworks --include-cxx "${framework_inputs[@]}" \
   --out "$out/MacOSX.sdk"
-python3 -m tools.sdk_composition.c_sdk "$out/MacOSX-C.sdk" --write-provenance "$sources"
-for sdk_tree in MacOSX-C.sdk MacOSX.sdk; do
+python3 -m tools.sdk_composition.c_sdk "$out/MacOSX-Minimal.sdk" --write-provenance "$sources"
+for sdk_tree in MacOSX-Minimal.sdk MacOSX.sdk; do
   python3 -m tools.pack_archive --source "$out/$sdk_tree" \
     --root-name MacOSX.sdk --output "$out/$sdk_tree.tar.zst"
 done

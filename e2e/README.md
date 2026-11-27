@@ -5,9 +5,9 @@ Build the [composed SDK](../tools/sdk_composition/README.md) with
 `build/sdk/MacOSX.sdk.tar.zst` directly. Bazel watches the archive file and
 refreshes the SDK repository when it changes.
 
-## Framework-free C SDK
+## Minimal macOS SDK
 
-The `c-sdk` workspace reads `build/sdk/MacOSX-C.sdk.tar.zst`. It compiles
+The `c-sdk` workspace reads `build/sdk/MacOSX-Minimal.sdk.tar.zst`. It compiles
 SQLite's engine and shell from the registry's `sqlite3` module and runs an
 on-disk transaction, reopen and integrity check. The executable loads
 libSystem.

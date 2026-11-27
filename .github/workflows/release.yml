@@ -82,7 +82,7 @@ jobs:
             --@llvm//config:macos_libcxx_headers=sdk \
             --@curl//:ssl_lib=mbedtls //:framework_consumers
 
-      - name: Build and run SQLite against the C SDK
+      - name: Build and run SQLite against the minimal SDK
         working-directory: e2e/c-sdk
         run: |
           bazelisk --nohome_rc run --platforms=@llvm//platforms:macos_arm64 \
@@ -102,7 +102,7 @@ jobs:
       - name: Record SDK checksums
         working-directory: build/sdk
         run: |
-          for archive in MacOSX.sdk.tar.zst MacOSX-C.sdk.tar.zst; do
+          for archive in MacOSX.sdk.tar.zst MacOSX-Minimal.sdk.tar.zst; do
             shasum -a 256 "$archive" | tee "$archive.sha256"
           done
 
@@ -114,8 +114,8 @@ jobs:
           subject-path: |
             build/sdk/MacOSX.sdk.tar.zst
             build/sdk/MacOSX.sdk.tar.zst.sha256
-            build/sdk/MacOSX-C.sdk.tar.zst
-            build/sdk/MacOSX-C.sdk.tar.zst.sha256
+            build/sdk/MacOSX-Minimal.sdk.tar.zst
+            build/sdk/MacOSX-Minimal.sdk.tar.zst.sha256
 
       - name: Name the attestation bundle
         if: github.ref == 'refs/heads/main' && inputs.publish
@@ -131,8 +131,8 @@ jobs:
             build/sdk/MacOSX.sdk.tar.zst
             build/sdk/MacOSX.sdk.tar.zst.sha256
             build/sdk/MacOSX.sdk.tar.zst.attestation.jsonl
-            build/sdk/MacOSX-C.sdk.tar.zst
-            build/sdk/MacOSX-C.sdk.tar.zst.sha256
+            build/sdk/MacOSX-Minimal.sdk.tar.zst
+            build/sdk/MacOSX-Minimal.sdk.tar.zst.sha256
           if-no-files-found: error
 
   publish:
@@ -155,9 +155,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          sha256sum -c MacOSX.sdk.tar.zst.sha256 MacOSX-C.sdk.tar.zst.sha256
-          for asset in MacOSX.sdk.tar.zst MacOSX-C.sdk.tar.zst \
-            MacOSX.sdk.tar.zst.sha256 MacOSX-C.sdk.tar.zst.sha256; do
+          sha256sum -c MacOSX.sdk.tar.zst.sha256 MacOSX-Minimal.sdk.tar.zst.sha256
+          for asset in MacOSX.sdk.tar.zst MacOSX-Minimal.sdk.tar.zst \
+            MacOSX.sdk.tar.zst.sha256 MacOSX-Minimal.sdk.tar.zst.sha256; do
             gh attestation verify "$asset" --repo "$GITHUB_REPOSITORY" \
               --bundle MacOSX.sdk.tar.zst.attestation.jsonl \
               --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
@@ -173,5 +173,5 @@ jobs:
           fi
           gh release create "$next" --target "$GITHUB_SHA" --title "$next" \
             --generate-notes MacOSX.sdk.tar.zst MacOSX.sdk.tar.zst.sha256 \
-            MacOSX-C.sdk.tar.zst MacOSX-C.sdk.tar.zst.sha256 \
+            MacOSX-Minimal.sdk.tar.zst MacOSX-Minimal.sdk.tar.zst.sha256 \
             MacOSX.sdk.tar.zst.attestation.jsonl

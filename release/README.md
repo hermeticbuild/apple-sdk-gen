@@ -12,7 +12,7 @@ CMake, Ninja, zstd, AWS CLI, and Bazelisk versions.
 
 The default dispatch builds and tests both archives without publication.
 
-- `MacOSX-C.sdk.tar.zst` provides the framework-free C sysroot, its
+- `MacOSX-Minimal.sdk.tar.zst` provides the framework-free C sysroot, its
   linker stubs and its [source receipts](../docs/c-sdk-licensing.md).
 - `MacOSX.sdk.tar.zst` adds Objective-C, C++, and frameworks.
 

@@ -15,7 +15,7 @@ git_override(
 new_local_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:local.bzl", "new_local_repository")
 new_local_repository(
     name = "sdk_output",
-    build_file_content = 'exports_files(["MacOSX-C.sdk.tar.zst"])',
+    build_file_content = 'exports_files(["MacOSX-Minimal.sdk.tar.zst"])',
     path = "../../build/sdk",
 )
 
@@ -23,13 +23,13 @@ http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "ht
 http_archive(
     name = "composed_sdk",
     add_prefix = "sysroot",
-    build_file_content = 'exports_files(["MacOSX-C.sdk.tar.zst"])',
+    build_file_content = 'exports_files(["MacOSX-Minimal.sdk.tar.zst"])',
     files = {
-        "MacOSX-C.sdk.tar.zst": "@sdk_output//:MacOSX-C.sdk.tar.zst",
+        "MacOSX-Minimal.sdk.tar.zst": "@sdk_output//:MacOSX-Minimal.sdk.tar.zst",
         "sysroot/BUILD.bazel": "@llvm//3rd_party/macos_sdk:CLTools_macOSNMOS_SDK.BUILD.bazel",
     },
     strip_prefix = "MacOSX.sdk",
-    urls = ["file:../../build/sdk/MacOSX-C.sdk.tar.zst"],
+    urls = ["file:../../build/sdk/MacOSX-Minimal.sdk.tar.zst"],
 )
 
 osx = use_extension("@llvm//extensions:osx.bzl", "osx")
