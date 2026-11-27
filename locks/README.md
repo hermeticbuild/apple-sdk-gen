@@ -12,33 +12,23 @@ From the repository root:
 
 ```sh
 SDK=macosx26.5
-python3 -m tools.sources.locked_sources prepare --sdk "$SDK"
-make install SDK="$SDK" CLANG="$LLVM_CLANG" OUT="$C_INSTALL"
-make test SDK="$SDK" CLANG="$LLVM_CLANG" OUT="$C_INSTALL"
+make prepare-c-sources prepare-llvm SDK="$SDK"
+make install SDK="$SDK" OUT="$C_INSTALL"
+make test SDK="$SDK" OUT="$C_INSTALL"
 ```
 
-Preparation fetches only the locked commits into a Git cache under
-`build/source-cache` and checks them out in `build/sources/$SDK`. Pass
-`--offline` to prepare from a populated cache without contacting a remote.
-Pass `--cache` to share a cache across checkouts. For a different checkout
-directory, pass the same absolute path as `--source-root` to preparation
-and `SOURCE_ROOT` to Make.
-Prepare into a new directory when replacing or refreshing a tree. Each
-version can build independently from its own prepared tree.
-
-Make checks that the source tree matches the lock and that the project
-checkouts are clean. Installation itself requires no network. The output
-includes `source-lock.json` beside `header-manifest.tsv`.
-
-Run the cache and checkout tests with `python3 -m unittest discover -s tools/sources`.
-
-The optional Objective-C layer has its own lock and checkout under
-`build/sources/macosx26.5-objc4`. It never enters the standalone C installation.
+`make prepare-sources` also prepares the objc4 and framework checkouts for
+the full 26.5 SDK. The Git cache lives under `build/inputs/git` and the
+checkouts under `build/inputs/sources`. Set `OFFLINE=1` to reuse local inputs.
+The fetch command accepts an explicit lock and destination for other layouts:
 
 ```sh
-python3 -m tools.sources.locked_sources prepare --sdk macosx26.5 --profile objc4
-make install-objc4 SDK=macosx26.5 OUT="$OBJC4_INSTALL"
+python3 -m tools.fetch_sources --lock "locks/$SDK.json" --dest "$SOURCE_ROOT"
 ```
+
+Make verifies the source lock and rejects dirty checkouts. Installation
+writes `source-lock.json` and `header-manifest.tsv`. The separate
+`make install-objc4` target builds the Objective-C runtime header layer.
 
 Use the [SDK review skill](../.agents/skills/review-macos-c-sdk/SKILL.md)
 when selecting or qualifying a new source lock.

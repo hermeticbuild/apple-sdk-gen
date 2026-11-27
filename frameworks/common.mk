@@ -1,21 +1,3 @@
-# Read pinned Git objects directly. A working checkout or a bare repo works.
-define prepare-source
-@set -eu; \
-	repo="$(SOURCE_ROOT)/$(1)"; \
-	if test ! -e "$$repo"; then \
-		mkdir -p "$(SOURCE_ROOT)"; \
-		temp=$$(mktemp -d "$(SOURCE_ROOT)/.fetch-$(1).XXXXXX"); \
-		trap 'rm -rf -- "$$temp"' EXIT; \
-		git init --quiet --bare "$$temp"; \
-		git -C "$$temp" fetch --quiet --depth=1 --no-tags \
-			"https://github.com/apple-oss-distributions/$(1).git" "$(2)"; \
-		git -C "$$temp" cat-file -e "$(2)^{commit}"; \
-		mv "$$temp" "$$repo"; \
-	else \
-		git -C "$$repo" cat-file -e "$(2)^{commit}"; \
-	fi
-endef
-
 # Emit only the format shared by the small C framework stubs.
 define write-tbd
 @set -eu; \

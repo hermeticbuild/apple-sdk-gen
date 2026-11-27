@@ -1,0 +1,13 @@
+# LLVM 21.1.6 Apple.cmake enables vendor availability for the system dylib
+# and selects libdispatch as the PSTL backend.
+# https://github.com/llvm/llvm-project/blob/llvmorg-21.1.6/libcxx/cmake/caches/Apple.cmake
+--- __config_site
++++ __config_site
+@@ -25 +25 @@
+-#define _LIBCPP_HAS_VENDOR_AVAILABILITY_ANNOTATIONS 0
++#define _LIBCPP_HAS_VENDOR_AVAILABILITY_ANNOTATIONS 1
+@@ -39,2 +39,2 @@
+-#define _LIBCPP_PSTL_BACKEND_STD_THREAD
+-/* #undef _LIBCPP_PSTL_BACKEND_LIBDISPATCH */
++/* #undef _LIBCPP_PSTL_BACKEND_STD_THREAD */
++#define _LIBCPP_PSTL_BACKEND_LIBDISPATCH

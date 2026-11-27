@@ -7,7 +7,7 @@ description: Review a generated macOS C header installation against an official 
 
 Run from the repository root. Use a standalone installation built from the
 selected source lock, the official SDK with the same version and build, and
-the [pinned LLVM projection](../../../tools/toolchain/README.md). Keep the
+the [pinned LLVM projection](../../../docs/llvm-tools.md). Keep the
 reference SDK and generated review reports local.
 
 ```sh

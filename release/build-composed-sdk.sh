@@ -11,26 +11,23 @@ out=$(mkdir -p "$2" && cd "$2" && pwd -P)
 cd "$repo"
 
 sdk=macosx26.5
-sources="$out/sources"
-objc_sources="$out/objc-sources"
+inputs=${INPUTS:-"$repo/build/inputs"}
+sources="$inputs/sources/$sdk"
+objc_sources="$inputs/sources/$sdk-objc4"
+framework_sources="$inputs/sources/$sdk-frameworks"
+llvm=${LLVM_DIR:-"$inputs/llvm"}
 c_install="$out/c"
 objc_install="$out/objc4"
 frameworks="$out/frameworks"
 generated_frameworks="$generated/System/Library/Frameworks"
 
-source_cache=${C_SOURCE_CACHE:-"$PWD/build/c-source-cache"}
-llvm_cache=${LLVM_CACHE:-"$PWD/build/llvm-cache"}
-framework_sources=${FRAMEWORK_SOURCE_ROOT:-"$PWD/build/framework-sources"}
-
-python3 -m tools.sources.locked_sources prepare --sdk "$sdk" --source-root "$sources" --cache "$source_cache"
-python3 -m tools.sources.locked_sources prepare --sdk "$sdk" --profile objc4 --source-root "$objc_sources" --cache "$source_cache"
-llvm=${LLVM_DIR:-$(python3 -m tools.toolchain.official_llvm prepare --cache "$llvm_cache")}
+test -x "$llvm/bin/clang" || { echo "Run make prepare to install LLVM at $llvm." >&2; exit 1; }
+python3 -m tools.fetch_sources --verify --lock "locks/$sdk-frameworks.json" --dest "$framework_sources"
 clang="$llvm/bin/clang"
 /usr/bin/sandbox-exec -f release/c-header-build.sb \
   make install SDK="$sdk" OUT="$c_install" SOURCE_ROOT="$sources" CLANG="$clang"
 make install-objc4 SDK="$sdk" OUT="$objc_install" SOURCE_ROOT="$objc_sources"
 
-make -C frameworks prepare SOURCE_ROOT="$framework_sources"
 make -C frameworks install SOURCE_ROOT="$framework_sources" OUT="$frameworks" \
   CLANG="$clang" C_INSTALL="$c_install" OBJC4_INSTALL="$objc_install" \
   GENERATED_FRAMEWORKS="$generated_frameworks" \

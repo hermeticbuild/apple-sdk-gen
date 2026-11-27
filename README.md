@@ -36,10 +36,11 @@ AppKit and Core Data and builds an umbrella for the three.
 | `--xcode-version`, `--xcode-build` | Set the version recorded in the Xcode-style metadata |
 | `-v`, `-vv` | Enable info or debug logging |
 
-The C++ layer uses LLVM 21.1.6, the libc++ version reported by Xcode
-26.5. The installer checks release archive digests and runs LLVM's
-Apple CMake preset and header install targets. It includes both
-LLVM license files. Consumers link to the macOS system dylibs.
+The C++ layer uses the official LLVM 21.1.6 binary release, matching the
+libc++ version reported by Xcode 26.5. The installer applies LLVM's Apple
+preset choices to `__config_site` and includes both upstream license
+files. Consumers link to the macOS system dylibs. Pass `--llvm-dir` to
+reuse the directory from `make prepare-llvm`.
 [LLVM release](https://github.com/llvm/llvm-project/releases/tag/llvmorg-21.1.6)
 
 Selecting Model I/O or `--include-libc` generates `<simd/simd.h>` and a

@@ -12,7 +12,7 @@ import subprocess
 from tempfile import TemporaryDirectory
 
 from tools.tbd import parse_v5, version
-from tools.toolchain.official_llvm import PIN, projection, read_lock, sha256
+from tools.fetch_llvm_tools import PIN, projection, read_lock, sha256
 
 
 ARCHES = ("arm64",)

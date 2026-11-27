@@ -10,7 +10,7 @@ from types import SimpleNamespace
 
 from tools.header_manifest import read_header_manifest
 from sdk_review.linkage.verify_libsystem_links import link, read_object, run
-from tools.toolchain.official_llvm import PIN, projection, read_lock, sha256
+from tools.fetch_llvm_tools import PIN, projection, read_lock, sha256
 
 
 POLICY = Path(__file__).with_name("data") / "macosx26.5/expected-undefined.json"

@@ -95,6 +95,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Download and install C++ standard library headers from LLVM",
     )
     parser.add_argument(
+        "--llvm-dir",
+        type=Path,
+        help="Use libc++ headers from an already prepared LLVM directory",
+    )
+    parser.add_argument(
         "--xcode-version",
         type=str,
         default=None,

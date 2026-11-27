@@ -18,7 +18,7 @@ import tempfile
 
 from tools.header_manifest import read_header_manifest
 from tools.tbd import read_install_names, read_json
-from tools.sources.locked_sources import read_lock
+from tools.fetch_sources import ROOT as REPO_ROOT, read_lock
 
 
 STUB = Path("usr/lib/libSystem.B.tbd")
@@ -400,13 +400,13 @@ def compose(args):
     check_sdk_gen_version(sdk_gen, expected_sdk_gen, "--sdk-gen")
     if framework_sdk != sdk_gen:
         check_sdk_gen_version(framework_sdk, expected_sdk_gen, "--framework-sdk-gen")
-    expected_lock, _ = read_lock(SDK_NAME)
+    expected_lock, _ = read_lock(REPO_ROOT / "locks" / f"{SDK_NAME}.json")
     lock = c_root / "source-lock.json"
     if lock.is_symlink() or lock.read_bytes() != expected_lock:
         raise ValueError(f"composition requires the pinned {SDK_NAME} C installation")
     objc4_revision = None
     if objc_root:
-        expected_lock, projects = read_lock(SDK_NAME, "objc4")
+        expected_lock, projects = read_lock(REPO_ROOT / "locks" / f"{SDK_NAME}-objc4.json")
         lock = objc_root / "source-lock.json"
         if lock.is_symlink() or lock.read_bytes() != expected_lock:
             raise ValueError(f"objc4 installation does not match the {SDK_NAME} source lock")

@@ -1,12 +1,15 @@
 """Exercise declaration, object and link capabilities of the official bundle."""
 
+import argparse
 import json
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
+from tools.fetch_llvm_tools import PIN, projection, read_lock, run, sha256
 from tools.header_manifest import read_header_manifest
 
 
-FIXTURES = Path(__file__).resolve().parent / "fixtures"
+FIXTURES = Path(__file__).resolve().parent / "llvm_tools"
 PARENT = "/usr/lib/libBootstrap.dylib"
 CHILD = "/usr/lib/system/libBootstrapChild.dylib"
 FUNCTIONS = {"_example_asm_name", "_example_function"}
@@ -218,3 +221,14 @@ def verify(llvm, work, c_install, lock, run, sha256):
             "symbols": actual,
         }
     return result
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--llvm-dir", type=Path, required=True)
+    parser.add_argument("--c-install", type=Path)
+    args = parser.parse_args()
+    lock = read_lock(PIN)
+    projection(args.llvm_dir, lock)
+    with TemporaryDirectory(prefix="llvm-smoke-") as temporary:
+        result = verify(args.llvm_dir.resolve(), Path(temporary), args.c_install, lock, run, sha256)
+    print(json.dumps(result, indent=2, sort_keys=True))

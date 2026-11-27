@@ -11,8 +11,8 @@ INSTALLAPI_MIN := 15.4
 
 .PHONY: install stage
 install:
-	"$(PYTHON)" -m tools.sources.locked_sources verify --sdk macosx26.5 \
-		--source-root "$(abspath $(SOURCE_ROOT))"
+	"$(PYTHON)" -m tools.fetch_sources --verify --lock locks/macosx26.5.json \
+		--dest "$(abspath $(SOURCE_ROOT))"
 	cmp locks/macosx26.5.json "$(C_INSTALL)/source-lock.json"
 	@set -eu; \
 		test -n "$(OUT)" && test ! -e "$(OUT)" && test ! -L "$(OUT)" \

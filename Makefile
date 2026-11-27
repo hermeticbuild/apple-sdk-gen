@@ -2,8 +2,42 @@
 PYTHON ?= python3
 MIG ?= /usr/bin/mig
 SDK ?= macosx26.5
-SOURCE_ROOT ?= $(CURDIR)/build/sources/$(SDK)$(if $(install-profile),-$(install-profile))
+INPUTS ?= $(CURDIR)/build/inputs
+SOURCE_ROOT ?= $(INPUTS)/sources/$(SDK)$(if $(install-profile),-$(install-profile))
+LLVM_DIR ?= $(INPUTS)/llvm
+CLANG ?= $(LLVM_DIR)/bin/clang
+offline = $(if $(filter 1,$(OFFLINE)),--offline)
 export SOURCE_ROOT
+
+.PHONY: prepare prepare-sources prepare-c-sources prepare-llvm prepare-docc prepare-python test-llvm-tools
+prepare: prepare-sources prepare-llvm prepare-docc prepare-python
+
+prepare-c-sources:
+	"$(PYTHON)" -m tools.fetch_sources --lock "locks/$(SDK).json" --dest "$(INPUTS)/sources/$(SDK)" --cache "$(INPUTS)/git" $(offline)
+
+prepare-sources: prepare-c-sources
+	"$(PYTHON)" -m tools.fetch_sources --lock "locks/$(SDK)-objc4.json" --dest "$(INPUTS)/sources/$(SDK)-objc4" --cache "$(INPUTS)/git" $(offline)
+	"$(PYTHON)" -m tools.fetch_sources --lock "locks/$(SDK)-frameworks.json" --dest "$(INPUTS)/sources/$(SDK)-frameworks" --cache "$(INPUTS)/git" $(offline)
+
+prepare-llvm:
+	"$(PYTHON)" -m tools.fetch_llvm_tools --dest "$(LLVM_DIR)" --cache "$(INPUTS)/downloads" $(offline)
+
+prepare-docc:
+	SDK_VERSION="$(patsubst macosx%,%,$(SDK))" bash tools/fetch_docc_snapshot.sh "$(INPUTS)/docc" "$(INPUTS)/downloads" $(offline)
+
+prepare-python:
+	@set -eu; \
+		venv="$(INPUTS)/python"; \
+		digest=$$(shasum -a 256 release/requirements.txt | cut -d ' ' -f 1); \
+		if test -x "$$venv/bin/python" && test -f "$$venv/.requirements-sha256" && \
+			test "$$(cat "$$venv/.requirements-sha256")" = "$$digest"; then exit 0; fi; \
+		test "$(OFFLINE)" != 1 || { echo "Offline mode requires the prepared Python environment: $$venv" >&2; exit 1; }; \
+		"$(PYTHON)" -m venv "$$venv"; \
+		"$$venv/bin/python" -m pip install --require-hashes --only-binary=:all: -r release/requirements.txt; \
+		printf '%s\n' "$$digest" > "$$venv/.requirements-sha256"
+
+test-llvm-tools:
+	PYTHONPATH="$(CURDIR)" "$(PYTHON)" tests/check_llvm_tools.py --llvm-dir "$(LLVM_DIR)"
 
 .PHONY: install install-objc4 check-c-install-tools test
 install: check-c-install-tools
@@ -14,9 +48,8 @@ install install-objc4:
 		test -n "$(OUT)" && test ! -e "$(OUT)" || { echo "Set OUT to a new directory." >&2; exit 1; }; \
 		stage=$$(mktemp -d "$${TMPDIR:-/tmp}/apple-oss-c-recipes.XXXXXX"); \
 		trap 'rm -rf -- "$$stage"' EXIT; \
-		"$(PYTHON)" -m tools.sources.locked_sources verify --sdk "$(SDK)" \
-			$(if $(install-profile),--profile "$(install-profile)") \
-			--source-root "$(SOURCE_ROOT)" --record "$$stage/source-lock.json"; \
+		"$(PYTHON)" -m tools.fetch_sources --verify --lock "locks/$(SDK)$(if $(install-profile),-$(install-profile)).json" \
+			--dest "$(SOURCE_ROOT)" --record "$$stage/source-lock.json"; \
 		$(MAKE) $(if $(install-profile),build-$(install-profile),build-install) \
 			STAGE="$$stage" SOURCE_ROOT="$(SOURCE_ROOT)" CLANG="$(CLANG)" MIG="$(MIG)" OUT="$(OUT)"
 

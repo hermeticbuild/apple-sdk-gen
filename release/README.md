@@ -32,13 +32,15 @@ gh attestation verify MacOSX.sdk.tar.zst --repo hermeticbuild/apple-sdk-gen \
 
 ## Build and test locally
 
-Use an arm64 Mac with the Xcode command-line tools, Python 3.12 or newer,
-CMake, Ninja, zstd, and gh. Install SDK Gen with `python3 -m pip install -e
-tools/` from this checkout.
+Use an arm64 Mac with the Xcode command-line tools, Python 3.12, CMake,
+Ninja, zstd, and gh. Set the R2 credentials below for a cold DocC download.
 
 ```sh
+make prepare PYTHON=python3.12
+source build/inputs/python/bin/activate
 python3 -m tools.apple_sdk_gen --sdk-version 26.5 --all-frameworks \
-  --include-cxx --docc-cache-only --cache-dir cache --output build/generated -v
+  --include-cxx --llvm-dir build/inputs/llvm --docc-cache-only \
+  --cache-dir build/inputs/docc --output build/generated -v
 generated=build/generated/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
 release/build-composed-sdk.sh "$generated" build/sdk
 release/test-composed-sdk.sh build/sdk
@@ -46,9 +48,11 @@ release/test-composed-sdk.sh build/sdk
 
 The [Bazel workspaces](../e2e/README.md) read the corresponding archive under
 `build/sdk/`. The build driver takes the generated tree
-as an argument so local recipe iterations can reuse it. Use
-`C_SOURCE_CACHE`, `LLVM_CACHE`, and `FRAMEWORK_SOURCE_ROOT` to reuse local
-source caches. `LLVM_DIR` selects a verified LLVM projection.
+as an argument so local recipe iterations can reuse it. The build and tests
+read prepared inputs from `build/inputs`. Pass an absolute `INPUTS` path to
+Make and to the release scripts to share inputs across worktrees. Rerun
+`make prepare OFFLINE=1` to check that preparation can reuse the local inputs.
+Build each new pair of archives in a fresh output directory.
 
 ## Keep a portable DocC cache
 
@@ -65,14 +69,13 @@ Set repository Actions variables `DOCC_R2_ENDPOINT` and `DOCC_R2_BUCKET`
 and the bucket-scoped secrets `DOCC_R2_ACCESS_KEY_ID` and
 `DOCC_R2_SECRET_ACCESS_KEY`. The workflow verifies the full SHA-256 in
 `docc.snapshot` before extracting the pinned object. For a local restore,
-extract the snapshot as `cache.db` in a fresh `--cache-dir`.
+seed `build/inputs/downloads/<SHA-256>.db.zst` and run `make prepare-docc OFFLINE=1`.
 
 To refresh DocC, generate separately with `--reuse-docc-cache` to fetch
 missing pages. Use a fresh cache directory to refresh existing pages as
 well. Upload the checked snapshot under a new dated key in
 `macos/26.5/snapshots/`, then commit the full SHA-256 and key in
-`docc.snapshot`. Existing releases retain their snapshot pin. The
-generator downloads the pinned LLVM source archives as needed.
+`docc.snapshot`. Existing releases retain their snapshot pin.
 
 The earlier frozen input and archive checksums are [in Git history](https://github.com/hermeticbuild/apple-sdk-gen/tree/c66fa45/release).
 The fresh build uses the framework outputs generated in the release job.

@@ -1,6 +1,7 @@
 .DEFAULT_GOAL := install
 
-SOURCE_ROOT ?= $(abspath ../build/framework-sources)
+FRAMEWORK_SDK ?= macosx26.5
+SOURCE_ROOT ?= $(abspath ../build/inputs/sources/$(FRAMEWORK_SDK)-frameworks)
 OUT ?= $(abspath ../build/frameworks)
 C_FRAMEWORKS := CoreFoundation AudioToolbox AudioUnit CoreAudio CoreAudioTypes CoreMIDI IOKit OpenAL Security SystemConfiguration
 OBJC_FRAMEWORKS := Foundation AppKit CoreData Cocoa
@@ -12,7 +13,7 @@ OBJC_TESTS := test-Foundation test-Foundation-modules test-Cocoa test-Cocoa-modu
 OPTIONAL_TESTS := $(addprefix test-,$(OPTIONAL_FRAMEWORKS))
 PYTHON ?= python3
 
-.PHONY: install stage prepare test test-objc check-test-tools $(SUPPORTED) $(TESTS) $(OBJC_TESTS) $(OPTIONAL_TESTS)
+.PHONY: install stage test test-objc check-test-tools $(SUPPORTED) $(TESTS) $(OBJC_TESTS) $(OPTIONAL_TESTS)
 
 install:
 	@set -eu; \
@@ -28,8 +29,6 @@ install:
 		mv "$$stage" "$(OUT)"
 
 stage: $(FRAMEWORKS)
-
-prepare: prepare-CF prepare-IOAudioFamily prepare-OpenAL prepare-Security prepare-configd
 
 include common.mk
 include $(addsuffix /Makefile,$(SUPPORTED))

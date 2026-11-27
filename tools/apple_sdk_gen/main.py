@@ -211,6 +211,7 @@ async def run(args: argparse.Namespace) -> None:
                 sdk_root=sdk_path,
                 sdk_version=args.sdk_version,
                 cache_dir=cache_dir,
+                llvm_dir=args.llvm_dir,
             )
 
         print(f"SDK generated at: {sdk_path}", file=sys.stderr)

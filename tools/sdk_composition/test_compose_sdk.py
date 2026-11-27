@@ -10,7 +10,7 @@ import tempfile
 import unittest
 
 from tools.header_manifest import COLUMNS
-from tools.sources.locked_sources import read_lock
+from tools.fetch_sources import ROOT as REPO_ROOT, read_lock
 
 
 PARENT = "/usr/lib/libSystem.B.dylib"
@@ -54,7 +54,7 @@ class ComposeTests(unittest.TestCase):
             "usr/include/fixture.h", digest, "fixture", "source", "selection", "copy", "input",
         ]) + "\n")
         write(self.c / "uninstalled-scratch.txt", "outside the manifest\n")
-        lock, _ = read_lock("macosx26.5")
+        lock, _ = read_lock(REPO_ROOT / "locks/macosx26.5.json")
         (self.c / "source-lock.json").write_bytes(lock)
         write(self.gen / "SDKSettings.json", '{"CanonicalName":"macosx26.5","Version":"26.5"}')
         write(self.gen / "usr/lib/libSystem.B.tbd", tbd(PARENT, CHILD))
@@ -211,7 +211,7 @@ install-name: '{PARENT}'
             relative, digest, "objc4", "sources/objc4/runtime/objc-sync.h",
             "selection", "copy", "input",
         ]) + "\n")
-        lock, _ = read_lock("macosx26.5", "objc4")
+        lock, _ = read_lock(REPO_ROOT / "locks/macosx26.5-objc4.json")
         (source / "source-lock.json").write_bytes(lock)
         return source, header
 

@@ -80,7 +80,7 @@ the default recipes, Cocoa, and ApplicationServices. Pass the generated
 CoreServices stub to its recipe to preserve its linker exports.
 
 ```bash
-make -C frameworks prepare
+make prepare-sources
 make -C frameworks install CLANG="$LLVM/bin/clang" C_INSTALL="$C_INSTALL" \
   OBJC4_INSTALL="$OBJC4_INSTALL" FOUNDATION_TBD="$FOUNDATION_TBD" \
   COCOA_FRAMEWORK="$SDK_GEN/System/Library/Frameworks/Cocoa.framework" OUT="$FRAMEWORKS" \

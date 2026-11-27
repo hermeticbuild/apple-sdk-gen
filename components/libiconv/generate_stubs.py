@@ -9,7 +9,7 @@ import tarfile
 import tempfile
 
 from tools.sdk_composition.compose_sdk import Plan, c_install, digest
-from tools.toolchain import official_llvm
+from tools import fetch_llvm_tools
 
 
 REVISION = "7fb0198429570d3b6aa562d228a6ea5936d15c05"
@@ -72,8 +72,8 @@ def build_stub(target_name, project, src, sysroot, llvm, lock, work, libdir):
 def generate(source, headers, llvm, out):
     if out.exists() or out.is_symlink():
         raise ValueError(f"choose a new output directory: {out}")
-    lock = official_llvm.read_lock(official_llvm.PIN)
-    official_llvm.projection(llvm, lock)
+    lock = fetch_llvm_tools.read_lock(fetch_llvm_tools.PIN)
+    fetch_llvm_tools.projection(llvm, lock)
     with tempfile.TemporaryDirectory(dir=out.parent) as tmp:
         work = Path(tmp)
         # Only the pinned commit enters the header search, including quoted includes.
@@ -98,7 +98,7 @@ def generate(source, headers, llvm, out):
                        for target in ("charset", "libiconv"))
         manifest = {
             "repository": "https://github.com/apple-oss-distributions/libiconv",
-            "revision": REVISION, "project": PROJECT, "llvm_lock_sha256": digest(official_llvm.PIN),
+            "revision": REVISION, "project": PROJECT, "llvm_lock_sha256": digest(fetch_llvm_tools.PIN),
             "c_manifests": {p.name: digest(sysroot / p) for p in plan.files
                             if p.parent == Path(".")},
             "stubs": results,

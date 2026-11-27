@@ -21,4 +21,4 @@ include = ["apple_sdk_gen", "apple_sdk_gen.*"]
 where = ["."]
 
 [tool.setuptools.package-data]
-apple_sdk_gen = ["supplements/data/*.json"]
+apple_sdk_gen = ["supplements/data/*.json", "supplements/data/*.patch", "supplements/data/*-LICENSE.txt"]

@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 COMMIT = r"[0-9a-f]{40}"
 CHECKOUT_SETTINGS = {
     "core.attributesFile": os.devnull,
@@ -24,22 +24,17 @@ CHECKOUT_SETTINGS = {
 }
 
 
-def read_lock(sdk: str, profile: str | None = None) -> tuple[bytes, dict]:
-    if not re.fullmatch(r"[a-z][a-z0-9]*[0-9](?:\.[0-9]+)+", sdk):
-        raise ValueError(f"invalid SDK name: {sdk}")
-    if profile not in (None, "objc4"):
-        raise ValueError(f"unsupported source profile: {profile}")
-    suffix = f"-{profile}" if profile else ""
-    path = ROOT / "locks" / f"{sdk}{suffix}.json"
+def read_lock(path: Path) -> tuple[bytes, dict]:
     data = path.read_bytes()
     lock = json.loads(data)
     target = lock["sdk"]
-    if lock["schema"] != 1 or target["canonical_name"] != sdk:
-        raise ValueError(f"source lock does not identify SDK {sdk}")
-    if lock.get("profile") != profile:
-        raise ValueError(f"source lock does not identify profile {profile}")
-    if target["platform"] != "macosx" or sdk != target["platform"] + target["version"]:
-        raise ValueError(f"the header recipes do not support SDK {sdk}")
+    sdk = target["canonical_name"]
+    profile = lock.get("profile")
+    if (lock["schema"] != 1 or target["platform"] != "macosx"
+            or sdk != target["platform"] + target["version"]
+            or profile not in (None, "objc4", "frameworks")
+            or path.stem != (f"{sdk}-{profile}" if profile else sdk)):
+        raise ValueError(f"invalid SDK source lock: {path}")
     projects = lock["projects"]
     if not projects:
         raise ValueError(f"no projects in source lock: {path}")
@@ -56,12 +51,12 @@ def git(directory: Path, *args: str) -> str:
                 for option in ("-c", f"{key}={value}")]
     return subprocess.check_output(
         ["git", *settings, "-C", str(directory), *args], text=True,
-        env=dict(os.environ, GIT_ATTR_NOSYSTEM="1")).strip()
+        env=dict(os.environ, GIT_ATTR_NOSYSTEM="1", GIT_LFS_SKIP_SMUDGE="1")).strip()
 
 
 def verify(root: Path, projects: dict) -> None:
-    if not root.is_dir():
-        raise ValueError(f"missing source tree: {root}; run locked_sources prepare")
+    if root.is_symlink() or not root.is_dir():
+        raise ValueError(f"missing source tree: {root}; run make prepare-sources")
     actual = {path.name for path in root.iterdir()}
     if actual != projects.keys():
         raise ValueError(f"source tree differs from lock: missing={sorted(projects.keys() - actual)}, "
@@ -80,8 +75,11 @@ def verify(root: Path, projects: dict) -> None:
 
 
 def prepare(root: Path, cache: Path, projects: dict, offline: bool) -> None:
-    if root.exists() or root.is_symlink():
-        raise ValueError(f"destination already exists: {root}")
+    if root.is_symlink():
+        raise ValueError(f"source destination is a symlink: {root}")
+    if root.exists():
+        verify(root, projects)
+        return
     root.parent.mkdir(parents=True, exist_ok=True)
     cache.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".prepare-", dir=root.parent) as temp:
@@ -113,34 +111,34 @@ def prepare(root: Path, cache: Path, projects: dict, offline: bool) -> None:
                 git(checkout, "config", "--local", key, value)
             git(checkout, "checkout", "--quiet", "--detach", commit)
         verify(tree, projects)
-        tree.rename(root)
+        try:
+            tree.rename(root)
+        except OSError:
+            if root.is_symlink() or not root.is_dir():
+                raise
+            verify(root, projects)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("prepare", "verify"):
-        command = commands.add_parser(name)
-        command.add_argument("--sdk", required=True)
-        command.add_argument("--profile", choices=["objc4"])
-        command.add_argument("--source-root", type=Path)
-    commands.choices["prepare"].add_argument("--cache", type=Path, default=ROOT / "build/source-cache")
-    commands.choices["prepare"].add_argument("--offline", action="store_true")
-    commands.choices["verify"].add_argument("--record", type=Path,
-                                           help="write the verified source lock to a new file")
+    parser.add_argument("--lock", required=True, type=Path)
+    parser.add_argument("--dest", required=True, type=Path)
+    parser.add_argument("--cache", type=Path, default=ROOT / "build/inputs/git")
+    parser.add_argument("--offline", action="store_true")
+    parser.add_argument("--verify", action="store_true", help="check an existing checkout")
+    parser.add_argument("--record", type=Path, help="write the verified source lock to a new file")
     args = parser.parse_args()
     try:
-        lock_bytes, projects = read_lock(args.sdk, args.profile)
-        directory = f"{args.sdk}-{args.profile}" if args.profile else args.sdk
-        root = (args.source_root or ROOT / "build/sources" / directory).absolute()
-        if args.command == "prepare":
-            prepare(root, args.cache.resolve(), projects, args.offline)
-            print(f"{args.sdk}: prepared {len(projects)} projects at {root}")
-        else:
+        lock_bytes, projects = read_lock(args.lock)
+        root = args.dest.absolute()
+        if args.verify:
             verify(root, projects)
-            if args.record:
-                with args.record.open("xb") as record:
-                    record.write(lock_bytes)
+        else:
+            prepare(root, args.cache.resolve(), projects, args.offline)
+            print(f"{args.lock.stem}: ready at {root}")
+        if args.record:
+            with args.record.open("xb") as record:
+                record.write(lock_bytes)
     except (KeyError, ValueError, OSError, subprocess.CalledProcessError) as error:
         parser.exit(1, f"{error}\n")
     return 0

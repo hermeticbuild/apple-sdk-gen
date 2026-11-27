@@ -7,8 +7,9 @@ if [[ $# != 1 ]]; then
 fi
 out=$(cd "$1" && pwd -P)
 cd "$(dirname "$0")/.."
-llvm_cache=${LLVM_CACHE:-"$PWD/build/llvm-cache"}
-llvm=${LLVM_DIR:-$(python3 -m tools.toolchain.official_llvm prepare --offline --cache "$llvm_cache")}
+inputs=${INPUTS:-"$PWD/build/inputs"}
+llvm=${LLVM_DIR:-"$inputs/llvm"}
+test -x "$llvm/bin/clang" || { echo "Run make prepare to install LLVM at $llvm." >&2; exit 1; }
 args=(CLANG="$llvm/bin/clang" SDK="$out/MacOSX.sdk" RUN=1)
 make test CLANG="$llvm/bin/clang" OUT="$out/c"
 
@@ -41,5 +42,5 @@ make -C tests/composed_sdk test test-foundation-macros test-coregraphics \
   test-security test-network test-simd test-modelio test-modelio-modules \
   test-objc-property "${args[@]}"
 LLVM="$llvm" LIBSYSTEM_TEST_LLVM="$llvm" \
-  LIBSYSTEM_TEST_OBJC4="$out/objc4" ICONV_SOURCE="$out/sources/libiconv" C_INSTALL="$out/c" \
+  LIBSYSTEM_TEST_OBJC4="$out/objc4" ICONV_SOURCE="$inputs/sources/macosx26.5/libiconv" C_INSTALL="$out/c" \
   python3 -m unittest tools.sdk_composition.test_compose_sdk components.libiconv.test_stubs
