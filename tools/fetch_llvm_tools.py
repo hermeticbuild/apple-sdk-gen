@@ -11,7 +11,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from tools.apple_sdk_gen.supplements.libcxx import LLVM_PIN as PIN, fetch_archive
+from tools.apple_sdk_gen.supplements.libcxx import LLVM_PIN as PIN
+from tools.apple_sdk_gen.supplements.libcxx import cache_file, check_digest, fetch_asset, sha256
 
 
 TRUSTED_ROOT = "github-attestation-trusted-root.jsonl"
@@ -19,21 +20,6 @@ TRUSTED_ROOT = "github-attestation-trusted-root.jsonl"
 
 def read_lock(path):
     return json.loads(path.read_text())
-
-
-def sha256(path):
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def check_digest(path, expected):
-    if path.is_symlink() or not path.is_file():
-        raise ValueError(f"missing regular file: {path}")
-    if sha256(path) != expected:
-        raise ValueError(f"SHA-256 mismatch: {path}")
 
 
 def run(argv, **kwargs):
@@ -88,28 +74,6 @@ def projection(root, lock):
             raise ValueError(f"header inventory differs from pin: {root / directory}")
 
 
-def get_cached(path, command, offline, expected=None):
-    if not path.exists():
-        if offline:
-            raise ValueError(f"offline mode requires cached input: {path}")
-        with tempfile.TemporaryDirectory(dir=path.parent, prefix=".download-") as tmp:
-            incoming = Path(tmp) / path.name
-            command(incoming)
-            if expected:
-                check_digest(incoming, expected)
-            os.replace(incoming, path)
-    if expected:
-        check_digest(path, expected)
-    elif path.is_symlink() or not path.is_file():
-        raise ValueError(f"missing regular file: {path}")
-    return path
-
-
-def download(url, destination):
-    run(["curl", "--fail", "--location", "--silent", "--show-error", "--retry", "2",
-         "--output", destination, url])
-
-
 def fetch_trusted_root(destination):
     destination.write_text(run(["gh", "attestation", "trusted-root"]))
 
@@ -119,12 +83,10 @@ def prepare(root, cache, lock, offline):
         projection(root, lock)
         return root
     root.parent.mkdir(parents=True, exist_ok=True)
-    cache.mkdir(parents=True, exist_ok=True)
-    archive = fetch_archive(cache, lock["archive"], offline)
+    archive = fetch_asset(cache, lock["archive"], offline)
     asset = lock["attestation"]
-    bundle = get_cached(cache / asset["url"].rsplit("/", 1)[-1],
-                        lambda p: download(asset["url"], p), offline, asset["sha256"])
-    trusted_root = get_cached(cache / TRUSTED_ROOT, fetch_trusted_root, offline)
+    bundle = fetch_asset(cache, asset, offline)
+    trusted_root = cache_file(cache / TRUSTED_ROOT, fetch_trusted_root, offline)
     run(["gh", "attestation", "verify", archive, "--bundle", bundle,
          "--custom-trusted-root", trusted_root, "--repo", lock["repository"],
          "--signer-workflow", asset["signer_workflow"],
