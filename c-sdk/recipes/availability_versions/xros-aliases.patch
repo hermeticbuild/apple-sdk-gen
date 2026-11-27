@@ -1,0 +1,24 @@
+Accept xros in API availability annotations for visionOS.
+
+Source: AvailabilityVersions-155 (97f1225840fe7e2d97371c8e8beff6e149fce595) and
+AvailabilityVersions-157.2 (149b1777f3e8c2133042d8e188f72e3adf6a7110), generated AvailabilityInternal.h.
+Scope: macOS SDK 26.0 and 26.5, arm64 and x86_64.
+
+Apple's pinned availability.dsl declares cmd_aliases=xros for visionOS.
+The generated API macros only implement the visionos spelling. Apple's
+libdispatch public queue.h uses xros(1.1) in an availability annotation.
+Mirror the four generated visionos macros using the documented alias.
+
+--- a/usr/include/AvailabilityInternal.h
++++ b/usr/include/AvailabilityInternal.h
+@@ -225,6 +225,10 @@
+    #define __API_DEPRECATED_PLATFORM_visionos(x,y) visionos,introduced=x,deprecated=y
+    #define __API_OBSOLETED_PLATFORM_visionos(x,y,z) visionos,introduced=x,deprecated=y,obsoleted=z
+    #define __API_UNAVAILABLE_PLATFORM_visionos visionos,unavailable
++   #define __API_AVAILABLE_PLATFORM_xros(x) visionos,introduced=x
++   #define __API_DEPRECATED_PLATFORM_xros(x,y) visionos,introduced=x,deprecated=y
++   #define __API_OBSOLETED_PLATFORM_xros(x,y,z) visionos,introduced=x,deprecated=y,obsoleted=z
++   #define __API_UNAVAILABLE_PLATFORM_xros visionos,unavailable
+    #define __API_AVAILABLE_PLATFORM_visionOSApplicationExtension(x) visionOSApplicationExtension,introduced=x
+    #define __API_DEPRECATED_PLATFORM_visionOSApplicationExtension(x,y) visionOSApplicationExtension,introduced=x,deprecated=y
+    #define __API_OBSOLETED_PLATFORM_visionOSApplicationExtension(x,y,z) visionOSApplicationExtension,introduced=x,deprecated=y,obsoleted=z

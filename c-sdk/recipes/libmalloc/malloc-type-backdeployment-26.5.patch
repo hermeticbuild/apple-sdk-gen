@@ -1,0 +1,26 @@
+Select Apple's public SDK typed-allocation backdeployment branch.
+
+Source: libmalloc-812.100.31 (c49dafa25f1efe8607701ae6014a663ad2ee437f),
+include/malloc/_malloc_type.h. Scope: macOS SDK 26.5, arm64 and x86_64.
+
+Apple's tests/malloc_type_backdeploy.c selects __APPLE_BLEACH_SDK__ to
+exercise public SDK fallback. The pinned public packaging script omits
+this selection. This diff captures the previous recipe's exact output
+from unifdef -x2 -D__APPLE_BLEACH_SDK__ on the pinned header.
+
+Evidence: .agents/skills/review-macos-c-sdk/scripts/sdk_review/headers/data/macosx26.5/ranked-header-differences.md
+records the macOS 13/14 weak and strong import and fallback checks.
+
+--- a/usr/include/malloc/_malloc_type.h
++++ b/usr/include/malloc/_malloc_type.h
+@@ -45,10 +45,6 @@
+ __BEGIN_DECLS
+ 
+ #define _MALLOC_TYPE_MALLOC_BACKDEPLOY_PUBLIC 1
+-#ifndef __APPLE_BLEACH_SDK__
+-#undef _MALLOC_TYPE_MALLOC_BACKDEPLOY_PUBLIC
+-#define _MALLOC_TYPE_MALLOC_BACKDEPLOY_PUBLIC 0
+-#endif
+ 
+ #if _MALLOC_TYPE_MALLOC_BACKDEPLOY_PUBLIC && defined(__has_feature) && __has_feature(typed_memory_operations) && __has_builtin(__is_target_os) && defined(__LP64__) && !defined(_MALLOC_TYPE_MALLOC_IS_BACKDEPLOYING)
+ #if (defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__) && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 140000)   || \

@@ -1,0 +1,5 @@
+category	reviewed_sdk	approved_paths_sha256	evidence
+c++	macosx26.5	c8d0076495180ffc22d439b43f5dd57c0493147913a9abc97e934627c5e8b069	C++ headers come from the pinned LLVM toolchain; user scoped this audit to C.
+objc	macosx26.5	ac9de7b1e72d5cc92d667aa806cda00e8f25bc7db1174b8715e3370c49eb85ee	Objective-C is outside the C-only installation and probe.
+non_header	macosx26.5	b0e05e3dcf9c29ccbf7242094fac90e5f698820b097d816d0f01f6686829b68b	Non-.h SDK usr/include entries are metadata or source inputs, not installed C header paths.
+framework_symlink	macosx26.5	ff775920f242fb811ea3fb7e151d29b7294d048c3b83affdff93169dc9d35557	Symlinks into frameworks belong to the separate framework-header scope.

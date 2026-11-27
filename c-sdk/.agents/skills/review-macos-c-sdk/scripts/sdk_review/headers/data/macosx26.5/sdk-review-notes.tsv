@@ -1,0 +1,15 @@
+path	sdk	reason	evidence
+bootstrap.h	macosx26.5	launchd publishes servers/bootstrap.h, but the SDK also has a distinct root bootstrap.h; its first-party install source is unresolved.	Pinned launchd Xcode public header phase and postflight move; SDK 26.5 root path.
+AppleTextureEncoder.h	macosx26.5	Standalone C scope and public source remain unproven; do not infer ownership from the SDK path alone.	No matching basename in pinned Apple OSS source trees or separately named public install rule.
+cache.h	macosx26.5	The pinned HFS tree has an internal cache.h, but no evidence that it is this root SDK header.	Pinned hfs/lib_fsck_hfs/cache.h; no root cache.h public install rule identified.
+cache_callbacks.h	macosx26.5	No matching pinned Apple OSS header or public installation rule has been identified.	Pinned source-tree basename search; SDK 26.5 root path.
+profile.h	macosx26.5	XNU publishes architecture-specific machine/profile.h, but no rule maps it to the distinct root profile.h path.	Pinned xnu bsd/machine, bsd/arm, and bsd/i386 Makefiles; SDK 26.5 root path.
+sysdir.h	macosx26.5	Used by CoreFoundation source, but a public Apple OSS header source and install rule remain unlocated.	Pinned swift-corelibs-foundation CFSystemDirectories.c include; SDK 26.5 root path.
+usbuf.h	macosx26.5	No matching pinned Apple OSS header or public installation rule has been identified.	Pinned source-tree basename search; SDK 26.5 root path.
+os/activity.h	macosx26.5	Public user-level logging header source and install rule remain unlocated.	Pinned Apple OSS source-tree basename search; SDK 26.5 os path.
+os/arch/arm64.h	macosx26.5	XNU has this header but its public os/arch CopyFiles phase is empty; the minimal package omits it pending scope and provenance review.	Pinned xnu libsyscall/os/arch/arm64.h and Libsyscall.xcodeproj os/arch CopyFiles phases.
+os/signpost.h	macosx26.5	Public user-level logging header source and install rule remain unlocated.	Pinned Apple OSS source-tree basename search; SDK 26.5 os path.
+os/trace.h	macosx26.5	XNU provides only a kernel-side os/trace.h; public user header source remains unresolved.	Pinned XNU libkern/os/trace.h and libkern/os/Makefile public install list.
+os/trace_base.h	macosx26.5	Public user-level tracing header source and install rule remain unlocated.	Pinned Apple OSS source-tree basename search; SDK 26.5 os path.
+bsm/audit_session.h	macosx26.5	Absent from XNU and OpenBSM public header installs; first-party source remains unresolved.	Pinned XNU bsd/bsm/Makefile and OpenBSM Xcode usr/include/bsm CopyFiles phase; SDK 26.5 path.
+infiniband/verbs.h	macosx26.5	Likely a separate RDMA library API, but its source and scope decision remain unproven.	No matching pinned Apple OSS source or named framework/TBD mapping identified; SDK 26.5 path.

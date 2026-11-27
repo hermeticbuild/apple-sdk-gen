@@ -1,0 +1,24 @@
+Disable unprefixed assertion macro names by default.
+
+Source: CarbonHeaders-18.1 (214a9ae7ab3c0c78ddb50328ca226e6313c4c782), AssertMacros.h,
+after Apple's Makefile installhdrs. Scope: macOS SDK 26.5, arm64 and x86_64.
+
+The header's own compatibility comment announces the upcoming default.
+A client function named check collides with the old macro default. Retain
+the documented explicit opt-in and opt-out and match the 26.5 comparison.
+
+Evidence: .agents/skills/review-macos-c-sdk/scripts/sdk_review/headers/data/macosx26.5/tested-header-repairs.md.
+
+--- a/usr/include/AssertMacros.h
++++ b/usr/include/AssertMacros.h
+@@ -1280,8 +1280,8 @@
+  */
+ 
+ #ifndef __ASSERT_MACROS_DEFINE_VERSIONS_WITHOUT_UNDERSCORES
+-	/* If we haven't set this yet, it defaults to on.  In the next release, this will default to off. */
+-	#define	__ASSERT_MACROS_DEFINE_VERSIONS_WITHOUT_UNDERSCORES	1
++	/* Define the switch to 1 to enable unprefixed assertion macros. */
++	#define	__ASSERT_MACROS_DEFINE_VERSIONS_WITHOUT_UNDERSCORES	0
+ #endif
+ 
+ #if	__ASSERT_MACROS_DEFINE_VERSIONS_WITHOUT_UNDERSCORES

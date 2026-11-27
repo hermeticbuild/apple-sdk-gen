@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "sdk": "macosx26.5",
+  "sdk_build": "25F70",
+  "approvals": [
+    {
+      "id": "HEADER-26.5-EVENTLINK-STANDALONE",
+      "path": "usr/include/mach/mach_eventlink.h",
+      "architectures": ["arm64"],
+      "minimum": "11.0",
+      "context": {},
+      "compiler_sha256": "f8fa7184dab7d8fa7f6af268a6f1b3aa3d2e598d0cca04dc68447b4c0ca58d8e",
+      "header_sha256": "0da6ccdbf119527e6f2734e162a07b2f4156bc3ddceece35a6befdb1cb9ac3c4",
+      "failure": {
+        "kind": "missing-include",
+        "source": "usr/include/mach/mach_eventlink.h",
+        "header": "mach/mach_eventlink_types.h"
+      },
+      "source": {
+        "project": "xnu",
+        "commit": "ac9718fb1af618d5ce8678d0dc6e8a58f252216f",
+        "path": "osfmk/mach/Makefile",
+        "selector": "PRIVATE_DATAFILES"
+      },
+      "approved_by": "Corentin Kerisit",
+      "reason": "The generated header and SDK 26.5 build 25F70 have identical bytes and fail the same default C17 standalone probe on arm64. XNU lists the missing dependency as a private header. The approval covers this compile context only."
+    }
+  ]
+}

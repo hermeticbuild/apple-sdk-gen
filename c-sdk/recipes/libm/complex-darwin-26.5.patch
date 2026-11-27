@@ -1,0 +1,26 @@
+Expose the complex constructors in full Darwin C mode.
+
+Source: Libm-2026 (17a5f9daa3f5679f7536b26f133b40cc078753c3), Source/complex.h after complex.patch.
+Scope: macOS SDK 26.5, arm64 and x86_64.
+
+The 26.5 comparison exposes these macros in full Darwin modes before C11,
+while strict C99 and restricted POSIX modes hide them. Use the public Darwin
+namespace level from XNU sys/cdefs.h. The existing builtin bodies are retained.
+
+Evidence: .agents/skills/review-macos-c-sdk/scripts/sdk_review/headers/data/macosx26.5/tested-header-repairs.md
+records visibility checks across both targets and C dialects.
+
+--- a/usr/include/complex.h
++++ b/usr/include/complex.h
+@@ -40,8 +40,9 @@
+ #define I _Complex_I
+ 
+ /* C11 complex constructors, ISO/IEC 9899 7.3.9.3. */
+-#if !defined(__cplusplus) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L \
+-    && __has_builtin(__builtin_complex)
++#if !defined(__cplusplus) && __has_builtin(__builtin_complex) && \
++    ((defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L) || \
++     __DARWIN_C_LEVEL >= __DARWIN_C_FULL)
+ #define CMPLX(x, y)  __builtin_complex((double)(x), (double)(y))
+ #define CMPLXF(x, y) __builtin_complex((float)(x), (float)(y))
+ #define CMPLXL(x, y) __builtin_complex((long double)(x), (long double)(y))

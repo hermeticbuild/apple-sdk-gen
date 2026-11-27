@@ -1,0 +1,71 @@
+Provide the Apple Libm binary64 classifier inline on macOS arm64.
+
+Sources: Libm-2026 (17a5f9daa3f5679f7536b26f133b40cc078753c3), Source/ARM/math.h and Source/ARM/fpclassify.c.
+Scope: macOS SDK 26.5, arm64 C.
+
+The legacy macro calls ___fpclassify for binary64. That name is absent from
+the reference arm64 link and runtime. Use the pinned Apple integer
+implementation, retaining its notice. This also preserves the observed
+signaling-NaN behavior without raising FE_INVALID.
+
+Evidence: .agents/skills/review-macos-c-sdk/scripts/sdk_review/headers/data/macosx26.5/fpclassify-gap.md
+records the Apple source, strict links and runtime tests.
+
+--- a/usr/include/architecture/arm/math.h
++++ b/usr/include/architecture/arm/math.h
+@@ -124,10 +124,55 @@
+ *                                                                               *
+ ********************************************************************************/
+ 
++#if defined(__arm64__) && defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__) && !defined(__cplusplus)
++
++/*
++ *	fpclassify.c
++ *
++ *		by Ian Ollmann
++ *
++ *	Copyright (c) 2007, Apple Inc. All Rights Reserved.
++ *
++ *	C99 implementation for __fpclassify function (called by FPCLASSIFY macro.)
++ */
++ 
++#include <stdint.h>
++
++static __inline__ int __darwin_libm_classify_binary64(double x)
++{
++	union{ double d; uint64_t u;}u = {x};
++
++	uint32_t	exp = (uint32_t) ( (u.u & 0x7fffffffffffffffULL) >> 52 );
++
++	if( 0 == exp )
++	{
++		if( u.u & 0x000fffffffffffffULL )
++			return FP_SUBNORMAL;
++	
++		return FP_ZERO;
++	}
++
++	if( 0x7ff == exp )
++	{	
++		if( u.u & 0x000fffffffffffffULL )
++			return FP_NAN;
++
++		return FP_INFINITE;
++	}
++
++	return FP_NORMAL;
++}
++
++#define fpclassify(x)    \
++    (    sizeof (x) == sizeof(float )    ?    __fpclassifyf((float)(x))    \
++    :    sizeof (x) == sizeof(double)    ?    __darwin_libm_classify_binary64((double)(x))    \
++                                         :    __fpclassifyl ((long double)(x)))
++#else
+ #define fpclassify(x)    \
+     (    sizeof (x) == sizeof(float )    ?    __fpclassifyf((float)(x))    \
+     :    sizeof (x) == sizeof(double)    ?    __fpclassify((double)(x))    \
+                                          :    __fpclassifyl ((long double)(x)))
++#endif
+ 
+ extern int __fpclassifyf(float      );
+ extern int __fpclassify(double     );

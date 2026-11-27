@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "host": "darwin-arm64",
+  "repository": "llvm/llvm-project",
+  "version": "23.1.2",
+  "tag": "llvmorg-23.1.2",
+  "commit": "85ac560262434c9ccfc0c183ec22d4138ed647fb",
+  "archive": {
+    "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.2/LLVM-23.1.2-macOS-ARM64.tar.zst",
+    "sha256": "3da0e91b5dfe3a5ec795ad2be79b3f5e6f28c8b23edcd3847fad7742b25e0507",
+    "directory": "LLVM-23.1.2-macOS-ARM64"
+  },
+  "attestation": {
+    "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.2/LLVM-23.1.2-macOS-ARM64.tar.zst.jsonl",
+    "sha256": "6c07293849e05e3cfae150a6f0ec7d2153af40f570c36a48801a82b87f74e7cb",
+    "signer_workflow": "llvm/llvm-project/.github/workflows/release-binaries.yml"
+  },
+  "files": {
+    "bin/clang-23": "f8fa7184dab7d8fa7f6af268a6f1b3aa3d2e598d0cca04dc68447b4c0ca58d8e",
+    "bin/clang-installapi": "f8de60466a240fb9f150bf5c102d3d8ee9841441e0bedeceb3ae180b9142515b",
+    "bin/lld": "87de299f2482f07991579207d3673694f5e152cfcd41e9c8c7c864fc91d1398e",
+    "bin/llvm-lipo": "89529d0cb2675dc32b04f2b4e1827c15b2630cb9b9d0511931bb64283512cb16",
+    "bin/llvm-nm": "4246ca6402fbbbe7fad22af63a72328d048820f04c62c1779cabc3e93799f49e",
+    "bin/llvm-objdump": "2ecce60ac491cb4840abe75f64cff3a56c80daf81f4aca2b2dcab859471b453f",
+    "bin/llvm-readtapi": "67a1672d5bd9c67657ccdb1fe4a0234b9c418382dde7833ce6fa1533f534cd9e",
+    "lib/clang/23/lib/darwin/libclang_rt.osx.a": "6a50e2746578f037b0977438f2fabfc60e01325a37cfadcc9406c4aae8927993"
+  },
+  "symlinks": {
+    "bin/clang": "clang-23",
+    "bin/ld64.lld": "lld"
+  },
+  "resource_headers": {
+    "path": "lib/clang/23/include",
+    "count": 325,
+    "sha256": "b743750cc37838fd27451887d71b643a9ca1ae546c12a9b63ad37a51acc5fc9c"
+  },
+  "target_architectures": [
+    "arm64"
+  ],
+  "minimum_deployment": "11.0",
+  "tbd_version": 5,
+  "darwin_builtins": {
+    "path": "lib/clang/23/lib/darwin/libclang_rt.osx.a",
+    "architectures": [
+      "arm64"
+    ]
+  }
+}

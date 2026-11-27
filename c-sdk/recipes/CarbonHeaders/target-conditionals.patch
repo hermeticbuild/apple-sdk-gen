@@ -1,0 +1,68 @@
+Add macOS target and ABI macros to the staged header.
+
+Source: CarbonHeaders-18.1 (214a9ae7ab3c0c78ddb50328ca226e6313c4c782), TargetConditionals.h
+after Apple's Makefile installhdrs substitutes the three CONFIG fields.
+Scope: macOS SDK 26.0 and 26.5, arm64 and x86_64.
+
+The template predates Apple silicon and the modern platform aliases. Use
+Clang target predefines for CPU, word size, and endian selection. Apple's
+NSTextAlignment documentation establishes the target ABI difference. objc2
+corroborates the TARGET_ABI_USES_IOS_VALUES macro spelling and its use.
+
+Evidence: recipes/CarbonHeaders/macos-abi.md and tests/installed_headers/target_conditionals.c.
+
+--- a/usr/include/TargetConditionals.h
++++ b/usr/include/TargetConditionals.h
+@@ -147,6 +147,21 @@
+         #define TARGET_CPU_68K          0
+         #define TARGET_CPU_X86          0
+         #define TARGET_CPU_X86_64       1
++        #define TARGET_CPU_ARM          0
++        #define TARGET_CPU_MIPS         0
++        #define TARGET_CPU_SPARC        0
++        #define TARGET_CPU_ALPHA        0
++        #define TARGET_RT_MAC_CFM       0
++        #define TARGET_RT_MAC_MACHO     1
++        #define TARGET_RT_LITTLE_ENDIAN 1
++        #define TARGET_RT_BIG_ENDIAN    0
++        #define TARGET_RT_64_BIT        1
++     #elif defined(__arm64__) || defined(__aarch64__)
++        #define TARGET_CPU_PPC          0
++        #define TARGET_CPU_PPC64        0
++        #define TARGET_CPU_68K         0
++        #define TARGET_CPU_X86          0
++        #define TARGET_CPU_X86_64       0
+         #define TARGET_CPU_ARM          0
+         #define TARGET_CPU_MIPS         0
+         #define TARGET_CPU_SPARC        0
+@@ -316,4 +331,30 @@
+     
+ #endif
+ 
++/* macOS aliases added after the CarbonHeaders release. */
++#define TARGET_OS_OSX 1
++#define TARGET_OS_IOS 0
++#define TARGET_OS_WATCH 0
++#define TARGET_OS_WATCHOS 0
++#define TARGET_OS_TV 0
++#define TARGET_OS_VISION 0
++#define TARGET_OS_SIMULATOR 0
++#define TARGET_OS_MACCATALYST 0
++#define TARGET_OS_DRIVERKIT 0
++#define TARGET_OS_WINDOWS 0
++#define TARGET_OS_LINUX 0
++#define TARGET_OS_NANO 0
++#if defined(__arm64__) || defined(__aarch64__)
++#define TARGET_CPU_ARM64 1
++#else
++#define TARGET_CPU_ARM64 0
++#endif
++#if defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__) && !defined(TARGET_ABI_USES_IOS_VALUES)
++#if defined(__arm64__) || defined(__aarch64__)
++#define TARGET_ABI_USES_IOS_VALUES 1
++#elif defined(__x86_64__)
++#define TARGET_ABI_USES_IOS_VALUES 0
++#endif
++#endif
++
+ #endif  /* __TARGETCONDITIONALS__ */

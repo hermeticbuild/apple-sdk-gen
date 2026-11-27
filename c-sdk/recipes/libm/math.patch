@@ -1,0 +1,127 @@
+Select the ARM math header on arm64 and restore macOS scalar and paired APIs.
+
+Source: Libm-2026 (17a5f9daa3f5679f7536b26f133b40cc078753c3), Source/math.h.
+Scope: macOS SDK 26.0 and 26.5, arm64 and x86_64.
+
+The old selector only recognizes 32-bit ARM. The pinned header also omits
+base-10 exponential, scalar pi trig, and paired sine/cosine APIs. Apple Clang
+builtin declarations and LLVM libcalls establish scalar signatures. Apple's
+WWDC 2013 Session 713 and independent client code establish the paired APIs.
+LLVM ABI lowering and Darling corroborate the struct-return interfaces.
+The pointer wrappers are local implementations based on those sources.
+
+Evidence: recipes/libm/exp10.md, recipes/libm/sinpi.md,
+recipes/libm/scalar_pi.md and recipes/libm/paired_trig.md record the sources,
+deployment evidence and two-target compile, link and runtime probes.
+
+--- a/usr/include/math.h
++++ b/usr/include/math.h
+@@ -26,10 +26,107 @@
+ #include "architecture/ppc/math.h"
+ #elif (defined (__i386__) || defined( __x86_64__ ))
+ #include "architecture/i386/math.h"
+-#elif defined(__arm__)
++#elif defined(__arm__) || defined(__arm64__)
+ #include "architecture/arm/math.h"
+ #else
+ #error Unknown architecture
+ #endif
+ 
++#if defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__) && \
++    (defined(__arm64__) || defined(__x86_64__))
++#include <Availability.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++extern double __exp10(double) __API_AVAILABLE(macos(10.9));
++extern float __exp10f(float) __API_AVAILABLE(macos(10.9));
++extern double __sinpi(double) __API_AVAILABLE(macos(10.9));
++extern float __sinpif(float) __API_AVAILABLE(macos(10.9));
++extern double __cospi(double) __API_AVAILABLE(macos(10.9));
++extern float __cospif(float) __API_AVAILABLE(macos(10.9));
++extern double __tanpi(double) __API_AVAILABLE(macos(10.9));
++extern float __tanpif(float) __API_AVAILABLE(macos(10.9));
++#ifdef __cplusplus
++}
++#endif
++#endif
++
++/* Paired trigonometric functions on 64-bit macOS. See paired_trig.md. */
++#if defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__) && \
++    (defined(__arm64__) || defined(__x86_64__))
++#include <sys/cdefs.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1090
++struct __float2 {
++    float __sinval;
++    float __cosval;
++};
++
++struct __double2 {
++    double __sinval;
++    double __cosval;
++};
++
++extern struct __double2 __sincos_stret(double);
++extern struct __float2 __sincosf_stret(float);
++extern struct __double2 __sincospi_stret(double);
++extern struct __float2 __sincospif_stret(float);
++
++__header_always_inline void
++__sincos(double angle, double *sine, double *cosine)
++{
++    struct __double2 pair = __sincos_stret(angle);
++    *sine = pair.__sinval;
++    *cosine = pair.__cosval;
++}
++
++__header_always_inline void
++__sincosf(float angle, float *sine, float *cosine)
++{
++    struct __float2 pair = __sincosf_stret(angle);
++    *sine = pair.__sinval;
++    *cosine = pair.__cosval;
++}
++
++__header_always_inline void
++__sincospi(double half_turns, double *sine, double *cosine)
++{
++    struct __double2 pair = __sincospi_stret(half_turns);
++    *sine = pair.__sinval;
++    *cosine = pair.__cosval;
++}
++
++__header_always_inline void
++__sincospif(float half_turns, float *sine, float *cosine)
++{
++    struct __float2 pair = __sincospif_stret(half_turns);
++    *sine = pair.__sinval;
++    *cosine = pair.__cosval;
++}
++#else
++__header_always_inline void
++__sincos(double angle, double *sine, double *cosine)
++{
++    *sine = sin(angle);
++    *cosine = cos(angle);
++}
++
++__header_always_inline void
++__sincosf(float angle, float *sine, float *cosine)
++{
++    *sine = sinf(angle);
++    *cosine = cosf(angle);
++}
++#endif
++
++#ifdef __cplusplus
++}
++#endif
++#endif
++
+ #endif /* __MATH_H__ */
