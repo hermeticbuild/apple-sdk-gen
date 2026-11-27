@@ -33,5 +33,5 @@ endif
 		DSTROOT="$(availability_root)/dst" OBJROOT="$(availability_root)/obj" \
 		SYMROOT="$(availability_root)/sym" CMAKE="$(CMAKE)" NINJA="$(NINJA)"
 	$(call apply-recipe-patch,$(availability_root)/dst,components/availability_versions/xros-aliases.patch)
-	$(call header-record,AvailabilityVersions,$(availability_header),staged:AvailabilityVersions:AvailabilityInternal.h,$(availability_rule),Apple public header install and add xros aliases,$(availability_rule) $(availability_inputs) components/availability_versions/xros-aliases.patch)
+	$(call header-record,AvailabilityVersions,$(availability_header),derived:sources/AvailabilityVersions/templates/AvailabilityInternal.h,$(availability_rule),Apple public header install and add xros aliases,sources/AvailabilityVersions/templates/AvailabilityInternal.h $(availability_rule) $(availability_inputs) components/availability_versions/xros-aliases.patch)
 	$(call record-installed,AvailabilityVersions,$(availability_rule),usr/include,$(availability_header),$(availability_inputs))

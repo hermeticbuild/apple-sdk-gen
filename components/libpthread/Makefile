@@ -11,8 +11,8 @@ stage-libpthread:
 		/bin/bash "$(SOURCE_ROOT)/libpthread/xcodescripts/install-sys-headers.sh"
 	env -i PATH="$$PATH" ACTION=installhdrs DSTROOT="$(pthread_root)" \
 		/bin/bash -e "$(SOURCE_ROOT)/libpthread/xcodescripts/install-symlinks.sh"
-	$(call record-installed,libpthread,components/libpthread/Makefile,usr/include/sys)
-	$(call record-installed,libpthread,components/libpthread/Makefile,usr/include/pthread.h)
-	$(call record-installed,libpthread,components/libpthread/Makefile,usr/include/pthread_impl.h)
-	$(call record-installed,libpthread,components/libpthread/Makefile,usr/include/pthread_spis.h)
-	$(call record-installed,libpthread,components/libpthread/Makefile,usr/include/sched.h)
+	$(call record-installed,libpthread,sources/libpthread/xcodescripts/install-sys-headers.sh,usr/include/sys,,components/libpthread/Makefile)
+	$(call record-installed,libpthread,sources/libpthread/xcodescripts/install-symlinks.sh,usr/include/pthread.h,,components/libpthread/Makefile)
+	$(call record-installed,libpthread,sources/libpthread/xcodescripts/install-symlinks.sh,usr/include/pthread_impl.h,,components/libpthread/Makefile)
+	$(call record-installed,libpthread,sources/libpthread/xcodescripts/install-symlinks.sh,usr/include/pthread_spis.h,,components/libpthread/Makefile)
+	$(call record-installed,libpthread,sources/libpthread/xcodescripts/install-symlinks.sh,usr/include/sched.h,,components/libpthread/Makefile)

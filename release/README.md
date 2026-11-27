@@ -10,11 +10,16 @@ Bazel, Python, and [Python wheels](requirements.txt). GitHub manages the
 macOS and Ubuntu runner images. The build logs record the image and its
 CMake, Ninja, zstd, AWS CLI, and Bazelisk versions.
 
-The default dispatch builds the archive and runs the C, framework, BCR, LLVM, and Rust
-tests. Select `publish` on main to attest the archive and its SHA-256 file,
-verify the attestation in the publish job, and tag the tested commit. Each
-release includes `MacOSX.sdk.tar.zst`, its checksum, and the signed
-`MacOSX.sdk.tar.zst.attestation.jsonl` bundle.
+The default dispatch builds and tests both archives without publication.
+
+- `MacOSX-C.sdk.tar.zst` provides the framework-free C sysroot, its
+  linker stubs and its [source receipts](../docs/c-sdk-licensing.md).
+- `MacOSX.sdk.tar.zst` adds Objective-C, C++, and frameworks.
+
+Both archives extract to `MacOSX.sdk/`. Each has its own SHA-256 file.
+Select `publish` on main to publish the tested archives under the same tag.
+The publish job verifies both archives and their checksums against the
+shared `MacOSX.sdk.tar.zst.attestation.jsonl` bundle.
 
 Verify a downloaded SDK against its accompanying bundle:
 
@@ -39,8 +44,8 @@ release/build-composed-sdk.sh "$generated" build/sdk
 release/test-composed-sdk.sh build/sdk
 ```
 
-The [Bazel workspaces](../e2e/README.md) read
-`build/sdk/MacOSX.sdk.tar.zst`. The build driver takes the generated tree
+The [Bazel workspaces](../e2e/README.md) read the corresponding archive under
+`build/sdk/`. The build driver takes the generated tree
 as an argument so local recipe iterations can reuse it. Use
 `C_SOURCE_CACHE`, `LLVM_CACHE`, and `FRAMEWORK_SOURCE_ROOT` to reuse local
 source caches. `LLVM_DIR` selects a verified LLVM projection.

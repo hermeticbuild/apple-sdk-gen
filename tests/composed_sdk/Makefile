@@ -2,7 +2,7 @@
 
 include ../../frameworks/common.mk
 
-.PHONY: test test-dns-sd test-resolver test-frameworks test-foundation-macros \
+.PHONY: test test-dns-sd test-resolver test-c-libraries test-frameworks test-foundation-macros \
 	test-coregraphics test-security test-network test-avrouting test-simd test-modelio test-modelio-modules test-metalkit test-objc-property
 test: test-dns-sd test-resolver
 
@@ -14,6 +14,9 @@ test-dns-sd:
 
 test-resolver:
 	$(call test-sdk-link,../../components/libresolv/test.c,-lresolv $(application-extension-link))
+
+test-c-libraries:
+	$(call test-sdk-link,c-libraries.c,-Xlinker -Z -L"$(SDK)/usr/lib" -liconv -lz -lbsm -lipsec,-Wno-deprecated-declarations)
 
 test-foundation-macros:
 	$(call test-sdk-link,foundation-macros.m,-framework Foundation -lobjc,-fobjc-arc)

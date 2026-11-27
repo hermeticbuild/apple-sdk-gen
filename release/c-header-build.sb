@@ -1,0 +1,8 @@
+(version 1)
+(allow default)
+
+; Host tools may locate Xcode. Target headers and module maps come from the
+; locked Apple OSS tree and the compiler's resource directory.
+(deny network*)
+(deny file-read-data
+  (regex #"/SDKs/[^/]+[.]sdk/(usr/(include|local/include)|System/Library/(Frameworks|PrivateFrameworks))(/|$)"))

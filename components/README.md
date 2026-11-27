@@ -1,4 +1,10 @@
-# Header recipes
+# C SDK components
+
+Each directory owns the pinned upstream install selection and local edits
+for its component. Resolver and iconv also generate their separate linker
+stubs here after the shared C include tree is assembled. The generator
+owns the macOS libSystem reexport graph and the existing bundled export
+tables for zlib and objc4.
 
 The root Makefile orders producer staging, the pre-MIG merge, both MIG runs,
 their comparison, and final assembly. Each producer adds a dependency to

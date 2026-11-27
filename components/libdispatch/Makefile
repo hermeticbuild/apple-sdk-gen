@@ -36,4 +36,4 @@ endif
 		file="$(dispatch_root)/usr/include/os/$$name"; \
 		unifdef $(dispatch_filter) -o "$$file" "$$file" || test "$$?" -eq 1; \
 	done
-	$(call record-installed,libdispatch,components/libdispatch/Makefile,usr/include/os)
+	$(call record-installed,libdispatch,components/libdispatch/Makefile,usr/include/os,,sources/libdispatch/xcodescripts/install-headers.sh sources/libdispatch/libdispatch.xcodeproj/project.pbxproj)

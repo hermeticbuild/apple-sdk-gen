@@ -7,4 +7,4 @@ stage-Libc:
 		ARCHS="arm64" RC_ARCHS="arm64" PLATFORM_NAME=macosx \
 		VARIANT_PLATFORM_NAME=macosx DEPLOYMENT_LOCATION=YES \
 		/bin/bash -e xcodescripts/headers.sh
-	$(call record-installed,Libc,sources/Libc/xcodescripts/headers.sh,usr/include)
+	$(call record-installed,Libc,sources/Libc/xcodescripts/headers.sh,usr/include,,sources/Libc/xcodescripts/generate_features.pl sources/Libc/Platforms/macosx/Makefile.inc)

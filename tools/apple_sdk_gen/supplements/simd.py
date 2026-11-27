@@ -40,17 +40,22 @@ async def _declaration(client: APIClient, path: str) -> str:
     return declaration.render().strip()
 
 
+def docc_pages() -> list[str]:
+    return [f"simd_{name}" for name in _VECTORS] + list(_RECORDS) + [
+        f"{name}/{member}" for name, (member, _) in _RECORDS.items()
+    ] + list(_ALIASES)
+
+
 async def install_simd_headers(sdk_root: Path, client: APIClient) -> None:
-    vectors = [f"simd_{name}" for name in _VECTORS]
-    record_members = [f"{name}/{member}" for name, (member, _) in _RECORDS.items()]
-    paths = [*vectors, *_RECORDS, *record_members, *_ALIASES]
+    paths = docc_pages()
     declarations = dict(zip(paths, await asyncio.gather(
         *(_declaration(client, path) for path in paths)
     ), strict=True))
 
     lines = ["// Generated from https://developer.apple.com/documentation/simd",
              "#ifndef APPLE_SDK_GEN_SIMD_H", "#define APPLE_SDK_GEN_SIMD_H", ""]
-    for suffix, name in zip(_VECTORS, vectors, strict=True):
+    for suffix in _VECTORS:
+        name = f"simd_{suffix}"
         scalar = _INTEGER_SCALARS.get(suffix[:-1], suffix[:-1])
         lanes = suffix[-1]
         declaration = declarations[name]

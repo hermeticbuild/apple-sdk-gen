@@ -49,6 +49,30 @@ See [the tests](../tests/c-sdk.md) for the checks and host requirements.
 
 See the [release build](../release/README.md) for the linkable SDK archive.
 
+## C link coverage
+
+In the macOS 26.5 arm64 reference, the shipped header set reaches
+libSystem and the separate resolver, iconv/charset, zlib, BSM and IPsec
+libraries. The C archive includes their stubs. The declarations of
+`DebugStr` and `Debugger` in `MacTypes.h` need CarbonCore through
+CoreServices. `OSReportWithBacktrace` in `libkern/OSDebug.h` is a DriverKit
+interface.
+
+The header comparison at deployment target 11.0 found 2,731 distinct
+reference imports through libSystem. The composed stub supplies 2,724.
+The seven differences are the previously deferred denormals environment
+and modern logging interfaces.
+
+- `__FE_DFL_DISABLE_DENORMS_ENV`
+- `__os_log_create`, `__os_log_debug_impl`, `__os_log_disabled`,
+  `__os_log_error_impl`, `__os_log_fault_impl`, `__os_log_impl`
+
+The archive retains the pinned XNU userspace logging header and its
+older linker names. The existing [provenance decisions](../.agents/skills/review-macos-c-sdk/scripts/sdk_review/headers/data/macosx26.5/tested-header-repairs.md)
+describe the remaining work for the modern declarations. The
+[linker audit](../.agents/skills/review-macos-c-sdk/scripts/sdk_review/linkage/sdk_header_linkage.md)
+describes the reference comparison and its direct-include limits.
+
 ## Review SDK coverage
 
 Use the [local SDK review skill](../.agents/skills/review-macos-c-sdk/SKILL.md)

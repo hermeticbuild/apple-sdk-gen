@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: Publish the tested archive as a GitHub release
+        description: Publish both tested SDK archives as a GitHub release
         type: boolean
         default: false
 
@@ -82,6 +82,13 @@ jobs:
             --@llvm//config:macos_libcxx_headers=sdk \
             --@curl//:ssl_lib=mbedtls //:framework_consumers
 
+      - name: Build and run SQLite against the C SDK
+        working-directory: e2e/c-sdk
+        run: |
+          bazelisk --nohome_rc run --platforms=@llvm//platforms:macos_arm64 \
+            --@llvm//config:macos_libcxx_headers=llvm \
+            --run_under="$PWD/sqlite-smoke.sh" @sqlite3//:shell
+
       # rules_rs tests SSH-form GitHub URLs for a public Git dependency.
       - name: Fetch public GitHub SSH dependencies over HTTPS
         run: |
@@ -92,9 +99,12 @@ jobs:
         working-directory: e2e
         run: bazelisk --nohome_rc test --keep_going --test_output=errors //:hermetic_llvm //:rules_rs
 
-      - name: Record SDK checksum
+      - name: Record SDK checksums
         working-directory: build/sdk
-        run: shasum -a 256 MacOSX.sdk.tar.zst | tee MacOSX.sdk.tar.zst.sha256
+        run: |
+          for archive in MacOSX.sdk.tar.zst MacOSX-C.sdk.tar.zst; do
+            shasum -a 256 "$archive" | tee "$archive.sha256"
+          done
 
       - name: Attest the tested SDK
         if: github.ref == 'refs/heads/main' && inputs.publish
@@ -104,6 +114,8 @@ jobs:
           subject-path: |
             build/sdk/MacOSX.sdk.tar.zst
             build/sdk/MacOSX.sdk.tar.zst.sha256
+            build/sdk/MacOSX-C.sdk.tar.zst
+            build/sdk/MacOSX-C.sdk.tar.zst.sha256
 
       - name: Name the attestation bundle
         if: github.ref == 'refs/heads/main' && inputs.publish
@@ -119,6 +131,8 @@ jobs:
             build/sdk/MacOSX.sdk.tar.zst
             build/sdk/MacOSX.sdk.tar.zst.sha256
             build/sdk/MacOSX.sdk.tar.zst.attestation.jsonl
+            build/sdk/MacOSX-C.sdk.tar.zst
+            build/sdk/MacOSX-C.sdk.tar.zst.sha256
           if-no-files-found: error
 
   publish:
@@ -141,8 +155,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          sha256sum -c MacOSX.sdk.tar.zst.sha256
-          for asset in MacOSX.sdk.tar.zst MacOSX.sdk.tar.zst.sha256; do
+          sha256sum -c MacOSX.sdk.tar.zst.sha256 MacOSX-C.sdk.tar.zst.sha256
+          for asset in MacOSX.sdk.tar.zst MacOSX-C.sdk.tar.zst \
+            MacOSX.sdk.tar.zst.sha256 MacOSX-C.sdk.tar.zst.sha256; do
             gh attestation verify "$asset" --repo "$GITHUB_REPOSITORY" \
               --bundle MacOSX.sdk.tar.zst.attestation.jsonl \
               --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
@@ -158,4 +173,5 @@ jobs:
           fi
           gh release create "$next" --target "$GITHUB_SHA" --title "$next" \
             --generate-notes MacOSX.sdk.tar.zst MacOSX.sdk.tar.zst.sha256 \
+            MacOSX-C.sdk.tar.zst MacOSX-C.sdk.tar.zst.sha256 \
             MacOSX.sdk.tar.zst.attestation.jsonl

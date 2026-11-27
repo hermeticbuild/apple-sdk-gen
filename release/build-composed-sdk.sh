@@ -26,7 +26,8 @@ python3 -m tools.sources.locked_sources prepare --sdk "$sdk" --source-root "$sou
 python3 -m tools.sources.locked_sources prepare --sdk "$sdk" --profile objc4 --source-root "$objc_sources" --cache "$source_cache"
 llvm=${LLVM_DIR:-$(python3 -m tools.toolchain.official_llvm prepare --cache "$llvm_cache")}
 clang="$llvm/bin/clang"
-make install SDK="$sdk" OUT="$c_install" SOURCE_ROOT="$sources" CLANG="$clang"
+/usr/bin/sandbox-exec -f release/c-header-build.sb \
+  make install SDK="$sdk" OUT="$c_install" SOURCE_ROOT="$sources" CLANG="$clang"
 make install-objc4 SDK="$sdk" OUT="$objc_install" SOURCE_ROOT="$objc_sources"
 
 make -C frameworks prepare SOURCE_ROOT="$framework_sources"
@@ -45,7 +46,7 @@ make -f components/libresolv/stubs.mk SOURCE_ROOT="$sources" \
   C_INSTALL="$c_install" CLANG="$clang" OUT="$out/resolver"
 
 stubs=()
-for name in libc++ libc++.1 libc++abi libobjc libobjc.A libz libz.1; do
+for name in libz libz.1 libbsm libbsm.0 libipsec libipsec.A; do
   stubs+=(--external-stub "usr/lib/$name.tbd=$generated/usr/lib/$name.tbd")
 done
 for name in libiconv libiconv.2 libcharset libcharset.1; do
@@ -53,6 +54,13 @@ for name in libiconv libiconv.2 libcharset libcharset.1; do
 done
 for name in libresolv libresolv.9; do
   stubs+=(--external-stub "usr/lib/$name.tbd=$out/resolver/usr/lib/$name.tbd")
+done
+
+compose=(python3 -m tools.sdk_composition.compose_sdk --c-install "$c_install"
+  --sdk-gen "$generated" --llvm "$llvm" "${stubs[@]}")
+"${compose[@]}" --out "$out/MacOSX-C.sdk"
+for name in libc++ libc++.1 libc++abi libobjc libobjc.A; do
+  compose+=(--external-stub "usr/lib/$name.tbd=$generated/usr/lib/$name.tbd")
 done
 
 framework_inputs=()
@@ -69,9 +77,11 @@ for bundle in "$frameworks"/*.framework; do
   esac
 done
 
-python3 -m tools.sdk_composition.compose_sdk \
-  --c-install "$c_install" --objc4-install "$objc_install" --sdk-gen "$generated" \
-  --all-frameworks --include-cxx --llvm "$llvm" "${framework_inputs[@]}" "${stubs[@]}" \
+"${compose[@]}" --objc4-install "$objc_install" \
+  --all-frameworks --include-cxx "${framework_inputs[@]}" \
   --out "$out/MacOSX.sdk"
-python3 -m tools.pack_archive --source "$out/MacOSX.sdk" \
-  --root-name MacOSX.sdk --output "$out/MacOSX.sdk.tar.zst"
+python3 -m tools.sdk_composition.c_sdk "$out/MacOSX-C.sdk" --write-provenance "$sources"
+for sdk_tree in MacOSX-C.sdk MacOSX.sdk; do
+  python3 -m tools.pack_archive --source "$out/$sdk_tree" \
+    --root-name MacOSX.sdk --output "$out/$sdk_tree.tar.zst"
+done

@@ -93,7 +93,7 @@ endef
 
 test-clang = "$(CLANG)" --no-default-config -target "$$cpu-apple-macos14.0" -isysroot "$(SDK)" \
 	-nostdinc -isystem "$$resource/include" -isystem "$(SDK)/usr/include" \
-	-iframework "$(SDK)/System/Library/Frameworks" -std=c11 -Werror
+	$(if $(wildcard $(SDK)/System/Library/Frameworks),-iframework "$(SDK)/System/Library/Frameworks") -std=c11 -Werror
 
 SDK_TEST_ARCHS := arm64
 
