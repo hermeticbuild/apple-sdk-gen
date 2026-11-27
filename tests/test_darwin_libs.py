@@ -5,7 +5,7 @@ from pathlib import Path
 
 import yaml
 
-from tools.apple_sdk_gen.supplements.darwin_libs import (
+from tools.apple_sdk_gen.supplements.install_darwin_stubs import (
     LIBRARIES,
     install_darwin_lib_stubs,
     select_darwin_libraries,

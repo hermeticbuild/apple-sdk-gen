@@ -16,8 +16,8 @@ import shutil
 import stat
 import tempfile
 
-from tools.header_manifest import read_header_manifest
-from tools.tbd import read_install_names, read_json
+from tools.read_header_manifest import read_header_manifest
+from tools.read_tbd import read_install_names, read_json
 from tools.fetch_sources import read_lock
 
 

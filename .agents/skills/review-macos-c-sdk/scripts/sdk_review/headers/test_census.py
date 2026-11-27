@@ -9,7 +9,7 @@ import sys
 from tempfile import TemporaryDirectory
 import unittest
 
-from tools.header_manifest import COLUMNS
+from tools.read_header_manifest import COLUMNS
 
 
 @unittest.skipUnless(os.environ.get("LLVM"), "set LLVM to the official release directory")

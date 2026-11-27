@@ -18,7 +18,7 @@ from ..config import (
 from ..generators.modulemap import generate_modulemap
 from ..generators.objc_header import generate_umbrella_header
 from ..generators.sdk_metadata import generate_info_plist, generate_sdk_settings, generate_sdk_settings_plist, generate_system_version_plist, generate_xcode_version_plist
-from ..generators.tbd import generate_tbd
+from ..generators.render_tbd import generate_tbd
 from ..models.symbol import Symbol
 from ..models.types import PlatformName
 from .cocoa import COCOA_IMPORTS, assemble_cocoa

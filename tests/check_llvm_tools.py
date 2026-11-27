@@ -6,7 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from tools.fetch_llvm_tools import read_llvm_lock, run, sha256, verify_prepared
-from tools.header_manifest import read_header_manifest
+from tools.read_header_manifest import read_header_manifest
 
 
 FIXTURES = Path(__file__).resolve().parent / "llvm_tools"

@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 
-from tools.header_manifest import COLUMNS
+from tools.read_header_manifest import COLUMNS
 
 from sdk_review import REPO_ROOT as ROOT
 

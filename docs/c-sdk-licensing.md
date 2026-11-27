@@ -11,7 +11,7 @@ and the compatibility edits in components/. The release denies reads of
 Xcode SDK headers and module maps during generation. The build can use
 the Mac's host tools, including MIG. SDK Gen generates the two SIMD
 files from C-family DocC pages and its own module map writer. The
-official SDK is a separate comparison input. The [system stub table](../tools/apple_sdk_gen/supplements/system_libs.py)
+official SDK is a separate comparison input. The [system stub table](../tools/apple_sdk_gen/supplements/generate_system_library_stubs.py)
 records its Xcode iOS SDK export data. This source contributes linker stubs.
 
 Read the license carried by each header and its source. The archive

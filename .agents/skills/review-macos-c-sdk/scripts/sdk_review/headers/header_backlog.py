@@ -9,7 +9,7 @@ import plistlib
 import re
 import subprocess
 
-from tools.header_manifest import read_header_manifest
+from tools.read_header_manifest import read_header_manifest
 from sdk_review.headers.census import ARCHES, options, probe
 from sdk_review.headers.audit_sdk_headers import path_digest
 

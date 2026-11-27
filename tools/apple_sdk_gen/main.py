@@ -21,10 +21,10 @@ from .crawler.technologies import fetch_technologies, filter_frameworks
 from .models.availability import is_available
 from .models.symbol import Symbol
 from .supplements.commoncrypto import install_commoncrypto_headers
-from .supplements.darwin_libs import install_darwin_lib_stubs, select_darwin_libraries
-from .supplements.libcxx import install_libcxx_headers
+from .supplements.generate_system_library_stubs import install_system_lib_stubs
+from .supplements.install_darwin_stubs import install_darwin_lib_stubs, select_darwin_libraries
+from .supplements.install_libcxx_headers import install_libcxx_headers
 from .supplements.simd import install_simd_headers
-from .supplements.system_libs import install_system_lib_stubs
 
 logger = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ import json
 import os
 from pathlib import Path
 
-from ..generators.tbd import tbd_document
+from ..generators.render_tbd import tbd_document
 
 DATA_PATH = Path(__file__).parent / "data" / "darwin_macos_26.5.json"
 TARGET = "arm64-macos"

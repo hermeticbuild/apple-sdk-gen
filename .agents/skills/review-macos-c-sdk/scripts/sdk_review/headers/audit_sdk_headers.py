@@ -14,7 +14,7 @@ import subprocess
 from collections import Counter
 from pathlib import Path
 
-from tools.header_manifest import read_header_manifest
+from tools.read_header_manifest import read_header_manifest
 
 from sdk_review.headers.trace_includes import DEFAULT_PROBE, current_probe_path, digest_tree
 

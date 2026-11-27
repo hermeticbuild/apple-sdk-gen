@@ -9,7 +9,7 @@ import sys
 import tempfile
 import unittest
 
-from tools.header_manifest import COLUMNS
+from tools.read_header_manifest import COLUMNS
 from tools.fetch_sources import ROOT as REPO_ROOT, read_lock
 
 

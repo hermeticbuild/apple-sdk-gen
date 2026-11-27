@@ -11,7 +11,7 @@ import re
 import subprocess
 from tempfile import TemporaryDirectory
 
-from tools.tbd import parse_v5, version
+from tools.read_tbd import parse_v5, version
 from tools.fetch_llvm_tools import read_llvm_lock, sha256, verify_prepared
 from tools.fetch_sources import ROOT
 

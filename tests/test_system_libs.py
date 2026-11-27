@@ -2,7 +2,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from tools.apple_sdk_gen.supplements.system_libs import install_system_lib_stubs
+from tools.apple_sdk_gen.supplements.generate_system_library_stubs import install_system_lib_stubs
 
 
 class SystemLibraryStubsTest(unittest.TestCase):

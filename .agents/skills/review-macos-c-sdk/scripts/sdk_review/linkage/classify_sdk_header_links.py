@@ -9,7 +9,7 @@ import re
 import subprocess
 from tempfile import TemporaryDirectory
 
-from tools.header_manifest import read_header_manifest
+from tools.read_header_manifest import read_header_manifest
 
 
 ARCHES = ("arm64",)

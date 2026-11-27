@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.header_manifest import read_header_manifest
+from tools.read_header_manifest import read_header_manifest
 
 ROOT = Path(__file__).resolve().parents[2]
 HEADER = "usr/include/example.h"

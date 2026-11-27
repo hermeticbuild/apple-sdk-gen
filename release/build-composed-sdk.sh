@@ -92,7 +92,8 @@ done
 "${compose[@]}" --objc4-install "$objc_install" \
   --variant full "${framework_inputs[@]}" \
   --out "$out/MacOSX.sdk"
-python3 -m tools.sdk_composition.c_sdk "$out/MacOSX-Minimal.sdk" --write-provenance "$sources" --lock "$lock"
+python3 -m tools.sdk_composition.write_minimal_sdk_provenance "$out/MacOSX-Minimal.sdk" \
+  --sources "$sources" --lock "$lock"
 for sdk_tree in MacOSX-Minimal.sdk MacOSX.sdk; do
   python3 -m tools.pack_archive --source "$out/$sdk_tree" \
     --root-name MacOSX.sdk --output "$out/$sdk_tree.tar.zst"

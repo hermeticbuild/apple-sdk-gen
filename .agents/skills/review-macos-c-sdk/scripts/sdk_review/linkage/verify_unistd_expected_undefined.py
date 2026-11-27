@@ -8,7 +8,7 @@ import re
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
-from tools.header_manifest import read_header_manifest
+from tools.read_header_manifest import read_header_manifest
 from sdk_review.linkage.verify_libsystem_links import link, read_object, run
 from tools.fetch_llvm_tools import read_llvm_lock, sha256, verify_prepared
 

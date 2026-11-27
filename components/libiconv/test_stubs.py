@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 from components.libiconv.generate_stubs import generate, REVISION
-from tools.tbd import read_stub
+from tools.read_tbd import read_stub
 from tools import fetch_llvm_tools
 
 

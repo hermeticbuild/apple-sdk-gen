@@ -11,7 +11,7 @@ import re
 import stat
 import tempfile
 
-from tools.tbd import V4_ROW, rows, run_reader, string, v4_documents, v4_sections, v5_libraries
+from tools.read_tbd import V4_ROW, rows, run_reader, string, v4_documents, v4_sections, v5_libraries
 
 
 SYMBOL_SECTIONS = {

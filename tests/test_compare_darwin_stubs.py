@@ -5,8 +5,8 @@ import sys
 import tempfile
 import unittest
 
-from tools.apple_sdk_gen.generators.tbd import tbd_document
-from tools.apple_sdk_gen.supplements.darwin_libs import LIBRARIES, TARGET
+from tools.apple_sdk_gen.generators.render_tbd import tbd_document
+from tools.apple_sdk_gen.supplements.install_darwin_stubs import LIBRARIES, TARGET
 
 
 CHILD = "/usr/lib/system/libsystem_test.dylib"

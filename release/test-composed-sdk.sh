@@ -20,7 +20,7 @@ mkdir "$work/c" "$work/full"
 tar -xf "$out/MacOSX-Minimal.sdk.tar.zst" -C "$work/c"
 tar -xf "$out/MacOSX.sdk.tar.zst" -C "$work/full"
 c_sdk="$work/c/MacOSX.sdk"
-python3 -m tools.sdk_composition.c_sdk "$c_sdk" --compare "$work/full/MacOSX.sdk"
+PYTHONPATH="$PWD" python3 tests/compare_sdk_archives.py "$c_sdk" "$work/full/MacOSX.sdk"
 make -C tests/composed_sdk test test-c-libraries test-simd \
   CLANG="$llvm/bin/clang" SDK="$c_sdk" RUN=1
 

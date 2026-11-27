@@ -10,7 +10,7 @@ import re
 import subprocess
 import sys
 
-from tools.header_manifest import TSV_NAME, read_header_manifest
+from tools.read_header_manifest import TSV_NAME, read_header_manifest
 from sdk_review.headers.trace_includes import classify, digest_tree, installed_path
 
 from sdk_review import REPO_ROOT as ROOT
