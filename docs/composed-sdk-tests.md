@@ -1,21 +1,22 @@
 # Composed SDK tests
 
-Run the DNS-SD and resolver link probes against the composed tree.
-On Apple Silicon, set `RUN=1` to execute
-the probes. They exercise the DNS-SD name helper and the resolver's
-initialization and cleanup without sending DNS queries.
+Run the minimal SDK suite against an extracted `MacOSX-Minimal.sdk.tar.zst`.
+The clients exercise DNS-SD, the resolver, iconv, zlib, BSM, IPsec and SIMD.
+The macOS 11 link probe checks that libSystem links and that Foundation is
+absent. On Apple Silicon, set `RUN=1` to execute the linked clients.
 
 ```sh
-make -C tests/composed_sdk test CLANG="$LLVM_CLANG" SDK="$NEW_SDK" RUN=1
+make -C tests/minimal_sdk_linking test CLANG="$LLVM_CLANG" SDK="$MINIMAL_SDK" RUN=1
 ```
 
-Use the separate framework suite for an expanded composition. The probes
-exercise Foundation macros and public graphics, security, networking and
-model APIs. The AVRouting check imports the public header for a class
-which macOS exposes in its SDK and marks unavailable.
+Run the full SDK suite against the assembled framework tree. The clients
+exercise Foundation, CoreGraphics, Security, Network and Model I/O, plus
+Objective-C compiler imports and Objective-C++ modules.
 
 ```sh
-make -k -C tests/composed_sdk test-frameworks CLANG="$LLVM_CLANG" SDK="$NEW_SDK" RUN=1
+make -C tests/full_sdk_frameworks test CLANG="$LLVM_CLANG" SDK="$FULL_SDK" RUN=1
 ```
 
-The [Bazel integration workspaces](../e2e/README.md) test the composed SDK archive.
+Run `test-avrouting` and `test-metalkit` explicitly to investigate the
+[known framework gaps](composition-gaps.md). The
+[Bazel integration workspaces](../e2e/README.md) test the composed SDK archives.

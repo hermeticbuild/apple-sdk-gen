@@ -48,7 +48,7 @@ prepare-python:
 .PHONY: test-python
 test-python:
 	"$(PYTHON)" -m unittest discover -s tools.apple_sdk_gen.tests -t .
-	"$(PYTHON)" -m unittest discover -s tests
+	"$(PYTHON)" -m unittest discover -s tests/sdk_archives
 
 .PHONY: generate-sdk compose-sdk test-composed-sdk
 generate-sdk:
@@ -90,21 +90,21 @@ test:
 	@test -x "$(CLANG)" || { echo "Set CLANG to the pinned LLVM Clang executable." >&2; exit 1; }
 	@test -n "$(OUT)" && test -f "$(OUT)/header-manifest.tsv" || { echo "Set OUT to the tree produced by make install." >&2; exit 1; }
 	@cmp -s "locks/$(SDK).json" "$(OUT)/source-lock.json" || { echo "OUT was not built with the $(SDK) source lock." >&2; exit 1; }
-	C_INSTALL="$(abspath $(OUT))" $(PYTHON) -m unittest discover -s tests/header_install
-	$(PYTHON) tests/installed_headers/compile_probes.py --clang "$(CLANG)" --sysroot "$(OUT)" \
-		--fixture tests/installed_headers/fenv_abi.c \
-		--fixture tests/installed_headers/libm_scalar_pi.c \
-		--fixture tests/installed_headers/libm_paired_trig.c \
-		--fixture tests/installed_headers/darwin_consumer_headers.c \
+	C_INSTALL="$(abspath $(OUT))" $(PYTHON) -m unittest discover -s tests/c_header_installation
+	$(PYTHON) tests/c_header_installation/compile_probes.py --clang "$(CLANG)" --sysroot "$(OUT)" \
+		--fixture tests/c_header_installation/fenv_abi.c \
+		--fixture tests/c_header_installation/libm_scalar_pi.c \
+		--fixture tests/c_header_installation/libm_paired_trig.c \
+		--fixture tests/c_header_installation/darwin_consumer_headers.c \
 		--fixture components/mDNSResponder/test.c \
 		--fixture components/libresolv/test.c \
-		--fixture tests/installed_headers/stdatomic_init.c \
-		$(if $(filter-out macosx26.5,$(SDK)),,--fixture tests/installed_headers/macos_26_5_availability.c) \
-		$(if $(filter-out macosx26.5,$(SDK)),,--fixture tests/installed_headers/libm_half.c) \
-		$(if $(filter-out macosx26.5,$(SDK)),,--fixture tests/installed_headers/security_dependencies.c) \
-		--fixture tests/installed_headers/complex_abi.c \
-		--fixture tests/installed_headers/target_conditionals.c
-	$(PYTHON) tests/installed_headers/check_fenv_runtime.py
+		--fixture tests/c_header_installation/stdatomic_init.c \
+		$(if $(filter-out macosx26.5,$(SDK)),,--fixture tests/c_header_installation/macos_26_5_availability.c) \
+		$(if $(filter-out macosx26.5,$(SDK)),,--fixture tests/c_header_installation/libm_half.c) \
+		$(if $(filter-out macosx26.5,$(SDK)),,--fixture tests/c_header_installation/security_dependencies.c) \
+		--fixture tests/c_header_installation/complex_abi.c \
+		--fixture tests/c_header_installation/target_conditionals.c
+	$(PYTHON) tests/c_header_installation/check_fenv_runtime.py
 
 ifneq ($(strip $(STAGE)),)
 # Each copy writes its full receipt as it stages the file.

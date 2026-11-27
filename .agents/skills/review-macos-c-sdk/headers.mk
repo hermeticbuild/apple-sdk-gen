@@ -5,7 +5,7 @@ CLANG = $(LLVM)/bin/clang
 SKILL := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 HEADERS = $(SKILL)scripts/sdk_review/headers
 BASELINE = $(wildcard $(HEADERS)/data/$(SDK)/inventory.json)
-ROOTS = tests/installed_headers/default_profile.c
+ROOTS = tests/c_header_installation/default_profile.c
 DISCOVERY = $(HEADERS)/fixtures/sdk_discovery.c
 export PYTHONPATH := $(SKILL)scripts$(if $(PYTHONPATH),:$(PYTHONPATH))
 
@@ -51,7 +51,7 @@ complex-runtime: complex-arm64
 complex-arm64: complex-%: inputs
 	env -i PATH=/usr/bin:/bin LC_ALL=C "$(CLANG)" --no-default-config -target "$*-apple-macos$(MINIMUM)" \
 		-isysroot "$(C_INSTALL)" -nostdinc -isystem "$$("$(CLANG)" --no-default-config -print-resource-dir)/include" \
-		-isystem "$(C_INSTALL)/usr/include" -std=c11 -c tests/installed_headers/complex_abi.c -o "$(WORK)/complex-$*.o"
+		-isystem "$(C_INSTALL)/usr/include" -std=c11 -c tests/c_header_installation/complex_abi.c -o "$(WORK)/complex-$*.o"
 	"$(LLVM)/bin/ld64.lld" -arch "$*" -platform_version macos "$(MINIMUM)" "$(patsubst macosx%,%,$(SDK))" \
 		-syslibroot "$(APPLE_SDK)" "$(WORK)/complex-$*.o" -lSystem -o "$(WORK)/complex-$*"
 	"$(WORK)/complex-$*"

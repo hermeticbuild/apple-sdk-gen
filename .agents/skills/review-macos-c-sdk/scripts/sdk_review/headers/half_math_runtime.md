@@ -2,7 +2,7 @@
 
 The [binary16 declarations](../../../../../../components/libm/half_math.md) have a syntax-only check in `make test` for 26.5.
 
-The [runtime fixture](../../../../../../tests/installed_headers/libm_half.c)
+The [runtime fixture](../../../../../../tests/c_header_installation/libm_half.c)
 checks each C function type, calls all thirteen functions, verifies the
 provider address with `dladdr`, and prints the binary16 result bits for
 comparison with the same client built using the reference SDK. Use the
@@ -14,7 +14,7 @@ clang="$LLVM/bin/clang"
 resource=$("$clang" -print-resource-dir)
 "$clang" --no-default-config -target "$T" -nostdinc -isystem "$resource/include" \
     -isystem "$C_INSTALL/usr/include" -std=c11 -D_DARWIN_C_SOURCE -fno-builtin \
-    -O2 -Werror=unguarded-availability-new -c -DTEST_HALF_RUNTIME tests/installed_headers/libm_half.c -o half.o
+    -O2 -Werror=unguarded-availability-new -c -DTEST_HALF_RUNTIME tests/c_header_installation/libm_half.c -o half.o
 "$LLVM/bin/llvm-nm" -mu half.o
 "$clang" --no-default-config -target "$T" -nostdlib -fuse-ld=lld \
     -isysroot "$STUBS" half.o -lSystem -o half

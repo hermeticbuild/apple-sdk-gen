@@ -12,7 +12,7 @@ C linkage rules.
 [Apple WWDC 2013 Session 713 slides](https://docs.huihoo.com/apple/wwdc/2013/session_713__accelerate_framework.pdf)
 
 LLVM 23.1.2 independently applies the macOS 10.9 libcall boundary to the
-cosine-pi pair. The [installed-header fixture](../../tests/installed_headers/libm_scalar_pi.c)
+cosine-pi pair. The [installed-header fixture](../../tests/c_header_installation/libm_scalar_pi.c)
 checks the four signatures, exact cosine at a half turn, exact tangent at a
 negative quarter turn and signed zero.
 [LLVM deployment predicate](https://github.com/llvm/llvm-project/blob/85ac560262434c9ccfc0c183ec22d4138ed647fb/llvm/lib/Analysis/TargetLibraryInfo.cpp#L38-L54) ·
