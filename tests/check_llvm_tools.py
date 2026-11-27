@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from tools.fetch_llvm_tools import read_llvm_lock, run, sha256, verify_prepared
+from tools.fetch_llvm_tools import PIN, projection, read_lock, run, sha256
 from tools.header_manifest import read_header_manifest
 
 
@@ -36,14 +36,14 @@ def symbols(library, target, segment, kind):
 
 
 def verify(llvm, work, c_install, lock, run, sha256):
-    architectures = ["arm64"]
-    minimum = "11.0"
+    architectures = lock["target_architectures"]
+    minimum = lock["minimum_deployment"]
     triples = {arch: f"{arch}-apple-macos{minimum}" for arch in architectures}
     expected_targets = {f"{arch}-macos" for arch in architectures}
     empty = work / "empty"
     empty.mkdir()
-    resource = llvm / lock["resource_headers"]
-    archive = llvm / lock["darwin_builtins"]
+    resource = llvm / lock["resource_headers"]["path"]
+    archive = llvm / lock["darwin_builtins"]["path"]
     paths = {work: "$WORK", llvm: "$LLVM", FIXTURES: "$FIXTURES"}
     if c_install is not None:
         c_install = c_install.resolve()
@@ -78,7 +78,7 @@ def verify(llvm, work, c_install, lock, run, sha256):
         document = json.loads(output.read_text())
         library = document["main_library"]
         require(document["tapi_tbd_version"] == 5 and targets(library) == expected_targets,
-                f"InstallAPI did not emit the expected v5 document for {header}")
+                f"InstallAPI did not emit a two-target v5 document for {header}")
         require(library["install_names"] == [{"name": install_name}],
                 f"InstallAPI emitted an unexpected install name for {header}")
         return library
@@ -95,10 +95,13 @@ def verify(llvm, work, c_install, lock, run, sha256):
 
     compiler = invoke("clang", "--version").splitlines()[0]
     linker = invoke("ld64.lld", "--version").strip()
+    for version in (compiler, linker):
+        require(lock["version"] in version and lock["commit"] in version,
+                f"unexpected LLVM version: {version}")
     require(Path(invoke("clang", "-print-resource-dir").strip()).resolve() == resource.parent,
             "Clang selected a resource directory outside the pinned projection")
     builtins_arches = invoke("llvm-lipo", "-archs", archive).split()
-    require(builtins_arches == architectures,
+    require(builtins_arches == lock["darwin_builtins"]["architectures"],
             f"unexpected builtins slices: {builtins_arches}")
 
     child = installapi(FIXTURES / "bootstrap.h", CHILD, work / "child.tbd", empty)
@@ -224,8 +227,8 @@ if __name__ == "__main__":
     parser.add_argument("--llvm-dir", type=Path, required=True)
     parser.add_argument("--c-install", type=Path)
     args = parser.parse_args()
-    lock = read_llvm_lock()
-    verify_prepared(args.llvm_dir, lock)
+    lock = read_lock(PIN)
+    projection(args.llvm_dir, lock)
     with TemporaryDirectory(prefix="llvm-smoke-") as temporary:
         result = verify(args.llvm_dir.resolve(), Path(temporary), args.c_install, lock, run, sha256)
     print(json.dumps(result, indent=2, sort_keys=True))

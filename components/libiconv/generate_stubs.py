@@ -51,13 +51,14 @@ def build_stub(target_name, project, src, sysroot, llvm, lock, work, libdir):
         extra = ["-I", src / "libcharset"]
     cmd = [
         llvm / "bin/clang-installapi", "-x", "c", "-nostdinc", "-isysroot", sysroot,
-        "-isystem", llvm / lock["resource_headers"], "-isystem", sysroot / "usr/include",
+        "-isystem", llvm / lock["resource_headers"]["path"], "-isystem", sysroot / "usr/include",
         "-dynamiclib", "-install_name", "/usr/lib/" + dylib,
         "-current_version", settings["DYLIB_CURRENT_VERSION"],
         "-compatibility_version", settings["DYLIB_COMPATIBILITY_VERSION"],
         "--filetype=tbd-v5", *extra,
     ]
-    cmd.extend(["-target", "arm64-apple-macos11.0"])
+    for arch in lock["target_architectures"]:
+        cmd.extend(["-target", f"{arch}-apple-macos{lock['minimum_deployment']}"])
     scan = subprocess.run([*cmd, listing, "-o", stub], cwd=work, env={"LC_ALL": "C"},
                           stderr=subprocess.PIPE, text=True)
     # InstallAPI can emit frontend errors while exiting successfully.
@@ -71,7 +72,8 @@ def build_stub(target_name, project, src, sysroot, llvm, lock, work, libdir):
 def generate(source, headers, llvm, out):
     if out.exists() or out.is_symlink():
         raise ValueError(f"choose a new output directory: {out}")
-    lock = fetch_llvm_tools.read_llvm_lock()
+    lock = fetch_llvm_tools.read_lock(fetch_llvm_tools.PIN)
+    fetch_llvm_tools.projection(llvm, lock)
     with tempfile.TemporaryDirectory(dir=out.parent) as tmp:
         work = Path(tmp)
         # Only the pinned commit enters the header search, including quoted includes.
@@ -96,7 +98,7 @@ def generate(source, headers, llvm, out):
                        for target in ("charset", "libiconv"))
         manifest = {
             "repository": "https://github.com/apple-oss-distributions/libiconv",
-            "revision": REVISION, "project": PROJECT, "llvm_archive_sha256": lock["archive"]["sha256"],
+            "revision": REVISION, "project": PROJECT, "llvm_lock_sha256": digest(fetch_llvm_tools.PIN),
             "c_manifests": {p.name: digest(sysroot / p) for p in plan.files
                             if p.parent == Path(".")},
             "stubs": results,

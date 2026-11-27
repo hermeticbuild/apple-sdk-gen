@@ -6,10 +6,6 @@ SDK build describe qualification, while the distribution tag and peeled
 commit identify Apple's operating-system source snapshot. Deployment targets
 are chosen separately by the qualification commands.
 
-The 26.5 lock also pins the official LLVM archive and lists the paths to
-extract. `locks/macosx26.5.json` points to the copy included in the Python
-package so the standalone generator and Make share one lock.
-
 ## Prepare and install
 
 From the repository root:

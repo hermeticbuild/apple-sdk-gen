@@ -52,6 +52,7 @@ jobs:
           DOCC_R2_BUCKET: ${{ vars.DOCC_R2_BUCKET }}
           AWS_ACCESS_KEY_ID: ${{ secrets.DOCC_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.DOCC_R2_SECRET_ACCESS_KEY }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           make prepare SDK="macosx$SDK_VERSION"
           echo "$PWD/build/inputs/python/bin" >> "$GITHUB_PATH"

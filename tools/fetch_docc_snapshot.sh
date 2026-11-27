@@ -58,6 +58,11 @@ else
   check_digest "$archive"
 fi
 zstd -dq "$archive" -o "$scratch/cache.db"
+count=$(sqlite3 "$scratch/cache.db" 'SELECT count(*) FROM cache;')
+if (( count == 0 )); then
+  echo "DocC snapshot contains no responses" >&2
+  exit 1
+fi
 printf '%s\n' "$expected" > "$receipt"
 mv "$scratch/cache.db" "$db"
-echo "Restored DocC snapshot $key (SHA-256 $expected)"
+echo "Restored $count DocC responses from $key (SHA-256 $expected)"

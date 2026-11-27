@@ -12,7 +12,7 @@ import subprocess
 from tempfile import TemporaryDirectory
 
 from tools.tbd import parse_v5, version
-from tools.fetch_llvm_tools import read_llvm_lock, sha256, verify_prepared
+from tools.fetch_llvm_tools import PIN, projection, read_lock, sha256
 
 
 ARCHES = ("arm64",)
@@ -136,10 +136,10 @@ def run(args):
     if settings["CanonicalName"] != f"macosx{settings['Version']}":
         raise ValueError("expected a macOS SDK")
     build = plistlib.loads(version_path.read_bytes())["ProductBuildVersion"]
-    lock = read_llvm_lock()
-    verify_prepared(llvm, lock)
+    lock = read_lock(PIN)
+    projection(llvm, lock)
     installapi = llvm / "bin/clang-installapi"
-    resource = llvm / lock["resource_headers"]
+    resource = llvm / lock["resource_headers"]["path"]
     headers, module_maps, aliases, exclusions = sdk_files(sdk)
     paths = sorted(set(args.header) if args.header else headers)
     if not paths or set(paths) - headers.keys():
@@ -154,7 +154,7 @@ def run(args):
         "evidence": "sdk-reference-header-candidates",
         "sdk": {"canonical_name": settings["CanonicalName"], "version": settings["Version"], "build": build,
                 "settings_sha256": sha256(settings_path), "system_version_sha256": sha256(version_path)},
-        "llvm_archive_sha256": lock["archive"]["sha256"],
+        "llvm_lock_sha256": sha256(PIN),
         "minimum": MINIMUM,
         "discovered_headers": len(headers),
         "selected_headers": len(paths),
