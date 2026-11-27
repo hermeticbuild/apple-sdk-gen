@@ -80,9 +80,10 @@ class FrameworkLayoutTest(unittest.TestCase):
                     sdk = assemble_sdk(Path(directory), "macos", "27.0", selected, include_cocoa=include_cocoa)
                     self.assertFalse((sdk / "System/Library/Frameworks/Cocoa.framework").exists())
 
-    def test_selecting_cocoa_requests_the_required_documented_frameworks(self):
-        args = parse_args(["--sdk-version", "27.0", "--frameworks", "Cocoa"])
-        self.assertEqual(args.frameworks, {"Cocoa", "Foundation", "AppKit", "CoreData"})
+    def test_framework_selection_keeps_the_callers_list(self):
+        args = parse_args(["--sdk-version", "26.5", "--frameworks", "Cocoa, AVFoundation",
+                           "--llvm-dir", "llvm"])
+        self.assertEqual(args.frameworks, {"Cocoa", "AVFoundation"})
 
 
 if __name__ == "__main__":

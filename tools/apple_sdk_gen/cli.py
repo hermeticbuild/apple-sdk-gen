@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import sys
 from pathlib import Path
 
-from .assembler.cocoa import COCOA_IMPORTS
 from .generators.sdk_metadata import default_xcode_build, default_xcode_version
 
 
@@ -64,7 +62,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--frameworks",
         type=str,
         default=None,
-        help="Comma-separated list of framework names to generate",
+        help="Framework names to generate, including any dependencies, or an empty list for system inputs only",
     )
     parser.add_argument(
         "--exclude-frameworks",
@@ -92,19 +90,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # Parse framework lists
     if args.exclude_frameworks:
         args.exclude_frameworks = {f.strip() for f in args.exclude_frameworks.split(",")}
-    if args.frameworks:
-        args.frameworks = {f.strip() for f in args.frameworks.split(",")}
-        if (
-            "Cocoa" in args.frameworks
-            and "Cocoa" not in (args.exclude_frameworks or ())
-        ):
-            args.frameworks.update(COCOA_IMPORTS)
-
-    if args.frameworks and args.llvm_dir is not None:
-        if args.frameworks & {"AVFoundation", "AppKit", "CoreData", "QuartzCore"}:
-            args.frameworks.add("Foundation")
-        if "AVFoundation" in args.frameworks:
-            args.frameworks.add("CoreGraphics")
+    if args.frameworks is not None:
+        args.frameworks = {name.strip() for name in args.frameworks.split(",") if name.strip()}
 
     return args
 

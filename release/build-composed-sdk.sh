@@ -23,31 +23,39 @@ frameworks="$out/frameworks"
 generated_frameworks="$generated/System/Library/Frameworks"
 
 test -x "$llvm/bin/clang" || { echo "Run make prepare to install LLVM at $llvm." >&2; exit 1; }
-python3 -m tools.fetch_sources --verify --lock "${lock%.json}-frameworks.json" --dest "$framework_sources"
 clang="$llvm/bin/clang"
-/usr/bin/sandbox-exec -f release/c-header-build.sb \
-  make install SDK="$sdk" OUT="$c_install" SOURCE_ROOT="$sources" CLANG="$clang"
-make install-objc4 SDK="$sdk" OUT="$objc_install" SOURCE_ROOT="$objc_sources"
-
-recipes="Cocoa AVFoundation CoreGraphics QuartzCore ApplicationServices IOKit Security SystemConfiguration AudioToolbox AudioUnit CoreAudio CoreAudioTypes CoreMIDI OpenAL"
-selected_recipes="$recipes"
+framework_inputs=()
+selected_recipes="Cocoa AVFoundation CoreGraphics QuartzCore ApplicationServices IOKit Security SystemConfiguration AudioToolbox AudioUnit CoreAudio CoreAudioTypes CoreMIDI OpenAL"
+requested=
 if [[ -n ${FRAMEWORKS:-} ]]; then
+  read -r -a names <<< "${FRAMEWORKS//,/ }"
+  requested="${names[*]:-}"
+  [[ -n $requested ]] || { echo "FRAMEWORKS must name at least one framework." >&2; exit 2; }
   selected_recipes=
-  requested=",${FRAMEWORKS// /},"
-  for name in $recipes Foundation AppKit CoreData; do
-    if [[ -d "$generated_frameworks/$name.framework" || $requested == *,"$name",* ]]; then
+  for name in "${names[@]}"; do
+    [[ $name =~ ^[A-Za-z0-9_][A-Za-z0-9_.+-]*$ ]] || { echo "Invalid framework name: $name" >&2; exit 2; }
+    framework_inputs+=(--framework "$name")
+    if [[ -f "$repo/frameworks/$name/Makefile" ]]; then
       selected_recipes="${selected_recipes:+$selected_recipes }$name"
     fi
   done
 fi
+
+/usr/bin/sandbox-exec -f release/c-header-build.sb \
+  make install SDK="$sdk" OUT="$c_install" SOURCE_ROOT="$sources" CLANG="$clang"
+make install-objc4 SDK="$sdk" OUT="$objc_install" SOURCE_ROOT="$objc_sources"
+
 if [[ -n $selected_recipes ]]; then
-  make -C frameworks install SOURCE_ROOT="$framework_sources" OUT="$frameworks" \
+  core_services_tbd="$generated_frameworks/CoreServices.framework/CoreServices.tbd"
+  [[ -f $core_services_tbd ]] || core_services_tbd=
+  make -C frameworks install SDK="$sdk" SOURCE_LOCK="${lock%.json}-frameworks.json" \
+    SOURCE_ROOT="$framework_sources" OUT="$frameworks" \
     CLANG="$clang" C_INSTALL="$c_install" OBJC4_INSTALL="$objc_install" \
     GENERATED_FRAMEWORKS="$generated_frameworks" \
     FOUNDATION_TBD="$generated_frameworks/Foundation.framework/Foundation.tbd" \
     COCOA_FRAMEWORK="$generated_frameworks/Cocoa.framework" \
     COREGRAPHICS_FRAMEWORK="$generated_frameworks/CoreGraphics.framework" \
-    CORE_SERVICES_TBD="$generated_frameworks/CoreServices.framework/CoreServices.tbd" \
+    CORE_SERVICES_TBD="$core_services_tbd" \
     FRAMEWORKS="$selected_recipes"
 fi
 
@@ -74,10 +82,10 @@ for name in libc++ libc++.1 libc++abi libobjc libobjc.A; do
   compose+=(--external-stub "usr/lib/$name.tbd=$generated/usr/lib/$name.tbd")
 done
 
-framework_inputs=()
 for bundle in "$frameworks"/*.framework; do
   [[ -d $bundle ]] || continue
   name=$(basename "$bundle" .framework)
+  [[ -z $requested || " $requested " == *" $name "* ]] || continue
   case "$name" in
     IOKit|Security)
       framework_inputs+=(--framework-overlay "$name" "$bundle")

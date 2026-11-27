@@ -44,11 +44,12 @@ test-llvm-tools:
 
 .PHONY: generate-sdk compose-sdk test-composed-sdk
 generate-sdk:
+	PYTHON="$(PYTHON)" bash tools/fetch_docc_snapshot.sh "$(SDK_LOCK)" "$(INPUTS)/docc" "$(INPUTS)/downloads" --verify
 	@set -eu; \
 		version=$$("$(PYTHON)" -c 'import json,sys; print(json.load(open(sys.argv[1]))["sdk"]["version"])' "$(SDK_LOCK)"); \
 		"$(INPUTS)/python/bin/python" -m tools.apple_sdk_gen --sdk-version "$$version" \
 			--llvm-dir "$(LLVM_DIR)" --docc-cache-only --cache-dir "$(INPUTS)/docc" \
-			--output "$(GENERATED)" $(if $(FRAMEWORKS),--frameworks "$(FRAMEWORKS)") -v
+			--output "$(GENERATED)" $(if $(filter undefined,$(origin FRAMEWORKS)),,--frameworks "$(FRAMEWORKS)") -v
 
 compose-sdk:
 	INPUTS="$(INPUTS)" LLVM_DIR="$(LLVM_DIR)" FRAMEWORKS="$(FRAMEWORKS)" PATH="$(INPUTS)/python/bin:$$PATH" \

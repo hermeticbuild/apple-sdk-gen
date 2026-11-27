@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# != 3 && $# != 4 ]] || [[ ${4:-} != "" && $4 != --offline ]]; then
-  echo "Usage: $0 SDK_LOCK CACHE_DIR DOWNLOAD_DIR [--offline]" >&2
+if [[ $# != 3 && $# != 4 ]] || [[ ${4:-} != "" && $4 != --offline && $4 != --verify ]]; then
+  echo "Usage: $0 SDK_LOCK CACHE_DIR DOWNLOAD_DIR [--offline|--verify]" >&2
   exit 2
 fi
 
@@ -13,9 +13,8 @@ with open(sys.argv[1]) as lock:
 print(docc["sha256"], docc["key"])
 ' "$1")
 
-mkdir -p "$2" "$3"
-cache_dir=$(cd "$2" && pwd -P)
-download_dir=$(cd "$3" && pwd -P)
+cache_dir="$2"
+download_dir="$3"
 db="$cache_dir/cache.db"
 receipt="$cache_dir/.snapshot-sha256"
 archive="$download_dir/$expected.db.zst"
@@ -25,6 +24,10 @@ if [[ -e $db || -e $db-wal || -e $db-shm ]]; then
     exit 0
   fi
   echo "DocC directory does not contain the pinned snapshot: $cache_dir" >&2
+  exit 1
+fi
+if [[ ${4:-} == --verify ]]; then
+  echo "Missing pinned DocC snapshot at $cache_dir. Run make prepare-docc." >&2
   exit 1
 fi
 
@@ -37,6 +40,7 @@ check_digest() {
   fi
 }
 
+mkdir -p "$cache_dir" "$download_dir"
 scratch=$(mktemp -d "$cache_dir/docc.XXXXXX")
 trap 'rm -rf -- "$scratch"' EXIT
 if [[ ! -f $archive ]]; then

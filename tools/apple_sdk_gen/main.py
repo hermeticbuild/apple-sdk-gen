@@ -11,6 +11,7 @@ from .config import (
     FRAMEWORK_NAME_MAPPINGS,
     PLATFORM_CONFIGS,
     PLATFORM_EXCLUDED_MODULES,
+    SUPPLEMENTARY_FRAMEWORKS,
     tbd_targets_for_platform,
 )
 from .crawler.cache import DEFAULT_TTL, CacheDB
@@ -71,16 +72,19 @@ async def run(args: argparse.Namespace) -> None:
     ) as client:
         # Phase 1: Discover frameworks
         print("Discovering frameworks...", file=sys.stderr)
-        all_frameworks = await fetch_technologies(client)
+        docc_selection = args.frameworks
+        if docc_selection is not None:
+            docc_selection = docc_selection.difference(SUPPLEMENTARY_FRAMEWORKS)
+        all_frameworks = [] if docc_selection == set() else await fetch_technologies(client)
 
         frameworks = filter_frameworks(
             all_frameworks,
-            include=args.frameworks,
+            include=docc_selection,
             exclude=excluded | (args.exclude_frameworks or set()),
             objc_only=True,
         )
 
-        if not frameworks:
+        if not frameworks and docc_selection != set():
             print("No frameworks matched the filter criteria.", file=sys.stderr)
             sys.exit(1)
 
@@ -157,6 +161,8 @@ async def run(args: argparse.Namespace) -> None:
             xcode_version=args.xcode_version,
             xcode_build=args.xcode_build,
             include_cocoa="Cocoa" not in (args.exclude_frameworks or ()),
+            selected_frameworks=args.frameworks,
+            excluded_frameworks=args.exclude_frameworks or (),
         )
 
         tbd_targets = tbd_targets_for_platform(platform_key)

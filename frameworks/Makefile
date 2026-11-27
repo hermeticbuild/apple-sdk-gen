@@ -1,5 +1,7 @@
 .DEFAULT_GOAL := install
 
+SDK ?= macosx26.5
+SOURCE_LOCK ?= $(abspath ../locks/$(SDK)-frameworks.json)
 SOURCE_ROOT ?= $(abspath ../build/inputs/sources/$(SDK)-frameworks)
 OUT ?= $(abspath ../build/frameworks)
 C_FRAMEWORKS := CoreFoundation AudioToolbox AudioUnit CoreAudio CoreAudioTypes CoreMIDI IOKit OpenAL Security SystemConfiguration
@@ -15,6 +17,8 @@ PYTHON ?= python3
 .PHONY: install stage test test-objc check-test-tools $(SUPPORTED) $(TESTS) $(OBJC_TESTS) $(OPTIONAL_TESTS)
 
 install:
+	PYTHONPATH="$(abspath ..)" "$(PYTHON)" -m tools.fetch_sources --verify --lock "$(SOURCE_LOCK)" \
+		--dest "$(abspath $(SOURCE_ROOT))"
 	@set -eu; \
 		test -n "$(strip $(FRAMEWORKS))" && test -z "$(filter-out $(SUPPORTED),$(FRAMEWORKS))" \
 			|| { echo "Select frameworks from $(SUPPORTED)." >&2; exit 1; }; \

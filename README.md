@@ -13,14 +13,15 @@ On arm64 macOS with Python 3.12 or newer, prepare LLVM and generate the SDK.
 python3 -m pip install -e tools/
 make prepare-llvm
 python3 -m tools.apple_sdk_gen --sdk-version 26.5 \
-  --frameworks Cocoa,CoreFoundation,CoreGraphics,Network,Security \
+  --frameworks Cocoa,Foundation,AppKit,CoreData,CoreFoundation,CoreGraphics,Network,Security \
   --llvm-dir build/inputs/llvm --cache-dir cache --output output
 ```
 
 The SDK is at
 `output/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk`.
-The cache stores DocC responses for regenerating frameworks. Selecting
-Cocoa requests Foundation, AppKit and Core Data and builds their umbrella.
+The cache stores DocC responses for regenerating frameworks. List any
+framework dependencies you need. Cocoa's umbrella uses Foundation, AppKit
+and Core Data.
 
 | Flag | Purpose |
 |---|---|

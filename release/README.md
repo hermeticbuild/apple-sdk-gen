@@ -32,8 +32,8 @@ gh attestation verify MacOSX.sdk.tar.zst --repo hermeticbuild/apple-sdk-gen \
 
 ## Build and test locally
 
-Use an arm64 Mac with the Xcode command-line tools, Python 3.12, CMake,
-Ninja, zstd, and gh. Set the R2 credentials below for a cold DocC download.
+Use an arm64 Mac with the Xcode command-line tools, Python 3.12 and zstd.
+A cold DocC download also uses the AWS CLI and the R2 credentials below.
 
 ```sh
 make prepare PYTHON=python3.12
@@ -48,14 +48,20 @@ intermediate directory. Set `SDK_OUTPUT` to a fresh directory when
 recomposing. Set `INPUTS` to an absolute path to share prepared inputs
 across worktrees. Use `make prepare OFFLINE=1` to reuse the local inputs.
 
-For a smaller framework build, pass the same comma-separated selection
-to generation and composition. Framework recipes may add dependencies.
+For a smaller build, list the frameworks to generate from DocC and any
+generated inputs needed by the local recipes. List exactly the bundles
+to ship when composing, including their dependencies. Use bundle names
+and a fresh `GENERATED` directory for each generation.
 
 ```sh
-make generate-sdk FRAMEWORKS=Cocoa,AVFoundation GENERATED="$PWD/build/selected"
-make compose-sdk FRAMEWORKS=Cocoa,AVFoundation GENERATED="$PWD/build/selected" \
+make generate-sdk FRAMEWORKS=Security GENERATED="$PWD/build/selected"
+make compose-sdk FRAMEWORKS=CoreFoundation,Security,SystemConfiguration GENERATED="$PWD/build/selected" \
   SDK_OUTPUT="$PWD/build/sdk-selected"
 ```
+
+If the selected recipes need no generated frameworks, pass `FRAMEWORKS=`
+to `make generate-sdk` to build just the system inputs. Leave `FRAMEWORKS`
+unset on both commands for the full release.
 
 ## Keep a portable DocC cache
 
@@ -73,6 +79,8 @@ and the bucket-scoped secrets `DOCC_R2_ACCESS_KEY_ID` and
 `DOCC_R2_SECRET_ACCESS_KEY`. The workflow verifies the full SHA-256 in
 the macOS lock before extracting the pinned object. For a local restore,
 seed `build/inputs/downloads/<SHA-256>.db.zst` and run `make prepare-docc OFFLINE=1`.
+For a cold download outside CI, set the same endpoint and bucket and
+export the R2 access key as `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 
 To refresh DocC, generate separately with `--reuse-docc-cache` to fetch
 missing pages. Use a fresh cache directory to refresh existing pages as

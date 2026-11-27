@@ -103,7 +103,7 @@ def filter_frameworks(
         # Skip documentation topics, REST APIs, JS libs, etc.
         if fw.module_name in NON_FRAMEWORK_MODULES:
             continue
-        if include and not names.intersection(include):
+        if include is not None and not names.intersection(include):
             continue
         if exclude and names.intersection(exclude):
             continue

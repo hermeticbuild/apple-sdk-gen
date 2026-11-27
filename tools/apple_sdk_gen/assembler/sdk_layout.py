@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Collection
 from dataclasses import dataclass
 from pathlib import Path
 from unicodedata import normalize
@@ -53,6 +54,8 @@ def assemble_sdk(
     xcode_build: str = "",
     *,
     include_cocoa: bool = True,
+    selected_frameworks: set[str] | None = None,
+    excluded_frameworks: Collection[str] = (),
 ) -> Path:
     """Assemble a complete SDK directory structure.
 
@@ -140,7 +143,7 @@ def assemble_sdk(
 
     # TBD targets for this platform
     tbd_targets = tbd_targets_for_platform(platform_key)
-    excluded = PLATFORM_EXCLUDED_MODULES.get(platform_key, set())
+    excluded = PLATFORM_EXCLUDED_MODULES.get(platform_key, set()).union(excluded_frameworks)
 
     frameworks = {
         name: [symbol.for_platform(cfg.name) for symbol in symbols]
@@ -164,12 +167,15 @@ def assemble_sdk(
 
         # Emit TBD-only stubs for companion frameworks
         for companion in COMPANION_FRAMEWORKS.get(mapped_name, []):
-            if companion not in excluded:
+            if companion not in excluded and (
+                selected_frameworks is None or companion in selected_frameworks
+            ):
                 _assemble_tbd_only_framework(sdk_root, companion, tbd_targets)
 
     if (
         platform_key == "macos"
         and include_cocoa
+        and (selected_frameworks is None or "Cocoa" in selected_frameworks)
         and "Cocoa" not in frameworks
         and all(name in frameworks for name in COCOA_IMPORTS)
     ):
@@ -181,7 +187,7 @@ def assemble_sdk(
 
     # Emit TBD-only stubs for supplementary frameworks (no doc API entry)
     for supp_name in SUPPLEMENTARY_FRAMEWORKS:
-        if supp_name not in excluded:
+        if supp_name not in excluded and (selected_frameworks is None or supp_name in selected_frameworks):
             _assemble_tbd_only_framework(sdk_root, supp_name, tbd_targets)
 
     logger.info("Assembled SDK at %s (%d frameworks)", sdk_root, len(frameworks))
