@@ -17,8 +17,8 @@ install rule as links to the unchanged SDK Gen umbrella. This lets
 `-ldl`, `-lm` and `-lpthread` bind through libSystem.
 [Apple Libsystem install rule](https://github.com/apple-oss-distributions/Libsystem/blob/c23b51183e46e613375dc7639fb4bf11fbf59ba8/xcodescripts/create_dylib_symlinks.sh#L14-L31)
 
-Use Python 3.11+, the [verified LLVM tools](../../c-sdk/tools/toolchain/README.md), and the
-[C and Objective-C installations](../../c-sdk/locks/README.md). Before staging,
+Use Python 3.11+, the [verified LLVM tools](../../tools/toolchain/README.md), and the
+[C and Objective-C installations](../../locks/README.md). Before staging,
 the composer checks their source locks and the SDK Gen input's
 `CanonicalName` and `Version` against the macOS 26.5 profile. When using a
 separate framework SDK Gen tree, both SDK Gen trees must pass the same
@@ -120,7 +120,7 @@ inputs for SDK Gen 0.0.4:
   SystemConfiguration stubs come from their staged headers.
 - `STUBS`, the generated iconv and charset layer described below.
 - `RESOLVER`, the resolver layer built using the same source root as the
-  C installation and Apple's [libresolv InstallAPI settings](../../stubs/libresolv/README.md).
+  C installation and Apple's [libresolv InstallAPI settings](../../components/libresolv/stubs.md).
   Pass `SOURCE_ROOT` to the resolver Make invocation when the C sources are
   outside `build/sources/macosx26.5`.
 
@@ -136,7 +136,7 @@ Use the retained qualified recipe outputs for that exact asset check.
 
 ```bash
 RESOLVER="$PWD/build/resolver"
-make -C stubs/libresolv C_SDK="$C_SDK" CLANG="$LLVM/bin/clang" C_INSTALL="$C_INSTALL" OUT="$RESOLVER"
+make -f components/libresolv/stubs.mk CLANG="$LLVM/bin/clang" C_INSTALL="$C_INSTALL" OUT="$RESOLVER"
 
 frameworks=()
 for name in CoreFoundation AudioToolbox AudioUnit CoreAudio CoreAudioTypes CoreMIDI IOKit OpenAL Security SystemConfiguration; do
@@ -235,7 +235,7 @@ C header installation, and the pinned macOS arm64 LLVM projection. macOS
 containing only C headers verified against the installation manifest.
 
 ```sh
-python3 -m tools.sdk_composition.iconv_stubs \
+python3 -m components.libiconv.generate_stubs \
   --source "$ICONV_SOURCE" --c-install "$C_INSTALL" --llvm "$LLVM" --out "$STUBS"
 ```
 
@@ -259,7 +259,7 @@ Append these four arguments to `compose_sdk`.
 ```
 
 For qualification, export `ICONV_SOURCE`, `C_INSTALL` and `LLVM` and run
-`python3 -m unittest -v tools.sdk_composition.test_iconv_stubs`. The tests
+`python3 -m unittest -v components.libiconv.test_stubs`. The tests
 check reproducibility, link an arm64 client against `-liconv`, and inspect the
 two-level bindings for `iconv_open` and `locale_charset`.
 

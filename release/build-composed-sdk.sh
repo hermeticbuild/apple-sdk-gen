@@ -1,17 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# != 3 ]]; then
-  echo "Usage: $0 C_SDK GENERATED_SDK OUTPUT_DIRECTORY" >&2
+if [[ $# != 2 ]]; then
+  echo "Usage: $0 GENERATED_SDK OUTPUT_DIRECTORY" >&2
   exit 2
 fi
-c_sdk=$(cd "$1" && pwd -P)
-generated=$(cd "$2" && pwd -P)
+generated=$(cd "$1" && pwd -P)
 repo=$(cd "$(dirname "$0")/.." && pwd -P)
-out=$(mkdir -p "$3" && cd "$3" && pwd -P)
+out=$(mkdir -p "$2" && cd "$2" && pwd -P)
 cd "$repo"
 
-export PYTHONPATH="$PWD:$c_sdk"
 sdk=macosx26.5
 sources="$out/sources"
 objc_sources="$out/objc-sources"
@@ -24,15 +22,12 @@ source_cache=${C_SOURCE_CACHE:-"$PWD/build/c-source-cache"}
 llvm_cache=${LLVM_CACHE:-"$PWD/build/llvm-cache"}
 framework_sources=${FRAMEWORK_SOURCE_ROOT:-"$PWD/build/framework-sources"}
 
-(
-  cd "$c_sdk"
-  python3 -m tools.sources.locked_sources prepare --sdk "$sdk" --source-root "$sources" --cache "$source_cache"
-  python3 -m tools.sources.locked_sources prepare --sdk "$sdk" --profile objc4 --source-root "$objc_sources" --cache "$source_cache"
-)
-llvm=${LLVM_DIR:-$(cd "$c_sdk" && python3 -m tools.toolchain.official_llvm prepare --cache "$llvm_cache")}
+python3 -m tools.sources.locked_sources prepare --sdk "$sdk" --source-root "$sources" --cache "$source_cache"
+python3 -m tools.sources.locked_sources prepare --sdk "$sdk" --profile objc4 --source-root "$objc_sources" --cache "$source_cache"
+llvm=${LLVM_DIR:-$(python3 -m tools.toolchain.official_llvm prepare --cache "$llvm_cache")}
 clang="$llvm/bin/clang"
-make -C "$c_sdk" install SDK="$sdk" OUT="$c_install" SOURCE_ROOT="$sources" CLANG="$clang"
-make -C "$c_sdk" install-objc4 SDK="$sdk" OUT="$objc_install" SOURCE_ROOT="$objc_sources"
+make install SDK="$sdk" OUT="$c_install" SOURCE_ROOT="$sources" CLANG="$clang"
+make install-objc4 SDK="$sdk" OUT="$objc_install" SOURCE_ROOT="$objc_sources"
 
 make -C frameworks prepare SOURCE_ROOT="$framework_sources"
 make -C frameworks install SOURCE_ROOT="$framework_sources" OUT="$frameworks" \
@@ -44,9 +39,9 @@ make -C frameworks install SOURCE_ROOT="$framework_sources" OUT="$frameworks" \
   CORE_SERVICES_TBD="$generated_frameworks/CoreServices.framework/CoreServices.tbd" \
   FRAMEWORKS="Cocoa AVFoundation CoreGraphics QuartzCore ApplicationServices IOKit Security SystemConfiguration AudioToolbox AudioUnit CoreAudio CoreAudioTypes CoreMIDI OpenAL"
 
-python3 -m tools.sdk_composition.iconv_stubs --source "$sources/libiconv" \
+python3 -m components.libiconv.generate_stubs --source "$sources/libiconv" \
   --c-install "$c_install" --llvm "$llvm" --out "$out/iconv"
-make -C stubs/libresolv C_SDK="$c_sdk" SOURCE_ROOT="$sources" \
+make -f components/libresolv/stubs.mk SOURCE_ROOT="$sources" \
   C_INSTALL="$c_install" CLANG="$clang" OUT="$out/resolver"
 
 stubs=()

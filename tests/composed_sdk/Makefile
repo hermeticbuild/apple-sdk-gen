@@ -10,10 +10,10 @@ test-frameworks: test-foundation-macros test-coregraphics test-security test-net
 	test-avrouting test-simd test-modelio test-modelio-modules test-metalkit test-objc-property
 
 test-dns-sd:
-	$(call test-sdk-link,$(C_SDK)/recipes/mDNSResponder/test.c)
+	$(call test-sdk-link,../../components/mDNSResponder/test.c)
 
 test-resolver:
-	$(call test-sdk-link,$(C_SDK)/recipes/libresolv/test.c,-lresolv $(application-extension-link))
+	$(call test-sdk-link,../../components/libresolv/test.c,-lresolv $(application-extension-link))
 
 test-foundation-macros:
 	$(call test-sdk-link,foundation-macros.m,-framework Foundation -lobjc,-fobjc-arc)

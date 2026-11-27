@@ -70,10 +70,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GENERATED_SDK: build/generated/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
-        run: release/build-composed-sdk.sh c-sdk "$GENERATED_SDK" build/sdk
+        run: release/build-composed-sdk.sh "$GENERATED_SDK" build/sdk
 
       - name: Run the C and framework probes
-        run: release/test-composed-sdk.sh c-sdk build/sdk
+        run: release/test-composed-sdk.sh build/sdk
 
       - name: Test BCR consumers
         working-directory: e2e/bcr

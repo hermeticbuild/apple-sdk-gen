@@ -2,7 +2,7 @@
 
 The manual [Release workflow](../.github/workflows/release.yml) generates
 frameworks, Darwin stubs, and LLVM libc++ headers using this checkout. It
-builds the C and objc4 header trees with the [in-tree C SDK](../c-sdk/README.md).
+builds the C and objc4 header trees with the [in-tree C SDK](../docs/c-sdk-headers.md).
 The SDK Gen commit pins both sets of build rules. The release job restores the exact private DocC
 snapshot recorded in [docc.snapshot](docc.snapshot) and uses only that
 snapshot for DocC responses. The workflow pins its GitHub actions, Xcode,
@@ -35,8 +35,8 @@ tools/` from this checkout.
 python3 -m tools.apple_sdk_gen --sdk-version 26.5 --all-frameworks \
   --include-cxx --docc-cache-only --cache-dir cache --output build/generated -v
 generated=build/generated/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
-release/build-composed-sdk.sh c-sdk "$generated" build/sdk
-release/test-composed-sdk.sh c-sdk build/sdk
+release/build-composed-sdk.sh "$generated" build/sdk
+release/test-composed-sdk.sh build/sdk
 ```
 
 The [Bazel workspaces](../e2e/README.md) read
