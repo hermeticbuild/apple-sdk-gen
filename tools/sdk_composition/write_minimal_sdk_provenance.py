@@ -1,4 +1,4 @@
-"""Record C SDK sources and verify the two extracted release archives."""
+"""Write source receipts and license notices into the minimal macOS SDK."""
 
 import argparse
 import json
@@ -6,26 +6,24 @@ from pathlib import Path
 import subprocess
 
 from tools.apple_sdk_gen.supplements import simd
-from tools.header_manifest import read_header_manifest
+from tools.fetch_sources import read_lock
+from tools.read_header_manifest import read_header_manifest
 from tools.sdk_composition.compose_sdk import SYSTEM_COMPAT_NAMES, digest, relative_path
-from tools.sources.locked_sources import read_lock, verify
 
 
 REPO = Path(__file__).resolve().parents[2]
 PROVENANCE = "c-sdk-provenance.json"
-SIMD = ("usr/include/simd/simd.h", "usr/include/simd/module.modulemap")
 STUBS = {
     "libSystem.B": "tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.md",
     **{f"lib{name}": "tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.md"
        for name in ("System", *SYSTEM_COMPAT_NAMES)},
-    **{f"lib{name}": "tools/apple_sdk_gen/supplements/system_libs.py (iOS SDK export data)"
+    **{f"lib{name}": "tools/apple_sdk_gen/supplements/generate_system_library_stubs.py (iOS SDK export data)"
        for name in ("z", "z.1", "bsm", "bsm.0", "ipsec", "ipsec.A")},
     **{f"lib{name}": "components/libiconv/generate_stubs.py (Apple OSS InstallAPI)"
        for name in ("iconv", "iconv.2", "charset", "charset.1")},
     **{f"lib{name}": "components/libresolv/stubs.md (Apple OSS InstallAPI)"
        for name in ("resolv", "resolv.9")},
 }
-METADATA = {"header-manifest.tsv", "SDKSettings.json"}
 
 
 def checked_input(value, sources, projects):
@@ -59,9 +57,8 @@ def check_header_inputs(sdk, sources, projects):
             raise ValueError(f"header differs from its copy source: {name}")
 
 
-def write_provenance(sdk, sources):
-    lock, projects = read_lock("macosx26.5")
-    verify(sources, projects)
+def write_provenance(sdk, sources, lock_path):
+    lock, projects = read_lock(lock_path)
     check_header_inputs(sdk, sources, projects)
     additional = {}
 
@@ -72,7 +69,7 @@ def write_provenance(sdk, sources):
             stream.write(contents)
         additional[name] = {"sha256": digest(file), "source": origin}
 
-    install("source-lock.json", lock, "locks/macosx26.5.json")
+    install("source-lock.json", lock, lock_path.relative_to(REPO).as_posix())
     for project in sorted(projects):
         for name in ("APPLE_LICENSE", "LICENSE"):
             source = sources / project / name
@@ -104,12 +101,12 @@ def write_provenance(sdk, sources):
                     install(name, notice + b"*/\n", path)
 
     revision = subprocess.check_output(["git", "-C", REPO, "rev-parse", "HEAD"], text=True).strip()
-    snapshot = (REPO / "release/docc.snapshot").read_text().split()
+    snapshot = json.loads(lock)["docc"]
     data = {
         "source_commit": revision,
         "additional_files": additional,
         "simd": {
-            "snapshot_sha256": snapshot[0],
+            "snapshot_sha256": snapshot["sha256"],
             "generator": "tools/apple_sdk_gen/supplements/simd.py",
             "generator_sha256": digest(REPO / "tools/apple_sdk_gen/supplements/simd.py"),
             "pages": [f"https://developer.apple.com/documentation/simd/{page}" for page in simd.docc_pages()],
@@ -119,60 +116,14 @@ def write_provenance(sdk, sources):
     (sdk / PROVENANCE).write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
 
 
-def check_archives(c_sdk, full_sdk):
-    headers, _ = read_header_manifest(c_sdk)
-    composition = json.loads((c_sdk / "composition.json").read_text())["files"]
-    provenance = json.loads((c_sdk / PROVENANCE).read_text())
-    additional = provenance["additional_files"]
-    if ("source-lock.json" not in additional or
-            any(name != "source-lock.json" and not relative_path(name).is_relative_to("usr/share/licenses")
-                for name in additional)):
-        raise ValueError("unexpected C SDK provenance assets")
-    stubs = {f"usr/lib/{name}.tbd" for name in STUBS}
-    shared = set(headers) | set(SIMD) | stubs | METADATA
-    if set(composition) != shared or set(provenance["linker_stubs"]) != stubs:
-        raise ValueError("C SDK composition differs from its header and stub set")
-    expected = shared | set(additional) | {"composition.json", PROVENANCE}
-    actual = {str(path.relative_to(c_sdk)) for path in c_sdk.rglob("*")
-              if path.is_symlink() or not path.is_dir()}
-    directories = {relative_path(name).parent for name in expected}
-    allowed_dirs = {ancestor for path in directories for ancestor in (path, *path.parents)}
-    if (actual != expected or
-            any(path.relative_to(c_sdk) not in allowed_dirs for path in c_sdk.rglob("*") if path.is_dir())):
-        raise ValueError(f"unexpected C SDK contents: {sorted(actual ^ expected)}")
-    full = json.loads((full_sdk / "composition.json").read_text())["files"]
-    for name, row in (composition | additional).items():
-        path = c_sdk / relative_path(name)
-        if "symlink" in row:
-            if not path.is_symlink() or str(path.readlink()) != row["symlink"]:
-                raise ValueError(f"C SDK symlink differs from its receipt: {name}")
-            if not path.resolve(strict=True).is_relative_to(c_sdk):
-                raise ValueError(f"C SDK symlink escapes its tree: {name}")
-        elif path.is_symlink() or digest(path) != row["sha256"]:
-            raise ValueError(f"C SDK file differs from its receipt: {name}")
-        if name in headers and headers[name]["sha256"] != row["sha256"]:
-            raise ValueError(f"C SDK header differs from its source receipt: {name}")
-        if name in shared:
-            peer = full_sdk / name
-            if (full.get(name) != row or
-                    (peer.is_symlink(), peer.readlink() if peer.is_symlink() else digest(peer)) !=
-                    (path.is_symlink(), path.readlink() if path.is_symlink() else row["sha256"])):
-                raise ValueError(f"C and full SDKs differ at shared path: {name}")
-    print(f"Verified {len(headers)} C headers, {len(SIMD)} SIMD files and {len(stubs)} stubs in both archives.")
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("c_sdk", type=Path)
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--write-provenance", metavar="SOURCE_ROOT", type=Path)
-    mode.add_argument("--compare", metavar="FULL_SDK", type=Path)
+    parser.add_argument("--sources", type=Path, required=True)
+    parser.add_argument("--lock", type=Path, required=True)
     args = parser.parse_args()
     try:
-        if args.write_provenance:
-            write_provenance(args.c_sdk.resolve(), args.write_provenance.resolve())
-        else:
-            check_archives(args.c_sdk.resolve(), args.compare.resolve())
+        write_provenance(args.c_sdk.resolve(), args.sources.resolve(), args.lock.resolve())
     except (OSError, ValueError, KeyError) as err:
         parser.exit(1, f"C SDK: {err}\n")
 

@@ -1,7 +1,7 @@
 # macOS SDK integration tests
 
 Build the [composed SDK](../tools/sdk_composition/README.md) with
-`release/build-composed-sdk.sh` from the repository root. Bazel reads
+`make compose-sdk` from the repository root. Bazel reads
 `build/sdk/MacOSX.sdk.tar.zst` directly. Bazel watches the archive file and
 refreshes the SDK repository when it changes.
 

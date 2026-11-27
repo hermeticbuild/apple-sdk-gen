@@ -9,7 +9,7 @@ from pathlib import Path
 import re
 import subprocess
 
-from tools.header_manifest import read_header_manifest
+from tools.read_header_manifest import read_header_manifest
 from sdk_review.headers.trace_includes import classify
 
 ARCHES = ("arm64",)

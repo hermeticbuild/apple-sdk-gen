@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from tools.sources.locked_sources import git, prepare, verify
+from tools.fetch_sources import git, prepare, verify
 
 
 class LockedSourcesTest(unittest.TestCase):
@@ -39,6 +39,7 @@ class LockedSourcesTest(unittest.TestCase):
         }
         offline = self.root / "offline"
         with patch.dict(os.environ, environment):
+            prepare(offline, self.cache, self.projects, offline=True)
             prepare(offline, self.cache, self.projects, offline=True)
             verify(offline, self.projects)
         self.assertEqual((offline / "example/example.h").read_bytes(), self.header)

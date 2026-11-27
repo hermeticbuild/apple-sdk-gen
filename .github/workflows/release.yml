@@ -13,9 +13,6 @@ concurrency: sdk-release
 permissions:
   contents: read
 
-env:
-  SDK_VERSION: "26.5"
-
 jobs:
   build:
     runs-on: macos-26
@@ -36,13 +33,6 @@ jobs:
         with:
           python-version: "3.12.10"
 
-      - name: Install dependencies
-        run: |
-          python3 -m venv "$RUNNER_TEMP/sdk-python"
-          "$RUNNER_TEMP/sdk-python/bin/python" -m pip install \
-            --require-hashes --only-binary=:all: -r release/requirements.txt
-          echo "$RUNNER_TEMP/sdk-python/bin" >> "$GITHUB_PATH"
-
       - name: Record runner tool versions
         run: |
           python3 --version
@@ -53,27 +43,22 @@ jobs:
           aws --version
           bazelisk version
 
-      - name: Restore the private DocC snapshot
+      - name: Prepare SDK inputs
         env:
           DOCC_R2_ENDPOINT: ${{ vars.DOCC_R2_ENDPOINT }}
           DOCC_R2_BUCKET: ${{ vars.DOCC_R2_BUCKET }}
           AWS_ACCESS_KEY_ID: ${{ secrets.DOCC_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.DOCC_R2_SECRET_ACCESS_KEY }}
-        run: bash release/docc-cache.sh cache
+        run: make prepare
 
       - name: Generate frameworks and linker stubs
-        run: |
-          python3 -m tools.apple_sdk_gen --sdk-version "$SDK_VERSION" \
-            --all-frameworks --include-cxx --docc-cache-only --cache-dir cache --output build/generated -v
+        run: make generate-sdk
 
       - name: Build and compose the SDK
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GENERATED_SDK: build/generated/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
-        run: release/build-composed-sdk.sh "$GENERATED_SDK" build/sdk
+        run: make compose-sdk
 
       - name: Run the C and framework probes
-        run: release/test-composed-sdk.sh build/sdk
+        run: make test-composed-sdk
 
       - name: Test BCR consumers
         working-directory: e2e/bcr

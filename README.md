@@ -7,42 +7,41 @@ cross-compilers.
 
 ## Generate macOS 26.5
 
-With Python 3.12 or newer, CMake, Ninja and Clang on `PATH`:
+On arm64 macOS with Python 3.12 or newer, prepare LLVM and generate the SDK.
 
 ```sh
 python3 -m pip install -e tools/
+make prepare-llvm
 python3 -m tools.apple_sdk_gen --sdk-version 26.5 \
-  --frameworks Cocoa,CoreFoundation,CoreGraphics,Network,Security \
-  --include-cxx --cache-dir cache --output output
+  --frameworks Cocoa,Foundation,AppKit,CoreData,CoreFoundation,CoreGraphics,Network,Security \
+  --llvm-dir build/inputs/llvm --cache-dir cache --output output
 ```
 
 The SDK is at
 `output/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk`.
-The cache stores DocC responses and the LLVM source archives. Reuse it
-when regenerating a framework. Selecting Cocoa requests Foundation,
-AppKit and Core Data and builds an umbrella for the three.
+The cache stores DocC responses for regenerating frameworks. List any
+framework dependencies you need. Cocoa's umbrella uses Foundation, AppKit
+and Core Data.
 
 | Flag | Purpose |
 |---|---|
 | `--sdk-version` | Required version of the generated SDK |
 | `--darwin-library-metadata` | Override the bundled 26.5 inventory with a matching version |
 | `--frameworks` | Generate a comma-separated set of frameworks |
-| `--all-frameworks` | Generate discovered macOS frameworks with a C or Objective-C DocC view |
 | `--exclude-frameworks` | Exclude selected frameworks, including Cocoa |
-| `--include-libc` | Install the generator's optional Apple OSS C header supplement |
-| `--include-cxx` | Install the macOS 26.5 LLVM C++ and ABI headers |
+| `--llvm-dir` | Install C++ and ABI headers from a prepared LLVM directory |
 | `--output`, `--cache-dir` | Choose the SDK output and download cache directories |
 | `--concurrency`, `--rate-limit` | Set the DocC request limits |
-| `--xcode-version`, `--xcode-build` | Set the version recorded in the Xcode-style metadata |
 | `-v`, `-vv` | Enable info or debug logging |
 
-The C++ layer uses LLVM 21.1.6, the libc++ version reported by Xcode
-26.5. The installer checks release archive digests and runs LLVM's
-Apple CMake preset and header install targets. It includes both
-LLVM license files. Consumers link to the macOS system dylibs.
+The C++ layer uses the official LLVM 21.1.6 binary release, matching the
+libc++ version reported by Xcode 26.5. The installer applies LLVM's Apple
+preset choices to `__config_site` and includes both upstream license
+files. Consumers link to the macOS system dylibs. Pass the directory from
+`make prepare-llvm` with `--llvm-dir`. The full release includes C++ headers.
 [LLVM release](https://github.com/llvm/llvm-project/releases/tag/llvmorg-21.1.6)
 
-Selecting Model I/O or `--include-libc` generates `<simd/simd.h>` and a
+Selecting Model I/O or supplying `--llvm-dir` generates `<simd/simd.h>` and a
 Clang module map. This header provides the vector, matrix and quaternion
 types used by Model I/O. The generator uses C-family declarations from
 the public [SIMD documentation](https://developer.apple.com/documentation/simd).

@@ -1,7 +1,7 @@
 CORE_GRAPHICS_STAGE = $(STAGE)/CoreGraphics.framework
 
 CoreGraphics: require-stage
-	@test -f "$(COREGRAPHICS_FRAMEWORK)/Headers/CoreGraphics.h" || { echo "Set COREGRAPHICS_FRAMEWORK to the generated 26.5 bundle." >&2; exit 1; }
+	@test -f "$(COREGRAPHICS_FRAMEWORK)/Headers/CoreGraphics.h" || { echo "Set COREGRAPHICS_FRAMEWORK to the generated CoreGraphics bundle." >&2; exit 1; }
 	cp -RP "$(COREGRAPHICS_FRAMEWORK)" "$(CORE_GRAPHICS_STAGE)"
 	install -m 644 CoreGraphics/Headers/CGGeometry.h "$(CORE_GRAPHICS_STAGE)/Headers/CGGeometry.h"
 	patch -s -f -F 0 -V none -p1 -d "$(CORE_GRAPHICS_STAGE)" < CoreGraphics/geometry-header.patch

@@ -9,7 +9,7 @@ from pathlib import Path
 import yaml
 
 from apple_sdk_gen.config import PLATFORM_CONFIGS
-from apple_sdk_gen.supplements.darwin_libs import LIBRARIES
+from apple_sdk_gen.supplements.install_darwin_stubs import LIBRARIES
 
 TBD_FIELDS = (
     "install-name", "targets", "current-version", "compatibility-version",

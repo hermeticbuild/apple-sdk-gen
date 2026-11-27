@@ -7,8 +7,8 @@ import tempfile
 import unittest
 
 from components.libiconv.generate_stubs import generate, REVISION
-from tools.tbd import read_stub
-from tools.toolchain import official_llvm
+from tools.read_tbd import read_stub
+from tools import fetch_llvm_tools
 
 
 INPUTS = ("ICONV_SOURCE", "C_INSTALL", "LLVM")
@@ -50,7 +50,7 @@ class IconvStubsTest(unittest.TestCase):
             "__typeof__(&locale_charset) charset = &locale_charset;\n"
         )
         tools = self.llvm / "bin"
-        resource = self.llvm / official_llvm.read_lock(official_llvm.PIN)["resource_headers"]["path"]
+        resource = self.llvm / fetch_llvm_tools.read_llvm_lock(Path(os.environ["C_INSTALL"]) / "source-lock.json")["resource_headers"]
         obj = self.work / "client.o"
         client = self.work / "client.dylib"
         subprocess.run([

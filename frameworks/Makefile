@@ -1,6 +1,8 @@
 .DEFAULT_GOAL := install
 
-SOURCE_ROOT ?= $(abspath ../build/framework-sources)
+SDK ?= macosx26.5
+SOURCE_LOCK ?= $(abspath ../locks/$(SDK)-frameworks.json)
+SOURCE_ROOT ?= $(abspath ../build/inputs/sources/$(SDK)-frameworks)
 OUT ?= $(abspath ../build/frameworks)
 C_FRAMEWORKS := CoreFoundation AudioToolbox AudioUnit CoreAudio CoreAudioTypes CoreMIDI IOKit OpenAL Security SystemConfiguration
 OBJC_FRAMEWORKS := Foundation AppKit CoreData Cocoa
@@ -12,9 +14,11 @@ OBJC_TESTS := test-Foundation test-Foundation-modules test-Cocoa test-Cocoa-modu
 OPTIONAL_TESTS := $(addprefix test-,$(OPTIONAL_FRAMEWORKS))
 PYTHON ?= python3
 
-.PHONY: install stage prepare test test-objc check-test-tools $(SUPPORTED) $(TESTS) $(OBJC_TESTS) $(OPTIONAL_TESTS)
+.PHONY: install stage test test-objc check-test-tools $(SUPPORTED) $(TESTS) $(OBJC_TESTS) $(OPTIONAL_TESTS)
 
 install:
+	PYTHONPATH="$(abspath ..)" "$(PYTHON)" -m tools.fetch_sources --verify --lock "$(SOURCE_LOCK)" \
+		--dest "$(abspath $(SOURCE_ROOT))"
 	@set -eu; \
 		test -n "$(strip $(FRAMEWORKS))" && test -z "$(filter-out $(SUPPORTED),$(FRAMEWORKS))" \
 			|| { echo "Select frameworks from $(SUPPORTED)." >&2; exit 1; }; \
@@ -28,8 +32,6 @@ install:
 		mv "$$stage" "$(OUT)"
 
 stage: $(FRAMEWORKS)
-
-prepare: prepare-CF prepare-IOAudioFamily prepare-OpenAL prepare-Security prepare-configd
 
 include common.mk
 include $(addsuffix /Makefile,$(SUPPORTED))

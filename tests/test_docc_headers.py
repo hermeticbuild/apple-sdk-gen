@@ -73,7 +73,7 @@ class DocCHeadersTest(unittest.IsolatedAsyncioTestCase):
             FrameworkInfo("UIKit", "/documentation/UIKit", ["occ", "swift"], ""),
         ]
         with tempfile.TemporaryDirectory() as directory:
-            args = parse_args(["--sdk-version", "26.5", "--all-frameworks",
+            args = parse_args(["--sdk-version", "26.5",
                                "--output", directory, "--cache-dir", directory])
             with (
                 patch("tools.apple_sdk_gen.main.fetch_technologies", return_value=frameworks),

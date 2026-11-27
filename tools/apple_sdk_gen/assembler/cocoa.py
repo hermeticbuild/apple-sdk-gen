@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..generators.modulemap import generate_modulemap
-from ..generators.tbd import tbd_document
+from ..generators.render_tbd import tbd_document
 
 
 # Apple documents the umbrella's imports separately from the DocC catalog.

@@ -8,9 +8,9 @@ import re
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
-from tools.header_manifest import read_header_manifest
+from tools.read_header_manifest import read_header_manifest
 from sdk_review.linkage.verify_libsystem_links import link, read_object, run
-from tools.toolchain.official_llvm import PIN, projection, read_lock, sha256
+from tools.fetch_llvm_tools import read_llvm_lock, sha256, verify_prepared
 
 
 POLICY = Path(__file__).with_name("data") / "macosx26.5/expected-undefined.json"
@@ -120,10 +120,10 @@ def qualify(args):
     policy = read(args.policy)
     symbols = validate_policy(policy)
     identity = check_sources(sdk, install, policy)
-    llvm_lock = read_lock(PIN)
-    projection(llvm, llvm_lock)
+    llvm_lock = read_llvm_lock(install / "source-lock.json")
+    verify_prepared(llvm, llvm_lock)
     lookup = check_lookup(sdk, read(args.lookup), symbols, sha256(llvm / "bin/llvm-readtapi"))
-    resource = llvm / llvm_lock["resource_headers"]["path"]
+    resource = llvm / llvm_lock["resource_headers"]
     cases = []
     for origin, headers in (("sdk", sdk), ("installation", install)):
         for arch in ARCHES:
@@ -136,7 +136,7 @@ def qualify(args):
     failed = [case for case in cases if case["status"] != "expected-undefined"]
     report = {
         "schema": 1, "pass": not failed, "sdk": identity, "policy": policy,
-        "policy_sha256": sha256(args.policy), "llvm_lock_sha256": sha256(PIN),
+        "policy_sha256": sha256(args.policy), "llvm_archive_sha256": llvm_lock["archive"]["sha256"],
         "lookup": lookup, "lookup_sha256": sha256(args.lookup), "cases": cases,
     }
     with TemporaryDirectory(dir=args.out.parent, prefix=".verify-unistd-") as tmp:

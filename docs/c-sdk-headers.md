@@ -16,20 +16,18 @@ probe. The installer does not publish `unwind.h`, `libunwind.h`, or
 Run from the repository root on macOS. The installer uses Make, CMake, Ninja,
 Python 3, Perl, system MIG, and standard command line tools such as `ed`,
 `unifdef`, `awk`, `realpath`, and `shasum`. CMake and Ninja default to tools on
-`PATH` and can be set with `CMAKE` and `NINJA`. Supply the pinned LLVM 23.1.2
-minimal prebuilt Clang. The resolver command below uses hermetic-llvm and Bazel.
+`PATH` and can be set with `CMAKE` and `NINJA`. Run from the repository root
+on Apple Silicon:
 
 ```sh
-LLVM_REPO=/absolute/path/to/hermetic-llvm
-LLVM_CLANG=$(python3 -m tools.toolchain.resolve_clang --llvm-repo "$LLVM_REPO")
-
-SDK=macosx26.5
-python3 -m tools.sources.locked_sources prepare --sdk "$SDK"
-make install SDK="$SDK" CLANG="$LLVM_CLANG" OUT=/tmp/apple-oss-c-headers
+make prepare-c-sources prepare-llvm SDK=macosx26.5
+make install SDK=macosx26.5 OUT=/tmp/apple-oss-c-headers
 ```
 
-The default SDK is `macosx26.5`. Select `macosx26.0` to use the older source
-set. See [the source locks](../locks/README.md) for preparation, offline operation,
+Use `CLANG=/path/to/clang` to supply a compiler explicitly.
+
+The default SDK is `macosx26.5`. To build the older C source set, run `make prepare-c-sources SDK=macosx26.0`
+and `make install SDK=macosx26.0` with the already prepared Clang. See [the source locks](../locks/README.md) for preparation, offline operation,
 and how to add a version. The output directory must be new.
 The installer copies the selected lock as `source-lock.json` and stages each upstream install
 separately, generates public MIG headers, and merges the result.

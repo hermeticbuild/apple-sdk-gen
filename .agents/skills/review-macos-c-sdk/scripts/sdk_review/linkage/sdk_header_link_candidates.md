@@ -1,7 +1,7 @@
 # SDK C-header linker candidates
 
 Run from the repository root with a locally installed Apple macOS SDK and
-the [verified official LLVM bundle](../../../../../../tools/toolchain/README.md).
+the [verified official LLVM bundle](../../../../../../docs/llvm-tools.md).
 
     python3 -m sdk_review.linkage.sdk_header_link_candidates \
       --sdk "$(xcrun --sdk macosx --show-sdk-path)" --llvm "$LLVM" \

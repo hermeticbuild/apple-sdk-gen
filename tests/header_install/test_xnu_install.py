@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import unittest
 
-from tools.header_manifest import read_header_manifest
+from tools.read_header_manifest import read_header_manifest
 
 
 @unittest.skipUnless(os.getenv("C_INSTALL"), "requires the output of make install")

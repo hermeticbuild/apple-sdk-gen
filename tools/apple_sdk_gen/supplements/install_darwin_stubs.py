@@ -4,10 +4,9 @@ import json
 import os
 from pathlib import Path
 
-from ..generators.tbd import tbd_document
+from ..generators.render_tbd import tbd_document
 
 DATA_PATH = Path(__file__).parent / "data" / "darwin_macos_26.5.json"
-BUNDLED_SDK_VERSION = "26.5"
 TARGET = "arm64-macos"
 
 LIBRARIES = {
@@ -47,14 +46,7 @@ def _render_document(document: dict) -> str:
 def select_darwin_libraries(
     sdk_version: str, metadata_path: Path | None,
 ) -> dict[str, str]:
-    if metadata_path is None:
-        if sdk_version != BUNDLED_SDK_VERSION:
-            raise ValueError(
-                f"SDK {sdk_version} requires --darwin-library-metadata "
-                f"(bundled inventory covers SDK {BUNDLED_SDK_VERSION})"
-            )
-        metadata_path = DATA_PATH
-
+    metadata_path = metadata_path or DATA_PATH
     data = json.loads(metadata_path.read_text())
     if not isinstance(data, dict):
         raise ValueError(f"{metadata_path} must contain a Darwin inventory object")

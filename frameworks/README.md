@@ -13,21 +13,19 @@ From the repository root, set `C_INSTALL` to the generated C tree and
 `bin/clang-installapi`.
 
 ```sh
-make -C frameworks prepare
-make -C frameworks install CLANG="$LLVM/bin/clang" C_INSTALL="$C_INSTALL" OUT="$PWD/build/frameworks"
+make prepare-sources
+make -C frameworks install SDK=macosx26.5 CLANG="$LLVM/bin/clang" C_INSTALL="$C_INSTALL" OUT="$PWD/build/frameworks"
 ```
 
-`prepare` fetches the pinned CF, IOAudioFamily, OpenAL, Security and configd
-commits into `build/framework-sources`. Set `SOURCE_ROOT` to an absolute
-directory containing those Git repositories to use existing objects.
-`install` reads the pinned objects offline and writes into a new output
-directory. To stage a subset, pass `FRAMEWORKS="CoreFoundation OpenAL"`,
+`make prepare-sources` fetches the exact CF, IOAudioFamily, OpenAL, Security
+and configd revisions in `locks/macosx26.5-frameworks.json`.
+`install` reads those checkouts and writes into a new output directory. To stage a subset, pass `FRAMEWORKS="CoreFoundation OpenAL"`,
 for example. SystemConfiguration also stages CoreFoundation and Security.
 
 The recipes use Make, shell, Git, and standard tools. They take no
 official SDK path. Each framework's `provenance.md` identifies its inputs,
 the scope of the repair, and the available source evidence. The
-[composition instructions](../tools/sdk_composition/README.md#expanded-framework-trial)
+[composition instructions](../tools/sdk_composition/README.md)
 use the resulting directories as prepared bundles or overlays.
 
 ```sh

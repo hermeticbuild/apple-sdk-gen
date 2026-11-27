@@ -7,8 +7,8 @@ from pathlib import Path
 
 import yaml
 
-from .generators.tbd import EXPORT_KEYS
-from .supplements.darwin_libs import LIBRARIES, TARGET
+from .generators.render_tbd import EXPORT_KEYS
+from .supplements.install_darwin_stubs import LIBRARIES, TARGET
 
 
 ARM64E = "arm64e-macos"
