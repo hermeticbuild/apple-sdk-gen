@@ -149,6 +149,7 @@ python -m tools.apple_sdk_gen.compare_darwin_stubs \
 Pushes to `main` and pull requests run `make test-python`. The generator's
 unit tests live in [its Python package](tools/apple_sdk_gen/tests). The manual
 **Release** workflow packages the macOS SDK on an Apple Silicon runner.
+See [SDK tests](tests/README.md) for the checks on each build output.
 The [consumer tests](e2e/README.md) show how to use the archives with Bazel.
 
 The [known limitations](tools/apple_sdk_gen/LIMITATIONS.md) describe

@@ -146,7 +146,7 @@ The arm64 test compiles and runs against the composition. Clang emits the
 same by-value function signatures as it does with Xcode 26.5 for all 14
 types. The checked-in probe also compares sizes, alignments and record
 member offsets. Objective-C++ inclusion and Objective-C `@import simd`
-both pass. [SIMD ABI fixture](../tests/composed_sdk/simd-abi.c)
+both pass. [SIMD ABI fixture](../tests/minimal_sdk_linking/simd-abi.c)
 
 SDK Gen now emits a class after its same-framework superclass, using
 the superclass from the rendered Objective-C declaration. The Foundation
@@ -210,7 +210,7 @@ three missing compiler-generated objc4 imports. SDK Gen's 26.5
 `libobjc.A.tbd` gained `objc_msgSendSuper2`, `objc_getProperty`, and
 `objc_setProperty_atomic` after verification against Apple's pinned
 objc4 sources and the installed macOS dylib. The
-[property fixture](../tests/composed_sdk/objc-property.m) checks
+[property fixture](../tests/full_sdk_frameworks/objc-property.m) checks
 all three through an atomic retained property and a superclass call.
 
 Archive `aa9a370cd0e7a0c8ab6f29e29d0cbf203d1956728c3e1688fe6165381cc8baa9`

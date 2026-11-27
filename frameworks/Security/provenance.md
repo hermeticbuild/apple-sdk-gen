@@ -9,7 +9,7 @@ WebKit-derived type from the standalone C installation when a full XPC
 header is absent. The libDER dependencies also come from the C installation.
 
 Compose this recipe as a path overlay on SDK Gen Security. SDK Gen
-supplies the linker stub. The [consumer probe](../../tests/composed_sdk/security.m)
+supplies the linker stub. The [consumer probe](../../tests/full_sdk_frameworks/security.m)
 links and calls `SecCopyErrorMessageString` on both architectures.
 
 - [Security source and notices](https://github.com/apple-oss-distributions/Security/blob/97c3a4296c1ea06b0fe1877a7e616aa84450b5b2/OSX/libsecurity_authorization/lib/Authorization.h)
