@@ -53,7 +53,7 @@ COMPAT_PREAMBLE = """\
 #pragma once
 
 /* ── Base types ──────────────────────────────────────────────────────
-   Use real ObjC runtime headers when present (the C installation supplies
+   Use real ObjC runtime headers when present (the full SDK supplies
    them from apple-oss-distributions/objc4).  Otherwise provide minimal
    inline definitions so the stub headers compile standalone.
    ─────────────────────────────────────────────────────────────────── */
