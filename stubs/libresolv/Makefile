@@ -11,7 +11,7 @@ INSTALLAPI_MIN := 15.4
 
 .PHONY: install stage
 install:
-	@test -f "$(C_SDK)/locks/macosx26.5.json" || { echo "Set C_SDK to the C SDK checkout." >&2; exit 1; }
+	@test -f "$(C_SDK)/locks/macosx26.5.json" || { echo "Set C_SDK to the C SDK directory." >&2; exit 1; }
 	cd "$(C_SDK)" && "$(PYTHON)" -m tools.sources.locked_sources verify --sdk macosx26.5 \
 		--source-root "$(abspath $(SOURCE_ROOT))"
 	cmp "$(C_SDK)/locks/macosx26.5.json" "$(C_INSTALL)/source-lock.json"

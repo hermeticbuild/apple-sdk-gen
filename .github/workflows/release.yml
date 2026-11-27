@@ -66,26 +66,14 @@ jobs:
           python3 -m tools.apple_sdk_gen --sdk-version "$SDK_VERSION" \
             --all-frameworks --include-cxx --docc-cache-only --cache-dir cache --output build/generated -v
 
-      - name: Read C SDK commit
-        id: c-sdk
-        run: echo "commit=$(cat release/c-sdk.commit)" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          repository: hermeticbuild/apple-oss-c-sdk
-          ref: ${{ steps.c-sdk.outputs.commit }}
-          token: ${{ secrets.C_SDK_READ_TOKEN }}
-          path: build/c-sdk
-          persist-credentials: false
-
       - name: Build and compose the SDK
         env:
           GH_TOKEN: ${{ github.token }}
           GENERATED_SDK: build/generated/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
-        run: release/build-composed-sdk.sh build/c-sdk "$GENERATED_SDK" build/sdk
+        run: release/build-composed-sdk.sh c-sdk "$GENERATED_SDK" build/sdk
 
       - name: Run the C and framework probes
-        run: release/test-composed-sdk.sh build/c-sdk build/sdk
+        run: release/test-composed-sdk.sh c-sdk build/sdk
 
       - name: Test BCR consumers
         working-directory: e2e/bcr

@@ -2,9 +2,8 @@
 
 The manual [Release workflow](../.github/workflows/release.yml) generates
 frameworks, Darwin stubs, and LLVM libc++ headers using this checkout. It
-builds the C and objc4 header trees from the source commit recorded in
-[c-sdk.commit](c-sdk.commit). The workflow uses `C_SDK_READ_TOKEN` for the
-private C Git checkout. The release job restores the exact private DocC
+builds the C and objc4 header trees with the [in-tree C SDK](../c-sdk/README.md).
+The SDK Gen commit pins both sets of build rules. The release job restores the exact private DocC
 snapshot recorded in [docc.snapshot](docc.snapshot) and uses only that
 snapshot for DocC responses. The workflow pins its GitHub actions, Xcode,
 Bazel, Python, and [Python wheels](requirements.txt). GitHub manages the
@@ -15,9 +14,7 @@ The default dispatch builds the archive and runs the C, framework, BCR, LLVM, an
 tests. Select `publish` on main to attest the archive and its SHA-256 file,
 verify the attestation in the publish job, and tag the tested commit. Each
 release includes `MacOSX.sdk.tar.zst`, its checksum, and the signed
-`MacOSX.sdk.tar.zst.attestation.jsonl` bundle. The
-[C SDK repository](https://github.com/hermeticbuild/apple-oss-c-sdk) builds
-its standalone header archive separately.
+`MacOSX.sdk.tar.zst.attestation.jsonl` bundle.
 
 Verify a downloaded SDK against its accompanying bundle:
 
@@ -32,14 +29,14 @@ gh attestation verify MacOSX.sdk.tar.zst --repo hermeticbuild/apple-sdk-gen \
 
 Use an arm64 Mac with the Xcode command-line tools, Python 3.12 or newer,
 CMake, Ninja, zstd, and gh. Install SDK Gen with `python3 -m pip install -e
-tools/` and check out the pinned C SDK source.
+tools/` from this checkout.
 
 ```sh
 python3 -m tools.apple_sdk_gen --sdk-version 26.5 --all-frameworks \
   --include-cxx --docc-cache-only --cache-dir cache --output build/generated -v
 generated=build/generated/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
-release/build-composed-sdk.sh /path/to/apple-oss-c-sdk "$generated" build/sdk
-release/test-composed-sdk.sh /path/to/apple-oss-c-sdk build/sdk
+release/build-composed-sdk.sh c-sdk "$generated" build/sdk
+release/test-composed-sdk.sh c-sdk build/sdk
 ```
 
 The [Bazel workspaces](../e2e/README.md) read

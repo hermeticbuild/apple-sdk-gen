@@ -17,8 +17,8 @@ install rule as links to the unchanged SDK Gen umbrella. This lets
 `-ldl`, `-lm` and `-lpthread` bind through libSystem.
 [Apple Libsystem install rule](https://github.com/apple-oss-distributions/Libsystem/blob/c23b51183e46e613375dc7639fb4bf11fbf59ba8/xcodescripts/create_dylib_symlinks.sh#L14-L31)
 
-Use Python 3.11+, the [verified LLVM tools](https://github.com/hermeticbuild/apple-oss-c-sdk/blob/main/tools/toolchain/README.md), and the
-[C and Objective-C installations](https://github.com/hermeticbuild/apple-oss-c-sdk/blob/main/locks/README.md). Before staging,
+Use Python 3.11+, the [verified LLVM tools](../../c-sdk/tools/toolchain/README.md), and the
+[C and Objective-C installations](../../c-sdk/locks/README.md). Before staging,
 the composer checks their source locks and the SDK Gen input's
 `CanonicalName` and `Version` against the macOS 26.5 profile. When using a
 separate framework SDK Gen tree, both SDK Gen trees must pass the same
