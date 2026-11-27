@@ -1,12 +1,15 @@
 # Apple OSS source locks
 
-Each JSON file resolves the selected projects for one canonical SDK name.
-Both current locks use the macOS header recipes. The SDK version and reference
-SDK build describe qualification, while the distribution tag and peeled
-commit identify Apple's operating-system source snapshot. Deployment targets
-are chosen separately by the qualification commands.
+Each SDK version has one JSON lock. The SDK version and reference build
+identify the SDK used for comparison. The distribution tag and peeled
+commit identify Apple's operating-system source snapshot.
 
-The 26.5 lock also records the official LLVM archive, extraction paths, and DocC snapshot.
+- `projects` pins the sources for the standalone C installation and the minimal SDK.
+- `full_projects` pins the additional sources for the full SDK, including
+  objc4 and the Apple OSS framework sources. SDK 26.0 supports the C installation.
+
+The 26.5 lock also records the official LLVM archive, the paths to extract,
+and the DocC snapshot.
 
 ## Prepare and install
 
@@ -19,18 +22,21 @@ make install SDK="$SDK" OUT="$C_INSTALL"
 make test SDK="$SDK" OUT="$C_INSTALL"
 ```
 
-`make prepare-sources` also prepares the objc4 and framework checkouts for
-the full 26.5 SDK. The Git cache lives under `build/inputs/git` and the
-checkouts under `build/inputs/sources`. Set `OFFLINE=1` to reuse local inputs.
-The fetch command accepts an explicit lock and destination for other layouts:
+`make prepare-sources` prepares the C checkouts under
+`build/inputs/sources/$SDK` and the additional full SDK checkouts under
+`build/inputs/sources/$SDK-full`. Both use the Git cache in
+`build/inputs/git`. Set `OFFLINE=1` to reuse local inputs.
+The fetch command also accepts an explicit lock and destination. Add
+`--full` to select the additional full SDK projects.
 
 ```sh
 python3 -m tools.fetch_sources --lock "locks/$SDK.json" --dest "$SOURCE_ROOT"
 ```
 
-Make verifies the source lock and rejects dirty checkouts. Installation
-writes `source-lock.json` and `header-manifest.tsv`. The separate
-`make install-objc4` target builds the Objective-C runtime header layer.
+Make verifies the source pins and rejects dirty checkouts. The C
+installation copies the lock to `source-lock.json` and writes a
+`header-manifest.tsv`. The internal `install-objc4` target stages the
+Objective-C runtime headers and records the verified full source group.
 
 Use the [SDK review skill](../.agents/skills/review-macos-c-sdk/SKILL.md)
 when selecting or qualifying a new source lock.

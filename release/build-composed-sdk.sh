@@ -14,8 +14,7 @@ cd "$repo"
 sdk=$(basename "$lock" .json)
 inputs=${INPUTS:-"$repo/build/inputs"}
 sources="$inputs/sources/$sdk"
-objc_sources="$inputs/sources/$sdk-objc4"
-framework_sources="$inputs/sources/$sdk-frameworks"
+full_sources="$inputs/sources/$sdk-full"
 llvm=${LLVM_DIR:-"$inputs/llvm"}
 c_install="$out/c"
 objc_install="$out/objc4"
@@ -43,13 +42,13 @@ fi
 
 /usr/bin/sandbox-exec -f release/c-header-build.sb \
   make install SDK="$sdk" OUT="$c_install" SOURCE_ROOT="$sources" CLANG="$clang"
-make install-objc4 SDK="$sdk" OUT="$objc_install" SOURCE_ROOT="$objc_sources"
+make install-objc4 SDK="$sdk" OUT="$objc_install" SOURCE_ROOT="$full_sources"
 
 if [[ -n $selected_recipes ]]; then
   core_services_tbd="$generated_frameworks/CoreServices.framework/CoreServices.tbd"
   [[ -f $core_services_tbd ]] || core_services_tbd=
-  make -C frameworks install SDK="$sdk" SOURCE_LOCK="${lock%.json}-frameworks.json" \
-    SOURCE_ROOT="$framework_sources" OUT="$frameworks" \
+  make -C frameworks install SDK="$sdk" SOURCE_LOCK="$lock" \
+    SOURCE_ROOT="$full_sources" OUT="$frameworks" \
     CLANG="$clang" C_INSTALL="$c_install" OBJC4_INSTALL="$objc_install" \
     GENERATED_FRAMEWORKS="$generated_frameworks" \
     FOUNDATION_TBD="$generated_frameworks/Foundation.framework/Foundation.tbd" \

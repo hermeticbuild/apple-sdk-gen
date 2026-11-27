@@ -383,8 +383,7 @@ def compose(args):
     check_source_lock(c_root, lock, "C installation")
     objc4_revision = None
     if objc_root:
-        objc_lock = args.lock.with_name(f"{name}-objc4.json")
-        lock_bytes, projects = read_lock(objc_lock)
+        lock_bytes, projects = read_lock(args.lock, full=True)
         check_source_lock(objc_root, read_json(lock_bytes), "objc4 installation")
         objc4_revision = projects["objc4"]["commit"]
 

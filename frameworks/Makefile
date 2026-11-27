@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := install
 
-SOURCE_LOCK ?= $(abspath ../locks/$(SDK)-frameworks.json)
-SOURCE_ROOT ?= $(abspath ../build/inputs/sources/$(SDK)-frameworks)
+SOURCE_LOCK ?= $(abspath ../locks/$(SDK).json)
+SOURCE_ROOT ?= $(abspath ../build/inputs/sources/$(SDK)-full)
 OUT ?= $(abspath ../build/frameworks)
 C_FRAMEWORKS := CoreFoundation AudioToolbox AudioUnit CoreAudio CoreAudioTypes CoreMIDI IOKit OpenAL Security SystemConfiguration
 OBJC_FRAMEWORKS := Foundation AppKit CoreData Cocoa
@@ -17,7 +17,7 @@ PYTHON ?= python3
 
 install:
 	@test -n "$(strip $(SDK))" || { echo "Pass an SDK lock name, for example SDK=macosx26.5." >&2; exit 1; }
-	PYTHONPATH="$(abspath ..)" "$(PYTHON)" -m tools.fetch_sources --verify --lock "$(SOURCE_LOCK)" \
+	PYTHONPATH="$(abspath ..)" "$(PYTHON)" -m tools.fetch_sources --verify --lock "$(SOURCE_LOCK)" --full \
 		--dest "$(abspath $(SOURCE_ROOT))"
 	@set -eu; \
 		test -n "$(strip $(FRAMEWORKS))" && test -z "$(filter-out $(SUPPORTED),$(FRAMEWORKS))" \

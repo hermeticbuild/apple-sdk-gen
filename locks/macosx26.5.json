@@ -157,6 +157,34 @@
       "selection": "distribution"
     }
   },
+  "full_projects": {
+    "CF": {
+      "url": "https://github.com/apple-oss-distributions/CF.git",
+      "commit": "dc54c6bb1c1e5e0b9486c1d26dd5bef110b20bf3"
+    },
+    "IOAudioFamily": {
+      "url": "https://github.com/apple-oss-distributions/IOAudioFamily.git",
+      "commit": "6fdf514055a9868fe20e4dc3845b78dfa5e27110"
+    },
+    "OpenAL": {
+      "url": "https://github.com/apple-oss-distributions/OpenAL.git",
+      "commit": "f6f9a3c01868d07937a46425fe0ce555e3341bb2"
+    },
+    "Security": {
+      "url": "https://github.com/apple-oss-distributions/Security.git",
+      "commit": "97c3a4296c1ea06b0fe1877a7e616aa84450b5b2"
+    },
+    "configd": {
+      "url": "https://github.com/apple-oss-distributions/configd.git",
+      "commit": "f6245c30f907567887bd7b4e1639dc3f3edea4f7"
+    },
+    "objc4": {
+      "url": "https://github.com/apple-oss-distributions/objc4.git",
+      "commit": "ebfe77e64331034c867285a95d3ac205203291d5",
+      "tag": "objc4-951.7",
+      "selection": "Apple release qualified as the separate macOS 26.5 Objective-C runtime header layer."
+    }
+  },
   "llvm": {
     "archive": {
       "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.6/LLVM-21.1.6-macOS-ARM64.tar.xz",

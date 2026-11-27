@@ -204,7 +204,7 @@ install-name: '{PARENT}'
             relative, digest, "objc4", "sources/objc4/runtime/objc-sync.h",
             "selection", "copy", "input",
         ]) + "\n")
-        lock, _ = read_lock(REPO_ROOT / "locks/macosx26.5-objc4.json")
+        lock, _ = read_lock(REPO_ROOT / "locks/macosx26.5.json", full=True)
         (source / "source-lock.json").write_bytes(lock)
         return source, header
 
@@ -227,7 +227,7 @@ install-name: '{PARENT}'
 
     def test_objc4_layer_requires_the_pinned_source_lock(self):
         source, _ = self.objc4_fixture()
-        write(source / "source-lock.json", "{}\n")
+        (source / "source-lock.json").write_bytes((self.c / "source-lock.json").read_bytes())
         result = self.compose("--objc4-install", source, variant="full")
         self.assertIn("objc4 installation does not match the macosx26.5 source lock", result.stderr)
         self.assertFalse(self.out.exists())

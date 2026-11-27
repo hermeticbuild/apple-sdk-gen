@@ -24,25 +24,28 @@ CHECKOUT_SETTINGS = {
 }
 
 
-def read_lock(path: Path) -> tuple[bytes, dict]:
+def read_lock(path: Path, *, full: bool = False) -> tuple[bytes, dict]:
+    """Return the installation receipt and selected project pins."""
     data = path.read_bytes()
     lock = json.loads(data)
     target = lock["sdk"]
     sdk = target["canonical_name"]
-    profile = lock.get("profile")
     if (lock["schema"] != 1 or target["platform"] != "macosx"
             or sdk != target["platform"] + target["version"]
-            or profile not in (None, "objc4", "frameworks")
-            or path.stem != (f"{sdk}-{profile}" if profile else sdk)):
+            or path.stem != sdk):
         raise ValueError(f"invalid SDK source lock: {path}")
-    projects = lock["projects"]
+    projects = lock.get("full_projects", {}) if full else lock["projects"]
     if not projects:
-        raise ValueError(f"no projects in source lock: {path}")
+        group = "full" if full else "minimal"
+        raise ValueError(f"no {group} projects in source lock: {path}")
     for name, pin in projects.items():
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", name):
             raise ValueError(f"invalid project name: {name}")
         if not re.fullmatch(COMMIT, pin["commit"]) or not pin["url"].startswith("https://"):
             raise ValueError(f"invalid source pin for {name}")
+    if full:
+        receipt = {"schema": lock["schema"], "sdk": target, "profile": "full", "projects": projects}
+        data = (json.dumps(receipt, indent=2) + "\n").encode()
     return data, projects
 
 
@@ -124,12 +127,13 @@ def main() -> int:
     parser.add_argument("--lock", required=True, type=Path)
     parser.add_argument("--dest", required=True, type=Path)
     parser.add_argument("--cache", type=Path, default=ROOT / "build/inputs/git")
+    parser.add_argument("--full", action="store_true", help="select the additional full SDK projects")
     parser.add_argument("--offline", action="store_true")
     parser.add_argument("--verify", action="store_true", help="check an existing checkout")
     parser.add_argument("--record", type=Path, help="write the verified source lock to a new file")
     args = parser.parse_args()
     try:
-        lock_bytes, projects = read_lock(args.lock)
+        lock_bytes, projects = read_lock(args.lock, full=args.full)
         root = args.dest.absolute()
         if args.verify:
             verify(root, projects)

@@ -11,7 +11,7 @@ endif
 
 SDK_LOCK := $(CURDIR)/locks/$(SDK).json
 INPUTS ?= $(CURDIR)/build/inputs
-SOURCE_ROOT ?= $(INPUTS)/sources/$(SDK)$(if $(install-profile),-$(install-profile))
+SOURCE_ROOT ?= $(INPUTS)/sources/$(SDK)$(if $(install-profile),-full)
 LLVM_DIR ?= $(INPUTS)/llvm
 GENERATED ?= $(CURDIR)/build/generated
 SDK_OUTPUT ?= $(CURDIR)/build/sdk
@@ -23,11 +23,10 @@ export SOURCE_ROOT
 prepare: prepare-sources prepare-llvm prepare-docc prepare-python
 
 prepare-c-sources:
-	"$(PYTHON)" -m tools.fetch_sources --lock "locks/$(SDK).json" --dest "$(INPUTS)/sources/$(SDK)" --cache "$(INPUTS)/git" $(offline)
+	"$(PYTHON)" -m tools.fetch_sources --lock "$(SDK_LOCK)" --dest "$(INPUTS)/sources/$(SDK)" --cache "$(INPUTS)/git" $(offline)
 
 prepare-sources: prepare-c-sources
-	"$(PYTHON)" -m tools.fetch_sources --lock "locks/$(SDK)-objc4.json" --dest "$(INPUTS)/sources/$(SDK)-objc4" --cache "$(INPUTS)/git" $(offline)
-	"$(PYTHON)" -m tools.fetch_sources --lock "locks/$(SDK)-frameworks.json" --dest "$(INPUTS)/sources/$(SDK)-frameworks" --cache "$(INPUTS)/git" $(offline)
+	"$(PYTHON)" -m tools.fetch_sources --lock "$(SDK_LOCK)" --full --dest "$(INPUTS)/sources/$(SDK)-full" --cache "$(INPUTS)/git" $(offline)
 
 prepare-llvm:
 	"$(PYTHON)" -m tools.fetch_llvm_tools --lock "$(SDK_LOCK)" --dest "$(LLVM_DIR)" --cache "$(INPUTS)/downloads" $(offline)
@@ -76,7 +75,7 @@ install install-objc4:
 		test -n "$(OUT)" && test ! -e "$(OUT)" || { echo "Set OUT to a new directory." >&2; exit 1; }; \
 		stage=$$(mktemp -d "$${TMPDIR:-/tmp}/apple-oss-c-recipes.XXXXXX"); \
 		trap 'rm -rf -- "$$stage"' EXIT; \
-		"$(PYTHON)" -m tools.fetch_sources --verify --lock "locks/$(SDK)$(if $(install-profile),-$(install-profile)).json" \
+		"$(PYTHON)" -m tools.fetch_sources --verify --lock "$(SDK_LOCK)" $(if $(install-profile),--full) \
 			--dest "$(SOURCE_ROOT)" --record "$$stage/source-lock.json"; \
 		$(MAKE) $(if $(install-profile),build-$(install-profile),build-install) \
 			STAGE="$$stage" SOURCE_ROOT="$(SOURCE_ROOT)" CLANG="$(CLANG)" MIG="$(MIG)" OUT="$(OUT)"

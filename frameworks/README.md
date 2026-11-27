@@ -18,7 +18,7 @@ make -C frameworks install SDK=macosx26.5 CLANG="$LLVM/bin/clang" C_INSTALL="$C_
 ```
 
 `make prepare-sources` fetches the exact CF, IOAudioFamily, OpenAL, Security
-and configd revisions in `locks/macosx26.5-frameworks.json`.
+and configd revisions from `full_projects` in `locks/macosx26.5.json`.
 `install` reads those checkouts and writes into a new output directory. To stage a subset, pass `FRAMEWORKS="CoreFoundation OpenAL"`,
 for example. SystemConfiguration also stages CoreFoundation and Security.
 
