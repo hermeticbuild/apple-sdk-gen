@@ -6,6 +6,7 @@ from pathlib import Path
 import yaml
 
 from tools.apple_sdk_gen.supplements.install_darwin_stubs import (
+    DATA_PATH,
     LIBRARIES,
     install_darwin_lib_stubs,
     select_darwin_libraries,
@@ -77,8 +78,7 @@ class DarwinLibrariesTest(unittest.TestCase):
         self.assertIn("_new_api", newer["libSystem.B"])
 
     def test_macos_26_5_inventory_excludes_newer_syscalls(self):
-        metadata = Path(__file__).resolve().parents[1] / "tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.json"
-        libraries = select_darwin_libraries("26.5", metadata)
+        libraries = select_darwin_libraries("26.5", DATA_PATH)
         documents = yaml.safe_load_all(libraries["libSystem.B"].replace("--- !tapi-tbd", "---"))
         symbols = set()
         pipe_targets = set()
@@ -92,8 +92,7 @@ class DarwinLibrariesTest(unittest.TestCase):
         self.assertTrue({"_pipe2", "_dup3"}.isdisjoint(symbols))
 
     def test_macos_26_5_keeps_sanitizer_abi_exports_in_libcxxabi(self):
-        metadata = Path(__file__).resolve().parents[1] / "tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.json"
-        libraries = select_darwin_libraries("26.5", metadata)
+        libraries = select_darwin_libraries("26.5", DATA_PATH)
         abi = yaml.safe_load(libraries["libc++abi"].replace("--- !tapi-tbd", "---"))
         cxx = yaml.safe_load(libraries["libc++.1"].replace("--- !tapi-tbd", "---"))
         expected = {
@@ -114,8 +113,7 @@ class DarwinLibrariesTest(unittest.TestCase):
         self.assertTrue(expected.isdisjoint(cxx_symbols))
 
     def test_macos_26_5_exports_environ_through_libdyld(self):
-        metadata = Path(__file__).resolve().parents[1] / "tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.json"
-        libraries = select_darwin_libraries("26.5", metadata)
+        libraries = select_darwin_libraries("26.5", DATA_PATH)
         documents = list(yaml.safe_load_all(libraries["libSystem.B"].replace("--- !tapi-tbd", "---")))
         libdyld_name = "/usr/lib/system/libdyld.dylib"
         umbrella = next(document for document in documents if document["install-name"] == "/usr/lib/libSystem.B.dylib")
@@ -147,8 +145,7 @@ class DarwinLibrariesTest(unittest.TestCase):
         self.assertIn("_PeerConnectionRelease", exports)
 
     def test_macos_26_5_provides_out_of_line_ctype(self):
-        metadata = Path(__file__).resolve().parents[1] / "tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.json"
-        libraries = select_darwin_libraries("26.5", metadata)
+        libraries = select_darwin_libraries("26.5", DATA_PATH)
         documents = yaml.safe_load_all(libraries["libSystem.B"].replace("--- !tapi-tbd", "---"))
         libc = next(document for document in documents if document["install-name"] == "/usr/lib/system/libsystem_c.dylib")
         required = {
@@ -246,8 +243,7 @@ class DarwinLibrariesTest(unittest.TestCase):
         )
 
     def test_macos_26_5_provides_objc_compiler_entry_points(self):
-        metadata = Path(__file__).resolve().parents[1] / "tools/apple_sdk_gen/supplements/data/darwin_macos_26.5.json"
-        libraries = select_darwin_libraries("26.5", metadata)
+        libraries = select_darwin_libraries("26.5", DATA_PATH)
         objc = yaml.safe_load(libraries["libobjc.A"].replace("--- !tapi-tbd", "---"))
         required = {"__objc_empty_cache", "_objc_getProperty", "_objc_msgSendSuper2", "_objc_setProperty_atomic"}
         for symbol in sorted(required):

@@ -22,4 +22,4 @@ jobs:
       - name: Run unit tests
         run: |
           clang --version
-          python -m unittest discover -s tests
+          make test-python

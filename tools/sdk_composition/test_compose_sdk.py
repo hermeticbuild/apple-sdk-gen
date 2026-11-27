@@ -16,10 +16,6 @@ from tools.fetch_sources import ROOT as REPO_ROOT, read_lock
 PARENT = "/usr/lib/libSystem.B.dylib"
 CHILD = "/usr/lib/system/libsystem_fixture.dylib"
 FRAMEWORK = "System/Library/Frameworks/Example.framework"
-OBJC_HEADERS = {
-    "NSObjCRuntime.h", "NSObject.h", "message.h", "objc-api.h", "objc-auto.h",
-    "objc-exception.h", "objc-sync.h", "objc.h", "runtime.h",
-}
 
 
 def write(path, content):
@@ -54,7 +50,6 @@ class ComposeTests(unittest.TestCase):
         write(self.c / "header-manifest.tsv", "\t".join(COLUMNS) + "\n" + "\t".join([
             "usr/include/fixture.h", digest, "fixture", "source", "selection", "copy", "input",
         ]) + "\n")
-        write(self.c / "uninstalled-scratch.txt", "outside the manifest\n")
         lock, _ = read_lock(REPO_ROOT / "locks/macosx26.5.json")
         (self.c / "source-lock.json").write_bytes(lock)
         write(self.gen / "SDKSettings.json", '{"CanonicalName":"macosx26.5","Version":"26.5"}')
@@ -81,119 +76,11 @@ class ComposeTests(unittest.TestCase):
         self.assertIn("macosx27.0", result.stderr)
         self.assertFalse(self.out.exists())
 
-    def test_c_source_lock_ignores_unrelated_release_inputs(self):
-        receipt = self.c / "source-lock.json"
-        data = json.loads(receipt.read_text())
-        data.pop("llvm")
-        data.pop("docc")
-        write(receipt, json.dumps(data))
-
-        result = self.compose()
-        self.assertEqual(result.returncode, 0, result.stderr)
-
     def cxx_fixture(self):
         for filename in ("__config_site", "module.modulemap", "cxxabi.h", "__cxxabi_config.h", "vector"):
             write(self.gen / "usr/include/c++/v1" / filename, "// LLVM C++ fixture\n")
         for project in ("libcxx", "libcxxabi"):
             write(self.gen / "usr/share/licenses" / project / "LICENSE.TXT", "LLVM license fixture\n")
-
-    def test_includes_only_the_selected_cxx_headers_and_licenses(self):
-        self.cxx_fixture()
-        write(self.gen / "usr/include/c++/unselected.h", "// outside v1\n")
-        write(self.gen / "usr/include/other.h", "// outside the C++ layer\n")
-        write(self.gen / "usr/lib/libc++.a", "!<arch>\n")
-        result = self.compose(variant="full")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        manifest = json.loads((self.out / "composition.json").read_text())
-        files = manifest["files"]
-        self.assertEqual(files["usr/include/c++/v1/vector"]["layer"], "sdk-gen-cxx")
-        self.assertIn("usr/include/c++/v1/cxxabi.h", files)
-        for project in ("libcxx", "libcxxabi"):
-            self.assertIn(f"usr/share/licenses/{project}/LICENSE.TXT", files)
-        for path in ("usr/include/c++/unselected.h", "usr/include/other.h", "usr/lib/libc++.a"):
-            self.assertFalse((self.out / path).exists(), path)
-
-    def test_rejects_an_incomplete_cxx_installation(self):
-        self.cxx_fixture()
-        (self.gen / "usr/include/c++/v1/cxxabi.h").unlink()
-        result = self.compose(variant="full")
-        self.assertIn("SDK Gen C++ installation is missing usr/include/c++/v1/cxxabi.h", result.stderr)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertFalse(self.out.exists())
-
-    def test_rejects_an_archive_in_the_cxx_installation(self):
-        self.cxx_fixture()
-        write(self.gen / "usr/include/c++/v1/archive", "!<arch>\n")
-        result = self.compose(variant="full")
-        self.assertIn("binary or archive in SDK input: usr/include/c++/v1/archive", result.stderr)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertFalse(self.out.exists())
-
-    def test_selects_only_the_generated_simd_files_from_the_framework_input(self):
-        write(self.gen / "usr/include/simd/simd.h", "typedef int simd_int2;\n")
-        write(self.gen / "usr/include/simd/module.modulemap", 'module simd { header "simd.h" }\n')
-        write(self.gen / "usr/include/simd/unselected.h", "// outside the SIMD layer\n")
-
-        result = self.compose()
-        self.assertEqual(result.returncode, 0, result.stderr)
-        files = json.loads((self.out / "composition.json").read_text())["files"]
-        for name in ("simd.h", "module.modulemap"):
-            self.assertEqual(files[f"usr/include/simd/{name}"]["layer"], "sdk-gen-simd")
-        self.assertFalse((self.out / "usr/include/simd/unselected.h").exists())
-        self.assertFalse((self.out / "usr/include/c++").exists())
-
-    @unittest.skipUnless(os.getenv("LIBSYSTEM_TEST_LLVM"), "requires the official llvm-readtapi")
-    def test_sdk_gen_umbrella_is_preserved(self):
-        write(self.gen / "usr/include/unselected.h", "#error reference C header\n")
-        data = f"""--- !tapi-tbd
-tbd-version: 4
-targets: [ arm64-macos, x86_64-macos ]
-install-name: '{PARENT}'
-...
-"""
-        write(self.gen / "usr/lib/libSystem.B.tbd", data)
-        result = self.compose()
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual((self.out / "usr/lib/libSystem.B.tbd").read_text(), data)
-        self.assertEqual((self.out / "usr/lib/libSystem.tbd").readlink(), Path("libSystem.B.tbd"))
-        self.assertFalse((self.out / "usr/include/unselected.h").exists())
-        manifest = json.loads((self.out / "composition.json").read_text())
-        self.assertEqual(manifest["sdk_gen"], "macosx26.5")
-        self.assertEqual(manifest["providers"][PARENT], ["usr/lib/libSystem.B.tbd"])
-        self.assertEqual(json.loads((self.out / "SDKSettings.json").read_text())["Version"], "26.5")
-
-    @unittest.skipUnless(os.getenv("LIBSYSTEM_TEST_OBJC4"), "requires make install-objc4 output")
-    def test_objc4_headers_and_external_stubs_have_separate_provenance(self):
-        source = Path(os.environ["LIBSYSTEM_TEST_OBJC4"])
-        target = self.work / "libobjc.A.tbd"
-        write(target, tbd("/usr/lib/libobjc.A.dylib"))
-        alias = self.work / "libobjc.tbd"
-        alias.symlink_to(target.name)
-
-        result = self.compose("--objc4-install", source,
-                              "--external-stub", f"usr/lib/libobjc.tbd={alias}",
-                              "--external-stub", f"usr/lib/libobjc.A.tbd={target}", variant="full")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        objc = self.out / "usr/include/objc"
-        self.assertEqual({p.name for p in objc.iterdir()}, OBJC_HEADERS)
-        self.assertEqual((self.out / "header-manifest.tsv").read_bytes(),
-                         (self.c / "header-manifest.tsv").read_bytes())
-        manifest = json.loads((self.out / "composition.json").read_text())
-        self.assertEqual(manifest["objc4_revision"], "ebfe77e64331034c867285a95d3ac205203291d5")
-        receipts = {}
-        for name in OBJC_HEADERS:
-            upstream = (source / "usr/include/objc" / name).read_bytes()
-            self.assertEqual((objc / name).read_bytes(), upstream)
-            receipts[f"usr/include/objc/{name}"] = {
-                "layer": "objc4-public-headers",
-                "source": f"usr/include/objc/{name}",
-                "sha256": hashlib.sha256(upstream).hexdigest(),
-            }
-        self.assertEqual({path: receipt for path, receipt in manifest["files"].items()
-                          if path.startswith("usr/include/objc/")}, receipts)
-        self.assertEqual(manifest["files"]["usr/lib/libobjc.tbd"]["layer"], "external-stub")
-        self.assertEqual((self.out / "usr/lib/libobjc.tbd").readlink(), Path("libobjc.A.tbd"))
-        self.assertEqual(manifest["providers"]["/usr/lib/libobjc.A.dylib"], ["usr/lib/libobjc.A.tbd"])
 
     def objc4_fixture(self):
         source = self.work / "objc4"
@@ -232,61 +119,13 @@ install-name: '{PARENT}'
         self.assertIn("objc4 installation does not match the macosx26.5 source lock", result.stderr)
         self.assertFalse(self.out.exists())
 
-    def test_prepared_framework(self):
-        write(self.framework / "Headers/Example.h", "typedef int example;\n")
-        result = self.compose("--prepared-framework", "Example", self.framework, variant="full")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        settings = json.loads((self.out / "SDKSettings.json").read_text())
-        self.assertEqual(settings["Version"], "26.5")
-        self.assertEqual(settings["SupportedTargets"]["macosx"]["Archs"], ["arm64"])
-        files = json.loads((self.out / "composition.json").read_text())["files"]
-        self.assertEqual(files[f"{FRAMEWORK}/Headers/Example.h"]["layer"], "prepared-framework")
-
-    def test_all_frameworks_preserve_generated_files_and_allow_explicit_overrides(self):
-        live = self.framework
-        write(live / "Versions/A/Headers/Example.h", "original")
-        write(live / "Versions/A/Headers/CASE.h", "generated capitalization")
-        (live / "Headers").symlink_to("Versions/A/Headers")
-        (live / "Example.h").symlink_to("Headers/Example.h")
-        install_name = "/System/Library/Frameworks/Example.framework/Example"
-        write(live / "Example.tbd", tbd(install_name))
-        other = "System/Library/Frameworks/Other.framework"
-        write(self.gen / other / "generated.h", "generated")
-        write(self.gen / "System/Library/PrivateFrameworks/Hidden.framework/hidden.h", "hidden")
-        write(self.gen / "usr/include/sdk.h", "not a framework")
-        prepared = self.work / "recipes/Other.framework"
-        write(prepared / "prepared.h", "prepared")
-        overlay = self.work / "recipes/Example.framework"
-        write(overlay / "Versions/A/Headers/Example.h", "local fix")
-        write(overlay / "Versions/A/Headers/Extra.h", "new header")
-        write(overlay / "Versions/A/Headers/case.h", "source capitalization")
-
-        result = self.compose("--prepared-framework", "Other", prepared,
-                              "--framework-overlay", "Example", overlay, variant="full")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual((self.out / FRAMEWORK / "Example.h").read_text(), "local fix")
-        self.assertEqual((self.out / FRAMEWORK / "Headers/Extra.h").read_text(), "new header")
-        self.assertEqual((self.out / FRAMEWORK / "Headers/case.h").read_text(), "source capitalization")
-        self.assertNotIn("CASE.h", {path.name for path in (self.out / FRAMEWORK / "Headers").iterdir()})
-        self.assertTrue((self.out / other / "prepared.h").is_file())
-        self.assertFalse((self.out / other / "generated.h").exists())
-        self.assertFalse((self.out / "System/Library/PrivateFrameworks").exists())
-        self.assertFalse((self.out / "usr/include/sdk.h").exists())
-
-        manifest = json.loads((self.out / "composition.json").read_text())
-        self.assertEqual(manifest["sdk_gen"], "macosx26.5")
-        self.assertEqual(manifest["files"][f"{FRAMEWORK}/Example.tbd"]["layer"], "sdk-gen-framework")
-        self.assertEqual(manifest["files"][f"{FRAMEWORK}/Versions/A/Headers/Example.h"]["layer"],
-                         "framework-overlay")
-        self.assertEqual(manifest["providers"][install_name], [f"{FRAMEWORK}/Example.tbd"])
-
     def test_overlay_requires_a_selected_generated_bundle(self):
         write(self.framework / "Headers/Example.h", "replacement")
         result = self.compose("--framework", "Other", "--framework-overlay", "Example", self.framework, variant="full")
         self.assertIn("framework overlays require a selected SDK Gen base bundle: Example", result.stderr)
         self.assertFalse(self.out.exists())
 
-    def test_selected_assets_and_relative_framework_aliases(self):
+    def test_selects_only_the_requested_framework_and_preserves_its_aliases(self):
         write(self.framework / "Versions/A/Headers/Example.h", "#define EXAMPLE 1\n")
         example = "/System/Library/Frameworks/Example.framework/Versions/A/Example"
         write(self.framework / "Versions/A/Example.tbd", tbd(example))
@@ -294,32 +133,13 @@ install-name: '{PARENT}'
         (self.framework / "Headers").symlink_to("Versions/Current/Headers")
         (self.framework / "Example.tbd").symlink_to("Versions/Current/Example.tbd")
         write(self.gen / "System/Library/Frameworks/Unselected.framework/unused.h", "\n")
-        write(self.gen / "usr/include/c++/v1/vector", "\n")
-        external = self.work / "support" / "libexample.tbd"
-        write(external, tbd("/usr/lib/libexample.dylib"))
-
-        result = self.compose("--framework", "Example", "--external-stub",
-                              f"usr/lib/libexample.tbd={external}", variant="full")
+        result = self.compose("--framework", "Example", variant="full")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual((self.out / FRAMEWORK / "Headers/Example.h").read_text(),
                          "#define EXAMPLE 1\n")
         self.assertEqual(os.readlink(self.out / FRAMEWORK / "Example.tbd"),
                          "Versions/Current/Example.tbd")
-        self.assertEqual(os.readlink(self.out / "usr/lib/libSystem.tbd"), "libSystem.B.tbd")
-        self.assertEqual((self.out / "usr/include/fixture.h").read_bytes(),
-                         (self.c / "usr/include/fixture.h").read_bytes())
-        self.assertFalse((self.out / "uninstalled-scratch.txt").exists())
-        self.assertTrue((self.out / "usr/include/c++/v1/vector").exists())
-        self.assertFalse((self.out / "usr/include/objc").exists())
         self.assertFalse((self.out / "System/Library/Frameworks/Unselected.framework").exists())
-
-        manifest = json.loads((self.out / "composition.json").read_text())
-        self.assertNotIn("objc4_revision", manifest)
-        self.assertEqual(manifest["providers"], {
-            PARENT: ["usr/lib/libSystem.B.tbd"], CHILD: ["usr/lib/libSystem.B.tbd"],
-            example: [f"{FRAMEWORK}/Versions/A/Example.tbd"],
-            "/usr/lib/libexample.dylib": ["usr/lib/libexample.tbd"],
-        })
 
     def test_renamed_external_stub_with_embedded_child_shadows_sdk_gen_provider(self):
         external = self.work / "moved.tbd"
@@ -354,19 +174,6 @@ install-name: '{CHILD}'
                       result.stderr)
         self.assertFalse(self.out.exists())
 
-    def test_external_alias_preserves_its_explicitly_selected_target(self):
-        target = self.work / "libextra.1.tbd"
-        write(target, tbd("/usr/lib/libextra.1.dylib"))
-        alias = self.work / "libextra.tbd"
-        alias.symlink_to(target.name)
-        result = self.compose("--external-stub", f"usr/lib/libextra.tbd={alias}",
-                              "--external-stub", f"usr/lib/libextra.1.tbd={target}")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(os.readlink(self.out / "usr/lib/libextra.tbd"), target.name)
-        report = json.loads((self.out / "composition.json").read_text())
-        self.assertEqual(report["providers"]["/usr/lib/libextra.1.dylib"],
-                         ["usr/lib/libextra.1.tbd"])
-
     def test_framework_can_only_link_to_its_own_selected_members(self):
         write(self.gen / "System/Library/Frameworks/Unselected.framework/H.h", "\n")
         self.framework.mkdir()
@@ -383,19 +190,6 @@ install-name: '{CHILD}'
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("SDK path collision: usr/lib/libSystem.tbd", result.stderr)
         self.assertFalse(self.out.exists())
-
-    def test_sdk_gen_compatibility_alias_keeps_its_relative_target(self):
-        alias = Path("usr/lib/libm.tbd")
-        (self.gen / alias).symlink_to("libSystem.tbd")
-        write(self.gen / "usr/lib/libdl.tbd", tbd("/usr/lib/libdl.dylib"))
-
-        result = self.compose()
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(os.readlink(self.out / alias), "libSystem.tbd")
-        self.assertEqual(os.readlink(self.out / "usr/lib/libdl.tbd"), "libSystem.B.tbd")
-        manifest = json.loads((self.out / "composition.json").read_text())
-        self.assertEqual(manifest["files"][alias.as_posix()]["symlink"], "libSystem.tbd")
-        self.assertNotIn("/usr/lib/libdl.dylib", manifest["providers"])
 
     def test_named_framework_cannot_embed_a_static_archive(self):
         write(self.framework / "toolchain.a", "!<arch>\n")

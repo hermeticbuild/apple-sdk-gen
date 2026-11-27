@@ -17,5 +17,6 @@ applies LLVM's Apple preset choices for vendor availability annotations
 and the libdispatch backend for parallel algorithms. The two license
 files are from the corresponding directories at LLVM's `llvmorg-21.1.6` tag.
 
-When changing the compiler pin, run `make test-llvm-tools SDK=macosx26.5` to exercise
-InstallAPI, Mach-O imports, LLD, and the bundled Darwin builtins.
+The SDK build uses InstallAPI to generate stubs. The
+[release tests](../release/README.md#build-and-test-locally) compile and link
+against the assembled SDK.

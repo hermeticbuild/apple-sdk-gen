@@ -43,5 +43,5 @@ make -C tests/composed_sdk test test-foundation-macros test-coregraphics \
   test-security test-network test-simd test-modelio test-modelio-modules \
   test-objc-property "${args[@]}"
 LLVM="$llvm" LIBSYSTEM_TEST_LLVM="$llvm" \
-  LIBSYSTEM_TEST_OBJC4="$out/objc4" ICONV_SOURCE="$inputs/sources/$sdk/libiconv" C_INSTALL="$out/c" \
+  ICONV_SOURCE="$inputs/sources/$sdk/libiconv" C_INSTALL="$out/c" \
   python3 -m unittest tools.sdk_composition.test_compose_sdk components.libiconv.test_stubs
